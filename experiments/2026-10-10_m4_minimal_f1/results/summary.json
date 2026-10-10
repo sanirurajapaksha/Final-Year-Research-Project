@@ -1,0 +1,10 @@
+{
+  "input_fixture_path": "data/fixtures/telemetry_sample.json",
+  "input_description": "Hand-written illustrative fixture; not a benchmark or live telemetry.",
+  "sample_count": 1,
+  "record_count": 3,
+  "output_format": "tsv",
+  "original_size_utf8_bytes": 241,
+  "compressed_size_utf8_bytes": 228,
+  "original_size_serialization_convention": "len(json.dumps(batch.records, ensure_ascii=False).encode(\"utf-8\")); all other json.dumps options use Python defaults, including sort_keys=False, indent=None, and separators=(', ', ': '). This measures records only, not the fixture file or batch metadata."
+}

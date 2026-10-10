@@ -1,0 +1,43 @@
+[
+  {
+    "name": "pytest",
+    "command": [
+      "D:\\SRE\\Final-Year-Research-Project\\.venv\\Scripts\\python.exe",
+      "-m",
+      "pytest"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "ruff_check",
+    "command": [
+      "D:\\SRE\\Final-Year-Research-Project\\.venv\\Scripts\\python.exe",
+      "-m",
+      "ruff",
+      "check",
+      "."
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "ruff_format_check",
+    "command": [
+      "D:\\SRE\\Final-Year-Research-Project\\.venv\\Scripts\\python.exe",
+      "-m",
+      "ruff",
+      "format",
+      "--check",
+      "."
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "git_diff_check",
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exit_code": 0
+  }
+]
