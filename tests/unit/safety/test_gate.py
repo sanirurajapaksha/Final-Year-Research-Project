@@ -1,7 +1,7 @@
 import pytest
 
-from sre_agent.contracts import GateDecision, ProposedAction, Z3Result
-from sre_agent.safety.gate import check, decision_for
+from argus.contracts import GateDecision, ProposedAction, Z3Result
+from argus.safety.gate import check, decision_for
 
 
 @pytest.mark.parametrize(

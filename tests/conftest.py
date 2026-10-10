@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from sre_agent.contracts import TelemetryBatch
+from argus.contracts import TelemetryBatch
 
 FIXTURES = Path(__file__).resolve().parents[1] / "data" / "fixtures"
 

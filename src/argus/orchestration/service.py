@@ -3,7 +3,7 @@
 STUB: replace the bodies. Keep the signatures until contract v1 changes them.
 """
 
-from sre_agent.contracts import CompressedTelemetry, ExecutionResult, ProposedAction, TelemetryBatch
+from argus.contracts import CompressedTelemetry, ExecutionResult, ProposedAction, TelemetryBatch
 
 
 def compress(batch: TelemetryBatch) -> CompressedTelemetry:

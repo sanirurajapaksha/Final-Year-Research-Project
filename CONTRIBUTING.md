@@ -8,7 +8,7 @@
 
 ## Module ownership
 - Each module folder has an owner (see the README). Change someone else's module only after they agree.
-- `src/sre_agent/contracts/` is shared. A PR that changes it needs approval from every owner whose module sends or receives the changed model.
+- `src/argus/contracts/` is shared. A PR that changes it needs approval from every owner whose module sends or receives the changed model.
 
 ## Tests
 - Every function gets at least one **happy-path** and one **failure-path** test.

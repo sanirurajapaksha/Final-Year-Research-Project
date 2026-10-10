@@ -1,5 +1,5 @@
-from sre_agent.contracts import GateDecision
-from sre_agent.orchestration.pipeline import run_once
+from argus.contracts import GateDecision
+from argus.orchestration.pipeline import run_once
 
 
 def test_every_write_gets_a_verdict(sample_batch):

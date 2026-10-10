@@ -3,7 +3,7 @@
 STUB: replace the body. Keep the signature until contract v1 changes it.
 """
 
-from sre_agent.contracts import CompressedTelemetry, SemanticContext
+from argus.contracts import CompressedTelemetry, SemanticContext
 
 
 def build_context(telemetry: CompressedTelemetry) -> SemanticContext:

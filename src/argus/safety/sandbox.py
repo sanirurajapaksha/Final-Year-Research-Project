@@ -8,7 +8,7 @@ gate treats as BLOCK.
 
 from typing import Any
 
-from sre_agent.contracts import Z3Result
+from argus.contracts import Z3Result
 
 
 def run(script: str, timeout_s: float, memory_mb: int) -> tuple[Z3Result | None, dict[str, Any] | None]:
