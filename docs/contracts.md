@@ -1,6 +1,6 @@
 # Contracts between modules (draft v0)
 
-The typed messages in `src/sre_agent/contracts/` are a first draft for **contract v1**, which all four owners agree together (Planner task W2-01). Until then, change them freely, but in a PR that every affected owner sees.
+The typed messages in `src/argus/contracts/` are a first draft for **contract v1**, which all four owners agree together (Planner task W2-01). Until then, change them freely, but in a PR that every affected owner sees.
 
 | Model | From → to | File |
 |---|---|---|

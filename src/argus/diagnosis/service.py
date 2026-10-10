@@ -3,7 +3,7 @@
 STUB: replace the body. Keep the signature until contract v1 changes it.
 """
 
-from sre_agent.contracts import (
+from argus.contracts import (
     DiagnosisResult,
     Hypothesis,
     ProposedAction,

@@ -8,7 +8,7 @@ import csv
 import io
 import json
 
-from sre_agent.contracts import CompressedTelemetry, ExecutionResult, ProposedAction, TelemetryBatch
+from argus.contracts import CompressedTelemetry, ExecutionResult, ProposedAction, TelemetryBatch
 
 
 def compress(batch: TelemetryBatch) -> CompressedTelemetry:

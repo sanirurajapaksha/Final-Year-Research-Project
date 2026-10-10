@@ -9,8 +9,8 @@ rule stays: read actions run freely, and every write action passes M3 before it 
 
 from dataclasses import dataclass, field
 
-from sre_agent.context.service import build_context
-from sre_agent.contracts import (
+from argus.context.service import build_context
+from argus.contracts import (
     DiagnosisResult,
     ExecutionResult,
     GateDecision,
@@ -18,9 +18,9 @@ from sre_agent.contracts import (
     SemanticContext,
     TelemetryBatch,
 )
-from sre_agent.diagnosis.service import diagnose
-from sre_agent.orchestration.service import compress, execute
-from sre_agent.safety.gate import check
+from argus.diagnosis.service import diagnose
+from argus.orchestration.service import compress, execute
+from argus.safety.gate import check
 
 
 @dataclass

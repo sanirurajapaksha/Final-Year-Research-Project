@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from sre_agent.contracts import CompressedTelemetry, ExecutionResult, ProposedAction
-from sre_agent.orchestration.service import compress, execute
+from argus.contracts import CompressedTelemetry, ExecutionResult, ProposedAction
+from argus.orchestration.service import compress, execute
 
 
 def test_compress_returns_compressed_telemetry(sample_batch):

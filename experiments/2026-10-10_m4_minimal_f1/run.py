@@ -5,8 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from sre_agent.contracts import TelemetryBatch
-from sre_agent.orchestration.service import compress
+from argus.contracts import TelemetryBatch
+from argus.orchestration.service import compress
 
 ROOT = Path(__file__).resolve().parents[2]
 RUN = Path(__file__).resolve().parent

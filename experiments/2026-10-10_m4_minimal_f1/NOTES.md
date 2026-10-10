@@ -25,6 +25,9 @@ Original reproduction command, run from the repository root:
 
 Use the copied script's path for a later run to keep these results intact.
 
+After merging the package rename from `main`, `run.py` imports `argus`.
+The recorded results and configuration still describe the original run.
+
 ## Results
 
 - `results/telemetry_sample.tsv`: actual TSV bytes returned by `compress()`.
