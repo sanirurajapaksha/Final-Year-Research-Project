@@ -1,0 +1,10 @@
+{
+  "_note": "Hand-written fixture for M3 tests and demos. Not recorded from a cluster.",
+  "captured_at": "2026-10-10T00:00:00Z",
+  "deployments": [
+    {"namespace": "hotel-reservation", "name": "geo", "replicas": 3, "min_replicas": 2},
+    {"namespace": "hotel-reservation", "name": "frontend", "replicas": 2, "min_replicas": 1},
+    {"namespace": "hotel-reservation", "name": "search", "replicas": 2},
+    {"namespace": "hotel-reservation", "name": "rate", "replicas": 0, "min_replicas": 2}
+  ]
+}

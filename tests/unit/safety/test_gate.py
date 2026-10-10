@@ -1,7 +1,14 @@
 import pytest
 
+from argus.config import Settings
 from argus.contracts import GateDecision, ProposedAction, Z3Result
 from argus.safety.gate import check, decision_for
+
+SETTINGS = Settings(solver_timeout_s=30.0, solver_memory_mb=512)
+
+
+def write(command: str) -> ProposedAction:
+    return ProposedAction(command=command, is_write=True)
 
 
 @pytest.mark.parametrize(
@@ -17,9 +24,68 @@ def test_decision_mapping_is_fail_closed(z3_result, expected):
     assert decision_for(z3_result) is expected
 
 
-def test_stub_gate_blocks_writes_until_solver_exists():
-    action = ProposedAction(command="kubectl scale deployment demo --replicas=0 -n demo", is_write=True)
-    verdict = check(action)
+def test_safe_scale_is_approved(snapshot):
+    verdict = check(
+        write("kubectl scale deployment geo --replicas=2 -n hotel-reservation"), snapshot, SETTINGS
+    )
+    assert verdict.decision is GateDecision.APPROVE
+    assert verdict.z3_result is Z3Result.UNSAT
+    assert verdict.counterexample is None
+    assert {"prefilter", "parse", "facts", "sandbox_total", "solver"} <= set(verdict.timings_ms)
+
+
+def test_unsafe_scale_is_blocked_with_a_counterexample(snapshot):
+    verdict = check(
+        write("kubectl scale deployment geo --replicas=1 -n hotel-reservation"), snapshot, SETTINGS
+    )
     assert verdict.decision is GateDecision.BLOCK
-    assert verdict.command == action.command
-    assert "prefilter" in verdict.timings_ms
+    assert verdict.z3_result is Z3Result.SAT
+    assert verdict.violated_invariants == ["min_replicas"]
+    assert verdict.counterexample["after"] == {"replicas": 1}
+
+
+def test_verdict_keeps_the_command_byte_exact(snapshot):
+    command = "kubectl  scale deployment geo --replicas=2 -n hotel-reservation "
+    assert check(write(command), snapshot, SETTINGS).command == command
+
+
+def test_without_a_snapshot_everything_is_blocked():
+    verdict = check(write("kubectl scale deployment geo --replicas=2 -n hotel-reservation"), None, SETTINGS)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.z3_result is None
+    assert "no cluster snapshot" in verdict.reason
+
+
+def test_unknown_resource_is_blocked(snapshot):
+    verdict = check(
+        write("kubectl scale deployment ghost --replicas=2 -n hotel-reservation"), snapshot, SETTINGS
+    )
+    assert verdict.decision is GateDecision.BLOCK
+    assert "resource not in snapshot" in verdict.reason
+
+
+def test_prefilter_rejection_is_blocked(snapshot):
+    verdict = check(write("kubectl get pods -n hotel-reservation | grep geo"), snapshot, SETTINGS)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.reason.startswith("pre-filter:")
+
+
+def test_unsupported_verb_is_blocked(snapshot):
+    verdict = check(write("kubectl delete pod geo-123 -n hotel-reservation"), snapshot, SETTINGS)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.reason.startswith("parse:")
+
+
+def test_solver_timeout_is_blocked(snapshot):
+    tiny = Settings(solver_timeout_s=0.001, solver_memory_mb=512)
+    verdict = check(write("kubectl scale deployment geo --replicas=2 -n hotel-reservation"), snapshot, tiny)
+    assert verdict.decision is GateDecision.BLOCK
+    assert "timeout" in verdict.reason
+
+
+def test_missing_fact_blocks_and_says_so(snapshot):
+    verdict = check(
+        write("kubectl scale deployment search --replicas=2 -n hotel-reservation"), snapshot, SETTINGS
+    )
+    assert verdict.decision is GateDecision.BLOCK
+    assert "min_replicas" in verdict.reason
