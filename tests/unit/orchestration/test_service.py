@@ -1,6 +1,7 @@
 import csv
 import io
 import json
+from pathlib import Path
 
 import pytest
 
@@ -121,3 +122,18 @@ def test_compress_rejects_values_that_are_not_json(sample_batch):
 def test_execute_returns_an_execution_result():
     action = ProposedAction(command="kubectl get pods -n demo", is_write=False)
     assert isinstance(execute(action), ExecutionResult)
+
+
+def test_saved_experiment_tsv_matches_fixture(sample_batch):
+    root = Path(__file__).resolve().parents[3]
+    results = root / "experiments/2026-10-10_m4_minimal_f1/results"
+    payload = (results / "telemetry_sample.tsv").read_bytes()
+    content = payload.decode("utf-8")
+    summary = json.loads((results / "summary.json").read_text(encoding="utf-8"))
+    columns = next(csv.reader(io.StringIO(content, newline=""), delimiter="\t"))
+    assert columns == list(dict.fromkeys(key for record in sample_batch.records for key in record))
+    assert_json_equal(read_records(content), sample_batch.records)
+    assert len(payload) == summary["compressed_size_utf8_bytes"] == 228
+    original = json.dumps(sample_batch.records, ensure_ascii=False).encode("utf-8")
+    assert len(original) == summary["original_size_utf8_bytes"] == 241
+    assert payload == compress(sample_batch).content.encode("utf-8")

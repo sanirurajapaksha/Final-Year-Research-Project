@@ -1,6 +1,6 @@
 ============================= test session starts =============================
 platform win32 -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0
-rootdir: D:\SRE\Final-Year-Research-Project
+rootdir: .
 configfile: pyproject.toml
 testpaths: tests
 collected 30 items
