@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "sre-agent"
+name = "argus"
 version = "0.1.0"
-description = "J26-SE-305: an enhanced autonomous AI SRE agent (SLIIT IT4010 research project)"
+description = "Argus: an enhanced autonomous AI SRE agent (J26-SE-305, SLIIT IT4010 research project)"
 readme = "README.md"
 requires-python = ">=3.12"
 # Direct dependencies are pinned to exact versions. Add a dependency only after the team agrees.
@@ -21,7 +21,7 @@ dev = [
 ]
 
 [project.scripts]
-sre-agent = "sre_agent.__main__:main"
+argus = "argus.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

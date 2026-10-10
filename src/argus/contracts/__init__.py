@@ -5,11 +5,11 @@ owners must agree on. Change a model here only through a PR that every affected 
 approves. See docs/contracts.md.
 """
 
-from sre_agent.contracts.context import SemanticContext
-from sre_agent.contracts.diagnosis import DiagnosisResult, Hypothesis, ProposedAction
-from sre_agent.contracts.execution import ExecutionResult
-from sre_agent.contracts.safety import GateDecision, SafetyVerdict, Z3Result
-from sre_agent.contracts.telemetry import CompressedTelemetry, TelemetryBatch
+from argus.contracts.context import SemanticContext
+from argus.contracts.diagnosis import DiagnosisResult, Hypothesis, ProposedAction
+from argus.contracts.execution import ExecutionResult
+from argus.contracts.safety import GateDecision, SafetyVerdict, Z3Result
+from argus.contracts.telemetry import CompressedTelemetry, TelemetryBatch
 
 __all__ = [
     "CompressedTelemetry",

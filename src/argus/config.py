@@ -21,9 +21,9 @@ class Settings:
 
 def load_settings() -> Settings:
     return Settings(
-        log_level=os.environ.get("SRE_AGENT_LOG_LEVEL", Settings.log_level),
-        llm_model=os.environ.get("SRE_AGENT_LLM_MODEL", Settings.llm_model),
-        kube_context=os.environ.get("SRE_AGENT_KUBE_CONTEXT", Settings.kube_context),
-        solver_timeout_s=float(os.environ.get("SRE_AGENT_SOLVER_TIMEOUT_S", Settings.solver_timeout_s)),
-        solver_memory_mb=int(os.environ.get("SRE_AGENT_SOLVER_MEMORY_MB", Settings.solver_memory_mb)),
+        log_level=os.environ.get("ARGUS_LOG_LEVEL", Settings.log_level),
+        llm_model=os.environ.get("ARGUS_LLM_MODEL", Settings.llm_model),
+        kube_context=os.environ.get("ARGUS_KUBE_CONTEXT", Settings.kube_context),
+        solver_timeout_s=float(os.environ.get("ARGUS_SOLVER_TIMEOUT_S", Settings.solver_timeout_s)),
+        solver_memory_mb=int(os.environ.get("ARGUS_SOLVER_MEMORY_MB", Settings.solver_memory_mb)),
     )

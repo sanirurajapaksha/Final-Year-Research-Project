@@ -13,9 +13,9 @@ Z3 is asked about the NEGATED safety formula, so its raw answer maps to the deci
     unknown, timeout, error, none -> BLOCK (fail-closed)
 """
 
-from sre_agent.common.timing import stage_timer
-from sre_agent.contracts import GateDecision, ProposedAction, SafetyVerdict, Z3Result
-from sre_agent.safety import prefilter
+from argus.common.timing import stage_timer
+from argus.contracts import GateDecision, ProposedAction, SafetyVerdict, Z3Result
+from argus.safety import prefilter
 
 
 def decision_for(z3_result: Z3Result | None) -> GateDecision:

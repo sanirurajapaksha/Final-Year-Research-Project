@@ -1,13 +1,13 @@
 """Demo: one pass of the (stub) pipeline on a telemetry fixture.
 
-python -m sre_agent [path/to/telemetry.json]
+python -m argus [path/to/telemetry.json]
 """
 
 import sys
 from pathlib import Path
 
-from sre_agent.contracts import TelemetryBatch
-from sre_agent.orchestration.pipeline import run_once
+from argus.contracts import TelemetryBatch
+from argus.orchestration.pipeline import run_once
 
 DEFAULT_FIXTURE = Path(__file__).resolve().parents[2] / "data" / "fixtures" / "telemetry_sample.json"
 

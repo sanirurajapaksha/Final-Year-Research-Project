@@ -1,4 +1,4 @@
-# Architecture (starting point)
+# Argus architecture (starting point)
 
 This is where we start, not a final design. Change it when the work shows a better way, and record why in the PR.
 
@@ -27,12 +27,12 @@ flowchart LR
 
 | Module | Folder | Owner | Entry point |
 |---|---|---|---|
-| M1 System Context Acquisition & Observation | `src/sre_agent/context/` | Minidu | `service.build_context` |
-| M2 Multi-Hypothesis Diagnostic RCA | `src/sre_agent/diagnosis/` | Kaveen | `service.diagnose` |
-| M3 Proactive Formal Verification Safety Layer | `src/sre_agent/safety/` | Saniru | `gate.check` |
-| M4 Adaptive Tool Orchestration & Token Manager | `src/sre_agent/orchestration/` | Nethmi | `service.compress`, `service.execute`, `pipeline.run_once` |
-| Shared contracts | `src/sre_agent/contracts/` | All four | see `docs/contracts.md` |
-| Shared adapters, LLM access | `src/sre_agent/integrations/`, `src/sre_agent/llm/` | Shared | not built yet |
+| M1 System Context Acquisition & Observation | `src/argus/context/` | Minidu | `service.build_context` |
+| M2 Multi-Hypothesis Diagnostic RCA | `src/argus/diagnosis/` | Kaveen | `service.diagnose` |
+| M3 Proactive Formal Verification Safety Layer | `src/argus/safety/` | Saniru | `gate.check` |
+| M4 Adaptive Tool Orchestration & Token Manager | `src/argus/orchestration/` | Nethmi | `service.compress`, `service.execute`, `pipeline.run_once` |
+| Shared contracts | `src/argus/contracts/` | All four | see `docs/contracts.md` |
+| Shared adapters, LLM access | `src/argus/integrations/`, `src/argus/llm/` | Shared | not built yet |
 
 Folders use names, not module numbers, because the TAF and the proposal number M3 and M4 differently.
 
@@ -40,6 +40,5 @@ Folders use names, not module numbers, because the TAF and the proposal number M
 - Orchestration framework: CrewAI or LangGraph. `pipeline.run_once` stays framework-agnostic until we choose.
 - LLM provider and models for development and for the final evaluation.
 - Contract v1 (the models in `contracts/` are a draft).
-- System name. `sre_agent` is a placeholder package name.
 - M3's policy for `unknown` and timeouts (fail-closed BLOCK for now).
 - Whether the system keeps an undo step for failed mitigations, and which part decides that an incident is fixed.

@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from sre_agent.contracts import GateDecision, Hypothesis, ProposedAction, SafetyVerdict
+from argus.contracts import GateDecision, Hypothesis, ProposedAction, SafetyVerdict
 
 
 def test_command_is_kept_byte_exact():
