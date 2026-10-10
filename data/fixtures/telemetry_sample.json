@@ -1,0 +1,9 @@
+{
+  "source": "fixture (hand-written, illustrative only)",
+  "collected_at": "2026-10-10T00:00:00Z",
+  "records": [
+    {"kind": "metric", "service": "frontend", "name": "http_5xx_rate", "value": 0.42},
+    {"kind": "log", "service": "geo", "message": "connection refused: mongodb-geo:27017"},
+    {"kind": "event", "object": "pod/mongodb-geo-0", "reason": "BackOff"}
+  ]
+}

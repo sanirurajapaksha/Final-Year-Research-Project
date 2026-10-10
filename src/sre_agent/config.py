@@ -1,0 +1,29 @@
+"""Runtime settings. Defaults live here; override them with environment variables (see .env.example).
+
+Secrets such as API keys are deliberately not stored on Settings, so they can't leak into logs.
+The code that needs a key reads it from the environment itself.
+"""
+
+import os
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class Settings:
+    log_level: str = "INFO"
+    llm_model: str = ""
+    # Context name of the disposable dev cluster; empty means no cluster is configured.
+    kube_context: str = ""
+    # M3 sandbox limits (placeholders until measured).
+    solver_timeout_s: float = 5.0
+    solver_memory_mb: int = 256
+
+
+def load_settings() -> Settings:
+    return Settings(
+        log_level=os.environ.get("SRE_AGENT_LOG_LEVEL", Settings.log_level),
+        llm_model=os.environ.get("SRE_AGENT_LLM_MODEL", Settings.llm_model),
+        kube_context=os.environ.get("SRE_AGENT_KUBE_CONTEXT", Settings.kube_context),
+        solver_timeout_s=float(os.environ.get("SRE_AGENT_SOLVER_TIMEOUT_S", Settings.solver_timeout_s)),
+        solver_memory_mb=int(os.environ.get("SRE_AGENT_SOLVER_MEMORY_MB", Settings.solver_memory_mb)),
+    )
