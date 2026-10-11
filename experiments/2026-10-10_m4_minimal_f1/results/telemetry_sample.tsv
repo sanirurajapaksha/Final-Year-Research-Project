@@ -1,0 +1,4 @@
+kind	service	name	value	message	object	reason
+"""metric"""	"""frontend"""	"""http_5xx_rate"""	0.42			
+"""log"""	"""geo"""			"""connection refused: mongodb-geo:27017"""		
+"""event"""					"""pod/mongodb-geo-0"""	"""BackOff"""

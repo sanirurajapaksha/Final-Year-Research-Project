@@ -1,19 +1,34 @@
 """M4 entry points: telemetry preprocessing and the execution handler.
 
-STUB: replace the bodies. Keep the signatures until contract v1 changes them.
+compress() converts JSON records to TSV. execute() remains a stub.
+Keep the signatures until contract v1 changes them.
 """
+
+import csv
+import io
+import json
 
 from argus.contracts import CompressedTelemetry, ExecutionResult, ProposedAction, TelemetryBatch
 
 
 def compress(batch: TelemetryBatch) -> CompressedTelemetry:
-    """Preprocess and compress raw telemetry before M1 sees it.
-
-    The stub passes the records through as one line each, uncompressed.
-    """
-    content = "\n".join(str(record) for record in batch.records)
-    size = len(content.encode("utf-8"))
-    return CompressedTelemetry(content=content, original_size=size, compressed_size=size)
+    """Convert JSON records to TSV, keeping every present value as JSON."""
+    original = json.dumps(batch.records, ensure_ascii=False)
+    columns = list(dict.fromkeys(key for record in batch.records for key in record))
+    output = io.StringIO(newline="")
+    writer = csv.writer(output, delimiter="\t")
+    if batch.records:
+        writer.writerow(columns)
+        for record in batch.records:
+            writer.writerow(
+                [json.dumps(record[key], ensure_ascii=False) if key in record else "" for key in columns]
+            )
+    content = output.getvalue()
+    return CompressedTelemetry(
+        content=content,
+        original_size=len(original.encode("utf-8")),
+        compressed_size=len(content.encode("utf-8")),
+    )
 
 
 def execute(action: ProposedAction) -> ExecutionResult:

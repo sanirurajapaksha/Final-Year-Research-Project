@@ -1,0 +1,46 @@
+[
+  {
+    "name": "pytest",
+    "command": [
+      ".venv/Scripts/python.exe",
+      "-m",
+      "pytest"
+    ],
+    "exit_code": 0,
+    "path_normalization": "Paths normalized for portability after review; command text is not untouched raw evidence. Historical results are unchanged."
+  },
+  {
+    "name": "ruff_check",
+    "command": [
+      ".venv/Scripts/python.exe",
+      "-m",
+      "ruff",
+      "check",
+      "."
+    ],
+    "exit_code": 0,
+    "path_normalization": "Paths normalized for portability after review; command text is not untouched raw evidence. Historical results are unchanged."
+  },
+  {
+    "name": "ruff_format_check",
+    "command": [
+      ".venv/Scripts/python.exe",
+      "-m",
+      "ruff",
+      "format",
+      "--check",
+      "."
+    ],
+    "exit_code": 0,
+    "path_normalization": "Paths normalized for portability after review; command text is not untouched raw evidence. Historical results are unchanged."
+  },
+  {
+    "name": "git_diff_check",
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exit_code": 0
+  }
+]

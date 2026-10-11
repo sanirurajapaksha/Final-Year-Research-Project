@@ -1,0 +1,10 @@
+{
+  "command": ".venv\\Scripts\\python.exe experiments/2026-10-10_m4_minimal_f1/run.py",
+  "python_executable": ".venv/Scripts/python.exe",
+  "python_version": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+  "base_commit": "68c2443741cae93f52517dcf7311b9d60841a7c1",
+  "source_state": "Uncommitted work; the base commit alone does not identify this implementation.",
+  "input_fixture_path": "data/fixtures/telemetry_sample.json",
+  "model": "None; no model calls are made.",
+  "path_normalization": "Paths normalized for portability after review; command text is not untouched raw evidence. Historical results are unchanged."
+}
