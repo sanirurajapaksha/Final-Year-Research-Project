@@ -1,0 +1,66 @@
+[
+  {
+    "service": "frontend",
+    "source": "metric",
+    "name": "http_5xx_rate",
+    "value": 0.38,
+    "timestamp": "2026-10-10T10:04:30Z",
+    "evidence": "http_5xx_rate=0.38 > 0.05"
+  },
+  {
+    "service": "cart",
+    "source": "metric",
+    "name": "http_5xx_rate",
+    "value": 0.92,
+    "timestamp": "2026-10-10T10:04:30Z",
+    "evidence": "http_5xx_rate=0.92 > 0.05"
+  },
+  {
+    "service": "product-catalog",
+    "source": "metric",
+    "name": "memory_utilization",
+    "value": 0.94,
+    "timestamp": "2026-10-10T10:04:30Z",
+    "evidence": "memory_utilization=0.94 > 0.9"
+  },
+  {
+    "service": "cart",
+    "source": "log",
+    "name": "log_error",
+    "value": null,
+    "timestamp": "2026-10-10T10:04:41Z",
+    "evidence": "failed to connect to redis: CART_ADDR environment variable not set"
+  },
+  {
+    "service": "cart",
+    "source": "log",
+    "name": "log_error",
+    "value": null,
+    "timestamp": "2026-10-10T10:04:42Z",
+    "evidence": "GetCart failed: cart store unavailable"
+  },
+  {
+    "service": "frontend",
+    "source": "log",
+    "name": "log_error",
+    "value": null,
+    "timestamp": "2026-10-10T10:04:42Z",
+    "evidence": "rpc error: code = Unavailable desc = cart"
+  },
+  {
+    "service": "metrics-server",
+    "source": "log",
+    "name": "log_error",
+    "value": null,
+    "timestamp": "2026-10-10T10:04:20Z",
+    "evidence": "unable to fetch node metrics: connection timed out"
+  },
+  {
+    "service": "metrics-server",
+    "source": "k8s",
+    "name": "restart_count",
+    "value": 6.0,
+    "timestamp": "2026-10-10T10:05:00Z",
+    "evidence": "Pod metrics-server-7c4b8 restarted 6 times"
+  }
+]
