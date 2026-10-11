@@ -1,6 +1,7 @@
 import csv
 import io
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -76,6 +77,23 @@ def test_compress_preserves_values_and_types(sample_batch):
     ]
     restored = read_records(compress(sample_batch).content)
     assert_json_equal(restored, sample_batch.records)
+
+
+def test_compress_preserves_input_and_separated_duplicates(sample_batch):
+    repeated = {"kind": "log", "details": {"values": [True, 1, 1.0, {"message": "retry"}]}}
+    sample_batch.records = [
+        repeated,
+        {"kind": "metric", "details": {"values": [False, 2, 2.0]}},
+        deepcopy(repeated),
+    ]
+    before = deepcopy(sample_batch)
+
+    result = compress(sample_batch)
+
+    assert sample_batch.source == before.source
+    assert sample_batch.collected_at == before.collected_at
+    assert_json_equal(sample_batch.records, before.records)
+    assert_json_equal(read_records(result.content), before.records)
 
 
 def test_compress_distinguishes_missing_null_and_empty_string(sample_batch):
