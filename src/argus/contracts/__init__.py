@@ -5,21 +5,40 @@ owners must agree on. Change a model here only through a PR that every affected 
 approves. See docs/contracts.md.
 """
 
-from argus.contracts.context import SemanticContext
+from argus.contracts.context import AnomalySignal, SemanticContext, ServiceNode
 from argus.contracts.diagnosis import DiagnosisResult, Hypothesis, ProposedAction
 from argus.contracts.execution import ExecutionResult
 from argus.contracts.safety import GateDecision, SafetyVerdict, Z3Result
-from argus.contracts.telemetry import CompressedTelemetry, TelemetryBatch
+from argus.contracts.telemetry import (
+    CompressedTelemetry,
+    K8sEntity,
+    LogRecord,
+    MetricSample,
+    Severity,
+    Span,
+    SpanKind,
+    TelemetryBatch,
+    TelemetryRecord,
+)
 
 __all__ = [
+    "AnomalySignal",
     "CompressedTelemetry",
     "DiagnosisResult",
     "ExecutionResult",
     "GateDecision",
     "Hypothesis",
+    "K8sEntity",
+    "LogRecord",
+    "MetricSample",
     "ProposedAction",
     "SafetyVerdict",
     "SemanticContext",
+    "ServiceNode",
+    "Severity",
+    "Span",
+    "SpanKind",
     "TelemetryBatch",
+    "TelemetryRecord",
     "Z3Result",
 ]
