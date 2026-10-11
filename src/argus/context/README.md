@@ -4,7 +4,7 @@
 
 **Role in the flow:** M4's compressed telemetry → **M1** → Semantic Context Object → M4 → M2.
 
-**Entry point:** `service.build_context(CompressedTelemetry) -> SemanticContext` (stub until F1 and F2 are wired in).
+**Entry point:** `service.build_context(CompressedTelemetry) -> SemanticContext`. F1 is wired in (Stage 1 anomaly set, `strategy="stage1"`). F2 pruning comes next.
 
 **Functions** (specs in `docs/functions/`):
 - **F1, telemetry ingestion and Stage 1 noise filter** (`m1-F1-telemetry-noise-filter.md`): decode M4's TSV, validate records against the contract, and keep signals that cross threshold predicates. The output is an anomaly set.
@@ -17,9 +17,12 @@
 |---|---|
 | `ingest.py` | F1: M4 TSV → record dicts → typed models (`ParsedTelemetry`) |
 | `filters.py` | F1: Stage 1 threshold predicates → `list[AnomalySignal]` |
-| `service.py` | Public entry point `build_context` (stub) |
+| `metrics.py` | Noise-reduction ratios (simple and labelled) and false-prune rate |
+| `service.py` | Public entry point `build_context`: M4 TSV → F1 → `SemanticContext` |
 | `__main__.py` | Demo: `python -m argus.context [telemetry.json]` prints the anomaly set |
 
 **Try it:** `python -m argus.context` runs F1 on `data/fixtures/m1/scenario_01/telemetry.json`. It's a hand-written, synthetic CART_ADDR scenario, and its labels are in `ground_truth.json`.
+
+**Results:** `experiments/2026-10-11_m1_stage1_nrr/` has the first Stage 1 NRR (n = 1, synthetic).
 
 **Tests:** `tests/unit/context/`, and `tests/integration/test_m1_reads_m4_output.py` for reading M4's real output.
