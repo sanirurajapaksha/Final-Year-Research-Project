@@ -4,7 +4,8 @@ Rejects command shapes M3 can't reason about, before any parsing or solving:
 - anything that isn't a single `kubectl` command;
 - shell operators outside quotes: pipes, compound commands (&&, ||, ;), background (&),
   redirection (<, >), subshells;
-- command substitution (`...` or $(...)) and multi-line input, anywhere in the string;
+- command substitution (`...` or $(...)), shell variables ($), the comment character (#)
+  and multi-line input, anywhere in the string;
 - interactive or stdin forms (-i, -t, --stdin, --tty, -f -);
 - subcommands whose effect can't be checked: edit, debug, attach, port-forward, proxy, cp, wait, exec.
 
@@ -31,6 +32,9 @@ def tokenize(command: str) -> list[str]:
     """
     lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
     lexer.whitespace_split = True
+    # shlex treats '#' as a comment by default and drops the rest of the line.
+    # Turn that off, so M3 sees every character of the command (same as shlex.split).
+    lexer.commenters = ""
     return list(lexer)
 
 
@@ -56,6 +60,10 @@ def check(command: str) -> str | None:
         return "multi-line command"
     if "`" in command or "$(" in command:
         return "command substitution"
+    if "$" in command:
+        return "shell variable ($)"
+    if "#" in command:
+        return "comment character (#)"
 
     try:
         tokens = tokenize(command)

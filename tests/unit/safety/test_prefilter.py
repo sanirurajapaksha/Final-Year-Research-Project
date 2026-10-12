@@ -1,6 +1,6 @@
 import pytest
 
-from argus.safety.prefilter import check
+from argus.safety.prefilter import check, tokenize
 
 
 @pytest.mark.parametrize(
@@ -41,9 +41,18 @@ def test_plain_kubectl_commands_pass(command):
         ("kubectl apply -f -", "stdin"),
         ("kubectl apply --filename=-", "stdin"),
         ("kubectl", "no kubectl subcommand"),
+        ("kubectl scale deployment geo --replicas=5 -n hotel#x", "comment character"),
+        ("kubectl scale deployment geo --replicas=5 # -n kube-system", "comment character"),
+        ("kubectl scale deployment geo --replicas=5 -n $NS", "shell variable"),
+        ("kubectl scale deployment geo --replicas=5 -n ${NS:-kube-system}", "shell variable"),
     ],
 )
 def test_rejected_shapes(command, reason_part):
     reason = check(command)
     assert reason is not None
     assert reason_part in reason
+
+
+def test_tokenize_does_not_treat_hash_as_a_comment():
+    tokens = tokenize("kubectl scale deployment geo --replicas=5 -n hotel#x")
+    assert tokens[-1] == "hotel#x"

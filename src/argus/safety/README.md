@@ -14,7 +14,7 @@ python -m argus.safety "kubectl scale deployment geo --replicas=1 -n hotel-reser
 
 | Step | File | What it does | Status |
 |---|---|---|---|
-| 0 | `prefilter.py` | Syntactic checks (single kubectl command; no pipes, compound commands, substitution, redirects, interactive or stdin forms; no `exec`/`edit`/…). No LLM. | done |
+| 0 | `prefilter.py` | Syntactic checks (single kubectl command; no pipes, compound commands, substitution, `$` or `#`, redirects, interactive or stdin forms; no `exec`/`edit`/…). No LLM. | done |
 | 1 | `snapshot.py` | Looks up the target's facts in a snapshot (the format the extractor will produce). | done (fixture) |
 | 1 | `extractor.py` | Read-only cluster queries → snapshot. No LLM. | F2 |
 | 2a | `parser.py` | Command → structured action (deterministic templates). | `scale` only |
