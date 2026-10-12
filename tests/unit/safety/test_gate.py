@@ -83,6 +83,54 @@ def test_solver_timeout_is_blocked(snapshot):
     assert "timeout" in verdict.reason
 
 
+@pytest.mark.parametrize(
+    ("command", "z3_result", "decision", "violated"),
+    [
+        ("kubectl delete pod geo-1 -n hotel-reservation", Z3Result.UNSAT, GateDecision.APPROVE, []),
+        ("kubectl delete pvc old-pvc -n hotel-reservation", Z3Result.UNSAT, GateDecision.APPROVE, []),
+        (
+            "kubectl delete pod coredns-1 -n kube-system",
+            Z3Result.SAT,
+            GateDecision.BLOCK,
+            ["protected_namespace"],
+        ),
+        ("kubectl delete ns kube-system", Z3Result.SAT, GateDecision.BLOCK, ["protected_namespace"]),
+        ("kubectl delete pod geo-1 -A", Z3Result.SAT, GateDecision.BLOCK, ["protected_namespace"]),
+        ("kubectl delete pvc geo-pvc -n hotel-reservation", Z3Result.SAT, GateDecision.BLOCK, ["pvc_in_use"]),
+        (
+            "kubectl delete pvc mystery-pvc -n hotel-reservation",
+            Z3Result.SAT,
+            GateDecision.BLOCK,
+            ["pvc_in_use"],
+        ),
+        (
+            "kubectl scale deploy coredns --replicas=0 -n kube-system",
+            Z3Result.SAT,
+            GateDecision.BLOCK,
+            ["min_replicas", "protected_namespace"],
+        ),
+    ],
+)
+def test_protected_namespace_and_pvc_rules(snapshot, command, z3_result, decision, violated):
+    verdict = check(write(command), snapshot, SETTINGS)
+    assert verdict.z3_result is z3_result
+    assert verdict.decision is decision
+    assert verdict.violated_invariants == violated
+
+
+def test_deleting_an_unprotected_namespace_is_blocked_without_the_solver(snapshot):
+    verdict = check(write("kubectl delete ns hotel-reservation"), snapshot, SETTINGS)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.z3_result is None
+    assert "deletes everything in it" in verdict.reason
+
+
+def test_unknown_pvc_is_blocked(snapshot):
+    verdict = check(write("kubectl delete pvc ghost-pvc -n hotel-reservation"), snapshot, SETTINGS)
+    assert verdict.decision is GateDecision.BLOCK
+    assert "resource not in snapshot: pvc" in verdict.reason
+
+
 def test_missing_fact_blocks_and_says_so(snapshot):
     verdict = check(
         write("kubectl scale deployment search --replicas=2 -n hotel-reservation"), snapshot, SETTINGS

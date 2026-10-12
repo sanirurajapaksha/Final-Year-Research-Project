@@ -22,7 +22,8 @@ from argus.common.timing import stage_timer
 from argus.config import Settings, load_settings
 from argus.contracts import GateDecision, ProposedAction, SafetyVerdict, Z3Result
 from argus.safety import parser, prefilter, sandbox
-from argus.safety.snapshot import deployment_facts
+from argus.safety.policy import PROTECTED_NAMESPACES
+from argus.safety.snapshot import facts_for
 
 
 def decision_for(z3_result: Z3Result | None) -> GateDecision:
@@ -63,13 +64,20 @@ def check(
     if parsed is None:
         return block(f"parse: {parse_error}")
 
+    # Protected namespaces go on to the solver (I2 gives the counterexample). Any other namespace
+    # delete removes everything inside it, which F1 doesn't model, so it is blocked here.
+    if parsed.kind == "namespace" and parsed.name not in PROTECTED_NAMESPACES:
+        return block(
+            f"deleting namespace {parsed.name!r} deletes everything in it; not modelled in F1 (fail-closed)"
+        )
+
     if snapshot is None:
         return block("no cluster snapshot: the live Constraint Extractor isn't built yet (fail-closed)")
 
     with stage_timer(timings, "facts"):
-        facts = deployment_facts(snapshot, parsed.namespace, parsed.name)
+        facts = facts_for(snapshot, parsed.kind, parsed.namespace, parsed.name)
     if facts is None:
-        return block(f"resource not in snapshot: deployment {parsed.namespace}/{parsed.name}")
+        return block(f"resource not in snapshot: {parsed.kind} {parsed.namespace}/{parsed.name}")
 
     request = {
         "action": parsed.to_request(),
@@ -105,7 +113,8 @@ def check(
 
 def _reason(z3_result: Z3Result, result: dict[str, Any]) -> str:
     if z3_result is Z3Result.UNSAT:
-        text = "no post-state violates the encoded invariants (min_replicas, replicas_in_int32_range)"
+        checked = ", ".join(result.get("checked_invariants", []))
+        text = f"no post-state violates the encoded invariants ({checked})"
     elif z3_result is Z3Result.SAT:
         text = f"counterexample found: violates {', '.join(result.get('violated_invariants', []))}"
     else:
