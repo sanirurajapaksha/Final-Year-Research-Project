@@ -1,0 +1,43 @@
+{
+  "command": "python experiments/2026-10-13_m4_contract_v1/run.py",
+  "actual_python_invocation": ".venv/Scripts/python.exe",
+  "source_commit": "3c646dec15bcd20877b2db31c8429641b035be04",
+  "branch": "feat/m4-f1-contract-integration",
+  "upstream": "origin/main",
+  "source_state": "uncommitted changes present",
+  "uncommitted_changes": true,
+  "git_status_at_run_start": [
+    " M docs/functions/m4/F1.md",
+    " M docs/functions/m4/token-counting-proposal.md",
+    " M src/argus/orchestration/README.md",
+    " M src/argus/orchestration/service.py",
+    " M tests/unit/orchestration/test_service.py",
+    "?? experiments/2026-10-13_m4_contract_v1/NOTES.md",
+    "?? experiments/2026-10-13_m4_contract_v1/run.py"
+  ],
+  "source_note": "The commit alone does not identify dirty source. See source hashes and source_changes.patch.",
+  "source_changes_patch_sha256": "808d93d11831711f053eb182ecef43b988bfd3a7c19e697a1eca7c90ba984b57",
+  "source_file_sha256": {
+    "src/argus/orchestration/service.py": "fd84fe729c389d21553d8a77f894ac5fbba8a78a6953c02b54157f9c55aa07a3",
+    "src/argus/context/ingest.py": "8aa9c5417170f51f66d081b67652b06a8ed2401cf21ef22fae98fb5f7a1aaf6d",
+    "src/argus/contracts/telemetry.py": "5bf6dbe4a1e1f9d9f130bef8c001883184d326a83b07c18e5dcbb834faa9d4a8",
+    "pyproject.toml": "4e8296bf60b92024e6489b48ceb2e4e4811f9c65baacff8c027409bf68d42157",
+    "tests/unit/orchestration/test_service.py": "00ba63cd5e288c457b167116fc5d18d9404339f927200c7ab0199aed1b5b2500",
+    "tests/integration/test_m1_reads_m4_output.py": "5d22972aa96a3d2d216b03940e2e47e04ec2eadc2ca83f6b41cab4d39c8cd2b0"
+  },
+  "runner_sha256": "08be02c2f33ccef6b1ef6928d2c699fe7d8be811a2021bbb1d7d3cf7b1f48c11",
+  "python": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "pydantic_version": "2.14.0",
+  "run_time_utc": "2026-10-13T17:19:18.171999+00:00",
+  "input": "data/fixtures/m1/scenario_01/telemetry.json",
+  "input_sha256": "df08c51e622392980970f039860f131b44a2286354fc432bb1b1ced69994f151",
+  "provenance_source": "data/fixtures/m1/scenario_01/ground_truth.json",
+  "provenance_source_sha256": "30e76d6bb4a11ab1e431b50a7ac3f264a10ffccc91e0fb1e99a83af4dab62c5a",
+  "data_type": "synthetic",
+  "provenance": "synthetic (hand-written, modelled on the Stratus CART_ADDR example; not recorded from a cluster)",
+  "baseline_serialization": "json.dumps(batch.records, ensure_ascii=False); all other options use Python defaults: sort_keys=False, indent=None, separators=(', ', ': '), allow_nan=True. Encode the exact result as UTF-8, with no added newline. Records only, not batch metadata.",
+  "byte_reduction_formula": "100 * (original_utf8_bytes - tsv_utf8_bytes) / original_utf8_bytes",
+  "model": "None; no model calls",
+  "token_counting": "not performed; not required for PP1 byte evaluation"
+}

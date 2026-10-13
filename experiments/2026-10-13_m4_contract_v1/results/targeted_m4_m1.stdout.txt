@@ -1,0 +1,10 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0
+rootdir: D:\SRE\Final-Year-Research-Project
+configfile: pyproject.toml
+collected 29 items
+
+tests\unit\orchestration\test_service.py ...........................     [ 93%]
+tests\integration\test_m1_reads_m4_output.py ..                          [100%]
+
+============================= 29 passed in 0.07s ==============================

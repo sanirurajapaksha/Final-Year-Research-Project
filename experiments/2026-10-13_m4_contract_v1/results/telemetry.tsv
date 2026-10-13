@@ -1,0 +1,28 @@
+kind	service	name	timestamp	value	labels	severity	message	trace_id	span_id	parent_span_id	operation	span_kind	start_time	duration_ms	otel_status_code	http_status_code	grpc_status_code	namespace	resource	status	restart_count	replicas
+"""metric"""	"""frontend"""	"""http_5xx_rate"""	"""2026-10-10T10:04:30Z"""	0.38																		
+"""metric"""	"""cart"""	"""http_5xx_rate"""	"""2026-10-10T10:04:30Z"""	0.92																		
+"""metric"""	"""checkout"""	"""http_5xx_rate"""	"""2026-10-10T10:04:30Z"""	0.0																		
+"""metric"""	"""frontend"""	"""cpu_utilization"""	"""2026-10-10T10:04:30Z"""	0.41																		
+"""metric"""	"""cart"""	"""cpu_utilization"""	"""2026-10-10T10:04:30Z"""	0.22																		
+"""metric"""	"""product-catalog"""	"""cpu_utilization"""	"""2026-10-10T10:04:30Z"""	0.35																		
+"""metric"""	"""product-catalog"""	"""memory_utilization"""	"""2026-10-10T10:04:30Z"""	0.94	"{""pod"": ""product-catalog-5d8f7""}"																	
+"""metric"""	"""redis-cart"""	"""memory_utilization"""	"""2026-10-10T10:04:30Z"""	0.31																		
+"""log"""	"""cart"""		"""2026-10-10T10:04:41Z"""			"""ERROR"""	"""failed to connect to redis: CART_ADDR environment variable not set"""															
+"""log"""	"""cart"""		"""2026-10-10T10:04:42Z"""			"""ERROR"""	"""GetCart failed: cart store unavailable"""															
+"""log"""	"""frontend"""		"""2026-10-10T10:04:42Z"""			"""ERROR"""	"""rpc error: code = Unavailable desc = cart"""															
+"""log"""	"""product-catalog"""		"""2026-10-10T10:04:10Z"""			"""INFO"""	"""catalog reloaded: 9 products"""															
+"""log"""	"""product-catalog"""		"""2026-10-10T10:04:43Z"""			"""INFO"""	"""GetProduct served in 3ms"""															
+"""log"""	"""coredns"""		"""2026-10-10T10:04:00Z"""			"""WARN"""	"""[WARNING] plugin/health: Local health request failed"""															
+"""log"""	"""coredns"""		"""2026-10-10T10:04:30Z"""			"""WARN"""	"""[WARNING] plugin/health: Local health request failed"""															
+"""log"""	"""coredns"""		"""2026-10-10T10:05:00Z"""			"""WARN"""	"""[WARNING] plugin/health: Local health request failed"""															
+"""log"""	"""metrics-server"""		"""2026-10-10T10:04:20Z"""			"""ERROR"""	"""unable to fetch node metrics: connection timed out"""															
+"""span"""	"""frontend"""							"""t-001"""	"""a1"""	null	"""GET /cart"""	"""SERVER"""	"""2026-10-10T10:04:42.000Z"""	31.0	"""ERROR"""	500						
+"""span"""	"""frontend"""							"""t-001"""	"""a2"""	"""a1"""	"""hipstershop.CartService/GetCart"""	"""CLIENT"""	"""2026-10-10T10:04:42.002Z"""	27.0	"""ERROR"""		14					
+"""span"""	"""cart"""							"""t-001"""	"""a3"""	"""a2"""	"""hipstershop.CartService/GetCart"""	"""SERVER"""	"""2026-10-10T10:04:42.004Z"""	22.0	"""ERROR"""		14					
+"""span"""	"""frontend"""							"""t-002"""	"""b1"""	null	"""GET /product/OLJCESPC7Z"""	"""SERVER"""	"""2026-10-10T10:04:43.000Z"""	9.0	"""OK"""	200						
+"""span"""	"""frontend"""							"""t-002"""	"""b2"""	"""b1"""	"""hipstershop.ProductCatalogService/GetProduct"""	"""CLIENT"""	"""2026-10-10T10:04:43.001Z"""	5.0	"""OK"""		0					
+"""span"""	"""product-catalog"""							"""t-002"""	"""b3"""	"""b2"""	"""hipstershop.ProductCatalogService/GetProduct"""	"""SERVER"""	"""2026-10-10T10:04:43.002Z"""	3.0	"""OK"""		0					
+"""k8s"""	"""cart"""	"""cart-6b7c9"""																"""default"""	"""Pod"""	"""Running"""	0	
+"""k8s"""	"""product-catalog"""	"""product-catalog-5d8f7"""																"""default"""	"""Pod"""	"""Running"""	0	
+"""k8s"""	"""metrics-server"""	"""metrics-server-7c4b8"""																"""kube-system"""	"""Pod"""	"""Running"""	6	
+"""k8s"""	"""frontend"""	"""frontend"""																"""default"""	"""Deployment"""	"""Available"""		1
