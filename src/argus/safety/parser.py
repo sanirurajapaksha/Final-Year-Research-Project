@@ -2,11 +2,14 @@
 
 Template path for common verbs. The F1 slice supports two forms:
 
-    kubectl scale (deployment NAME | deployment/NAME) --replicas=N [-n NAMESPACE]
-    kubectl delete (pod | pvc | namespace) NAME [-n NAMESPACE] [-A]
+    kubectl scale (deployment NAME | deployment/NAME) --replicas=N -n NAMESPACE
+    kubectl delete (pod | pvc) NAME (-n NAMESPACE | -A)
+    kubectl delete namespace NAME
 
 Anything else raises ParseError, which the gate turns into BLOCK. Unknown flags are rejected
 rather than ignored, because ignoring a flag could change what the command does.
+The namespace must be given: without -n, kubectl uses its current context's namespace, which
+M3 can't see, so M3 could check a different object from the one that is changed.
 Run the pre-filter first: this module assumes a single, plain kubectl command.
 """
 
@@ -30,7 +33,7 @@ DELETE_KINDS = {
     "namespaces": "namespace",
     "ns": "namespace",
 }
-DEFAULT_NAMESPACE = "default"
+ALL_NAMESPACES = "*"  # the namespace recorded for -A
 INTEGER = re.compile(r"-?\d+")
 
 
@@ -99,10 +102,13 @@ def _parse_delete(tokens: list[str]) -> Action:
         raise ParseError(f"only pods, PVCs and namespaces can be deleted in the F1 slice, got {typed_kind!r}")
     kind = DELETE_KINDS[typed_kind]
 
-    namespace = _namespace(flags)
     if kind == "namespace":
         # A namespace isn't inside another namespace. The namespace that changes is the one deleted.
         namespace = name
+    elif "all_namespaces" in flags:
+        namespace = ALL_NAMESPACES
+    else:
+        namespace = _namespace(flags)
 
     params = {}
     if "all_namespaces" in flags:
@@ -141,7 +147,9 @@ def _reject_unknown_flags(flags: dict[str, str], allowed: set[str]) -> None:
 
 
 def _namespace(flags: dict[str, str]) -> str:
-    namespace = flags.get("namespace", DEFAULT_NAMESPACE)
+    if "namespace" not in flags:
+        raise ParseError("missing -n: kubectl would use its current context's namespace, which M3 can't see")
+    namespace = flags["namespace"]
     if not namespace:
         raise ParseError("empty namespace")
     return namespace

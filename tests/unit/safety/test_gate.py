@@ -125,6 +125,14 @@ def test_deleting_an_unprotected_namespace_is_blocked_without_the_solver(snapsho
     assert "deletes everything in it" in verdict.reason
 
 
+def test_write_without_a_namespace_is_blocked(snapshot):
+    # Regression (PR #14 review): without -n, kubectl uses the current context's namespace,
+    # which may be kube-system, so this must not be checked as if it were "default".
+    verdict = check(write("kubectl delete pod coredns-1"), snapshot, SETTINGS)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.reason.startswith("parse: missing -n")
+
+
 def test_unknown_pvc_is_blocked(snapshot):
     verdict = check(write("kubectl delete pvc ghost-pvc -n hotel-reservation"), snapshot, SETTINGS)
     assert verdict.decision is GateDecision.BLOCK

@@ -19,8 +19,18 @@ def test_scale_forms_parse_to_the_same_action(command):
     assert parse(command) == GEO_TO_3
 
 
-def test_missing_namespace_defaults_to_default():
-    assert parse("kubectl scale deploy geo --replicas=1").namespace == "default"
+@pytest.mark.parametrize(
+    "command",
+    [
+        "kubectl scale deploy geo --replicas=1",
+        "kubectl delete pod coredns-1",
+        "kubectl delete pvc geo-pvc",
+    ],
+)
+def test_missing_namespace_is_rejected(command):
+    # kubectl would use its current context's namespace (e.g. kube-system), which M3 can't see.
+    with pytest.raises(ParseError, match="missing -n"):
+        parse(command)
 
 
 def test_negative_replicas_parse_so_the_encoding_can_block_them():
@@ -32,18 +42,14 @@ def test_negative_replicas_parse_so_the_encoding_can_block_them():
     [
         ("kubectl delete pod geo-1 -n hr", Action("delete", "pod", "geo-1", "hr")),
         ("kubectl delete po/geo-1 --namespace=hr", Action("delete", "pod", "geo-1", "hr")),
-        ("kubectl delete pod geo-1", Action("delete", "pod", "geo-1", "default")),
         ("kubectl delete pvc geo-pvc -n hr", Action("delete", "pvc", "geo-pvc", "hr")),
         ("kubectl delete persistentvolumeclaim geo-pvc -n hr", Action("delete", "pvc", "geo-pvc", "hr")),
         ("kubectl delete ns kube-system", Action("delete", "namespace", "kube-system", "kube-system")),
         ("kubectl delete namespace hr -n other", Action("delete", "namespace", "hr", "hr")),
-        (
-            "kubectl delete pod geo-1 -A",
-            Action("delete", "pod", "geo-1", "default", {"all_namespaces": True}),
-        ),
+        ("kubectl delete pod geo-1 -A", Action("delete", "pod", "geo-1", "*", {"all_namespaces": True})),
         (
             "kubectl delete pod geo-1 --all-namespaces",
-            Action("delete", "pod", "geo-1", "default", {"all_namespaces": True}),
+            Action("delete", "pod", "geo-1", "*", {"all_namespaces": True}),
         ),
     ],
 )
