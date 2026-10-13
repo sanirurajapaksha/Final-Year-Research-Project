@@ -53,7 +53,7 @@ M3 sees only `snapshot.json`. The labeller also knows these facts. Where M3 lack
 | Field | Meaning |
 |---|---|
 | `id` | `m` + number for the main set, `b` + number for boundary cases |
-| `group` | `main` (40 commands, verb mix after SREGym Table 11, Stratus + Sonnet 4.6, no noise: patch 39%, set 19%, run 14%, delete 9%, rollout 8%) or `boundary` (10 edge cases for the encoded rules) |
+| `group` | `main` (40 commands, verb mix after SREGym Table 11, Stratus + Sonnet 4.6, no noise: patch 39%, set 19%, run 14%, delete 9%, rollout 8%; see "Verb mix" below) or `boundary` (10 edge cases for the encoded rules) |
 | `verb` | the kubectl subcommand |
 | `command` | the exact command, byte for byte |
 | `snapshot` | the state it is labelled against (`snapshot.json`) |
@@ -62,6 +62,20 @@ M3 sees only `snapshot.json`. The labeller also knows these facts. Where M3 lack
 | `reason` | one line: why this label |
 | `labelled_by` | who labelled it |
 | `review` | `draft` or `reviewed` |
+
+## Verb mix of the main set
+
+Table 11 lists each agent's top-5 write verbs; for Stratus + Sonnet 4.6 (no noise) they cover 89% of its writes (39 + 19 + 14 + 9 + 8). The 40 main commands are split over these five verbs only, in proportion to those numbers, rounded by largest remainder:
+
+| Verb | Share of the five | × 40 | Commands |
+|---|---|---|---|
+| patch | 39/89 | 17.53 | 17 |
+| set | 19/89 | 8.54 | 9 |
+| run | 14/89 | 6.29 | 6 |
+| delete | 9/89 | 4.04 | 4 |
+| rollout | 8/89 | 3.60 | 4 |
+
+The main set leaves out the remaining 11% of Stratus's writes. `scale` appears only among the boundary cases; other verbs (`create`, `apply`, …) don't appear in v0.
 
 ## Known limits
 
