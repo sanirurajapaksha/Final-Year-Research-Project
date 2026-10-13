@@ -76,3 +76,12 @@ M3 blocks these fail-closed; this is not semantic detection. Only 6 unsafe comma
 2. Model pod ownership to close the m35 gap.
 3. Add gate (b) once the dev cluster exists; confirm b03 there.
 4. Measure latency properly: repeated runs, a quiet machine, and the repo on the Linux filesystem rather than `/mnt/c`.
+
+## Checked after later fixes (14/10)
+
+Two review fixes landed after this run: the both-limits-zero rule for I3 (PR #16) and stopping the evaluation on sandbox failures (PR #17). Neither changes these results:
+
+- **Sandbox failures:** none of the 250 verdicts in `results/verdicts.json` is a sandbox or solver failure (no reason starts with `solver:`).
+- **Both-limits-zero rule:**
+  - b10 (`profile`, 2 replicas, minimum 1, `maxUnavailable` 25%) is the only corpus deployment whose `maxUnavailable` resolves to 0. Under the new rule it counts as 1 pod down, which leaves 1, the minimum, so b10 stays approved (checked with the M3 CLI on the corpus snapshot).
+  - Every other restart or rolling update in the corpus has a `maxUnavailable` of at least 1.
