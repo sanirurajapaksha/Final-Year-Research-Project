@@ -14,14 +14,14 @@ STRATEGY = "stage1"
 def build_context(telemetry: CompressedTelemetry, thresholds: Thresholds | None = None) -> SemanticContext:
     """Turn M4's compressed telemetry into the Semantic Context Object for M2.
 
-    Telemetry that doesn't follow the contract v1 record shape gives an empty context whose
-    `notes` say why, so the failure is visible to M2 and in the pipeline output instead of
-    stopping the whole run.
+    Telemetry M1 can't use (IngestError) gives an empty context whose `notes` say why, so the
+    failure is visible to M2 and in the pipeline output instead of stopping the whole run.
+    Any other exception is a bug in M1 and is raised, not hidden in `notes`.
     """
     try:
         parsed = parse_records(decode_tsv(telemetry.content))
         signals = extract_anomalies(parsed, thresholds)
-    except (IngestError, ValueError) as error:
+    except IngestError as error:
         return SemanticContext(strategy=STRATEGY, notes=f"M1 could not read the telemetry: {error}")
 
     return SemanticContext(

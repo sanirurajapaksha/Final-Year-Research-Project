@@ -3,7 +3,7 @@ from collections import Counter
 import pytest
 
 from argus.context.filters import Thresholds, extract_anomalies
-from argus.context.ingest import parse_records
+from argus.context.ingest import IngestError, parse_records
 
 T = "2026-10-10T10:00:00Z"
 
@@ -85,5 +85,5 @@ def test_k8s_signal_without_any_timestamped_record_fails_loudly():
             }
         ]
     )
-    with pytest.raises(ValueError, match="timestamped"):
+    with pytest.raises(IngestError, match="timestamped"):
         extract_anomalies(telemetry)

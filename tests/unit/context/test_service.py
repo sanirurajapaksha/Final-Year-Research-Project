@@ -1,3 +1,5 @@
+import pytest
+
 from argus.context.filters import Thresholds
 from argus.context.service import build_context
 from argus.contracts import CompressedTelemetry, SemanticContext, TelemetryBatch
@@ -47,3 +49,12 @@ def test_unreadable_telemetry_is_reported_in_notes_not_raised():
 def test_malformed_tsv_is_reported_in_notes():
     telemetry = CompressedTelemetry(content="kind\r\nnot-json\r\n", original_size=0, compressed_size=0)
     assert "TSV row 2" in build_context(telemetry).notes
+
+
+def test_a_bug_inside_m1_is_raised_not_hidden_in_notes(scenario_01_batch, monkeypatch):
+    def broken_filter(*_args):
+        raise ValueError("bug")
+
+    monkeypatch.setattr("argus.context.service.extract_anomalies", broken_filter)
+    with pytest.raises(ValueError, match="bug"):
+        build_context(compress(scenario_01_batch))

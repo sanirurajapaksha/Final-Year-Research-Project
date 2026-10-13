@@ -8,7 +8,7 @@ Spans are not Stage 1 input: F2 uses them to build that graph.
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from argus.context.ingest import ParsedTelemetry
+from argus.context.ingest import IngestError, ParsedTelemetry
 from argus.contracts import AnomalySignal, Severity
 
 
@@ -90,5 +90,6 @@ def _latest_timestamp(telemetry: ParsedTelemetry) -> datetime:
     times = [m.timestamp for m in telemetry.metrics] + [entry.timestamp for entry in telemetry.logs]
     times += [s.start_time for s in telemetry.spans]
     if not times:
-        raise ValueError("k8s signals need at least one timestamped metric, log or span")
+        # An input problem, not a bug: say so the same way ingestion does.
+        raise IngestError("k8s signals need at least one timestamped metric, log or span")
     return max(times)
