@@ -187,3 +187,76 @@ def test_delete_pvc_in_use_in_kube_system_breaks_both_rules():
 def test_in_use_must_be_true_or_false(in_use):
     with pytest.raises(EncodingError):
         solve(delete_request("pvc", "geo-pvc", "hr", {"in_use": in_use}))
+
+
+# I3: minimum available during a rolling restart
+
+
+def restart_request(facts: dict, namespace: str = "hr") -> dict:
+    action = {
+        "verb": "rollout-restart",
+        "kind": "deployment",
+        "name": "geo",
+        "namespace": namespace,
+        "params": {},
+    }
+    return {"action": action, "facts": facts, "timeout_ms": 2000}
+
+
+def restart_facts(replicas, min_replicas, max_unavailable) -> dict:
+    return {"replicas": replicas, "min_replicas": min_replicas, "max_unavailable": max_unavailable}
+
+
+@pytest.mark.parametrize(
+    ("replicas", "min_replicas", "max_unavailable", "z3_result"),
+    [
+        (3, 2, 1, "unsat"),  # at most 1 down: 2 stay, minimum 2
+        (3, 2, 2, "sat"),  # 2 down leaves 1
+        (3, 2, 0, "unsat"),  # nothing goes down before its replacement is ready
+        (1, 1, 1, "sat"),  # the only pod may go down
+        (3, 2, "50%", "unsat"),  # 50% of 3 = 1.5, rounded down to 1
+        (2, 2, "50%", "sat"),  # 50% of 2 = 1, leaves 1 of minimum 2
+        (2, 1, "25%", "unsat"),  # 25% of 2 = 0.5, rounded down to 0
+        (3, 0, 5, "unsat"),  # no minimum: even all pods down is allowed
+    ],
+)
+def test_restart_cases(replicas, min_replicas, max_unavailable, z3_result):
+    result = solve(restart_request(restart_facts(replicas, min_replicas, max_unavailable)))
+    assert result["z3_result"] == z3_result
+
+
+def test_unsafe_restart_has_a_counterexample_from_the_range():
+    result = solve(restart_request(restart_facts(3, 2, 2)))
+    assert result["violated_invariants"] == ["min_available_during_restart"]
+    assert result["counterexample"]["during"] == {"pods_down": 2, "available": 1}
+    assert result["counterexample"]["before"] == {"replicas": 3, "min_replicas": 2, "max_unavailable": 2}
+
+
+def test_restart_with_unknown_max_unavailable_is_sat():
+    result = solve(restart_request({"replicas": 3, "min_replicas": 2}))
+    assert result["z3_result"] == "sat"
+    assert result["missing_facts"] == ["max_unavailable"]
+
+
+def test_percentage_of_unknown_replicas_is_unknown():
+    result = solve(restart_request({"min_replicas": 1, "max_unavailable": "25%"}))
+    assert result["z3_result"] == "sat"
+    assert result["missing_facts"] == ["replicas", "max_unavailable"]
+
+
+def test_restart_of_an_already_broken_deployment_is_sat_and_reported():
+    result = solve(restart_request(restart_facts(0, 2, 1)))
+    assert result["z3_result"] == "sat"
+    assert result["pre_state_violations"] == ["min_replicas"]
+
+
+def test_restart_in_a_protected_namespace_is_sat():
+    result = solve(restart_request(restart_facts(2, 1, 1), namespace="kube-system"))
+    assert result["z3_result"] == "sat"
+    assert result["violated_invariants"] == ["protected_namespace"]
+
+
+@pytest.mark.parametrize("max_unavailable", ["150%", "abc%", "%", "-5%", "abc", -1, True])
+def test_malformed_max_unavailable_is_rejected(max_unavailable):
+    with pytest.raises(EncodingError):
+        solve(restart_request(restart_facts(3, 2, max_unavailable)))

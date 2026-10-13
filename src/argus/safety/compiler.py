@@ -24,6 +24,7 @@ F1 slice:
     scale deployment          -> I1 minimum replicas (with the int32 range), I2 protected namespaces
     delete pod / namespace    -> I2 protected namespaces
     delete pvc                -> I2 protected namespaces, I4 in-use PVC
+    rollout restart           -> I3 minimum available during the restart, I2 protected namespaces
 The gate blocks deletes of unprotected namespaces before they reach this module (fail-closed),
 because deleting a namespace deletes everything in it, which F1 doesn't model.
 """
@@ -56,6 +57,8 @@ def solve(request: dict[str, Any]) -> dict[str, Any]:
         return _solve_scale(action, facts, timeout_ms)
     if action.get("verb") == "delete" and action.get("kind") in DELETABLE_KINDS:
         return _solve_delete(action, facts, timeout_ms)
+    if action.get("verb") == "rollout-restart" and action.get("kind") == "deployment":
+        return _solve_rollout_restart(action, facts, timeout_ms)
     raise EncodingError(f"no encoding for {action.get('verb')!r} on {action.get('kind')!r}")
 
 
@@ -75,6 +78,22 @@ def _fact(facts: dict[str, Any], key: str) -> int | None:
     if not 0 <= value <= INT32_MAX:
         raise EncodingError(f"fact {key!r} is outside the Kubernetes int32 range: {value}")
     return value
+
+
+def _max_unavailable_fact(facts: dict[str, Any], replicas: int | None) -> int | None:
+    """maxUnavailable as a number of pods, or None if it isn't known.
+
+    A percentage is a percentage of the replicas, rounded down (Kubernetes docs, Deployment).
+    """
+    value = facts.get("max_unavailable")
+    if isinstance(value, str) and value.endswith("%"):
+        digits = value[:-1]
+        if not digits.isdigit() or int(digits) > 100:
+            raise EncodingError(f"fact 'max_unavailable' is not a valid percentage: {value!r}")
+        if replicas is None:
+            return None  # a percentage of an unknown replica count is unknown
+        return replicas * int(digits) // 100
+    return _fact(facts, "max_unavailable")
 
 
 def _bool_fact(facts: dict[str, Any], key: str) -> bool | None:
@@ -201,6 +220,86 @@ def _solve_delete(action: dict[str, Any], facts: dict[str, Any], timeout_ms: int
         return _result("sat", started, missing, checked, violated, counterexample)
 
     return _result(str(answer), started, missing, checked)
+
+
+def _solve_rollout_restart(action: dict[str, Any], facts: dict[str, Any], timeout_ms: int) -> dict[str, Any]:
+    """Rolling restart. The command doesn't fix how many pods are down at once: anything from 0 up
+    to maxUnavailable. Z3 searches that range for a number that leaves too few pods available."""
+    known_replicas = _fact(facts, "replicas")
+    known_min = _fact(facts, "min_replicas")
+    known_max_unavailable = _max_unavailable_fact(facts, known_replicas)
+
+    replicas = z3.Int("replicas")
+    min_replicas = z3.Int("min_replicas")
+    max_unavailable = z3.Int("max_unavailable")
+    pods_down = z3.Int("pods_down")
+    in_protected = z3.Bool("in_protected_namespace")
+    pods_unchanged = z3.Bool("pods_unchanged")
+
+    # Facts(S0): values from the snapshot (missing ones stay unconstrained), within Kubernetes' ranges.
+    state_facts = [
+        replicas >= 0,
+        replicas <= INT32_MAX,
+        min_replicas >= 0,
+        min_replicas <= INT32_MAX,
+        max_unavailable >= 0,
+        in_protected == _in_protected_namespace(action),
+    ]
+    missing = []
+    if known_replicas is None:
+        missing.append("replicas")
+    else:
+        state_facts.append(replicas == known_replicas)
+    if known_min is None:
+        missing.append("min_replicas")
+    else:
+        state_facts.append(min_replicas == known_min)
+    if known_max_unavailable is None:
+        missing.append("max_unavailable")
+    else:
+        state_facts.append(max_unavailable == known_max_unavailable)
+
+    # T(S0, A, S1): every pod is replaced, and at any moment 0..maxUnavailable pods may be down
+    # (never more than there are). The replica count itself doesn't change.
+    transition = [
+        z3.Not(pods_unchanged),
+        pods_down >= 0,
+        pods_down <= max_unavailable,
+        pods_down <= replicas,
+    ]
+
+    # I3: enough pods stay available during the restart. I2: nothing changes in a protected namespace.
+    invariants_during = {
+        "min_available_during_restart": replicas - pods_down >= min_replicas,
+        "protected_namespace": z3.Implies(in_protected, pods_unchanged),
+    }
+    checked = list(invariants_during)
+
+    started = time.perf_counter()
+    answer, model, error = _check(state_facts, transition, invariants_during, timeout_ms)
+    if error:
+        return _result(None, started, missing, checked, error=error)
+
+    pre_state_violations = []
+    if known_replicas is not None and known_min is not None and known_replicas < known_min:
+        pre_state_violations.append("min_replicas")
+
+    if answer == z3.sat:
+        down = model.eval(pods_down, model_completion=True).as_long()
+        total = model.eval(replicas, model_completion=True).as_long()
+        counterexample = {
+            "before": {
+                "replicas": total,
+                "min_replicas": model.eval(min_replicas, model_completion=True).as_long(),
+                "max_unavailable": model.eval(max_unavailable, model_completion=True).as_long(),
+            },
+            "during": {"pods_down": down, "available": total - down},
+            "missing_facts_chosen_by_solver": missing,
+        }
+        violated = _violated(model, invariants_during)
+        return _result("sat", started, missing, checked, violated, counterexample, pre_state_violations)
+
+    return _result(str(answer), started, missing, checked, pre_state_violations=pre_state_violations)
 
 
 def _check(
