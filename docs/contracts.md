@@ -22,7 +22,7 @@ The typed messages in `src/argus/contracts/` are a first draft for **contract v1
 4. **Counterexamples go back to M2** through `diagnose(..., feedback=[...])`.
 5. **Changing a contract:** open a PR that touches `contracts/` and get approval from every owner whose module sends or receives that model.
 6. **Telemetry records are plain dicts with a `kind`.** `TelemetryBatch.records` stays `list[dict]`, so M4 can convert it to TSV without knowing the record types. Each dict has the fields of one `TelemetryRecord` model, chosen by its `kind`. M1 validates each decoded record with `TypeAdapter(TelemetryRecord)`.
-7. **Telemetry fields M1 relies on survive compression unchanged.** After decoding M4's TSV, `json.loads` of each cell gives back the original value and type, and column names are unchanged. Missing fields are empty cells; `null` and `""` stay distinct (see `docs/functions/m4/F1.md`). `CompressedTelemetry.alert_time` is copied unchanged from `TelemetryBatch.alert_time`.
+7. **Telemetry fields M1 relies on survive compression unchanged.** After decoding M4's TSV, `json.loads` of each cell gives back the original value and type, and column names are unchanged. Missing fields are empty cells; `null` and `""` stay distinct (see `docs/functions/m4-F1-telemetry-compression.md`). `CompressedTelemetry.alert_time` is copied unchanged from `TelemetryBatch.alert_time`.
 8. **`SemanticContext` is plain JSON.** No graph-library objects cross the boundary: dependencies are `(caller, callee)` pairs and nodes are `ServiceNode`s. Pruned signals, raw counts and timings stay inside M1.
 
 ## Telemetry records (proposed for v1)

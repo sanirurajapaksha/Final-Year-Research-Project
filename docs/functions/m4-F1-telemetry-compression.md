@@ -1,6 +1,6 @@
-# Function spec: F1 - Telemetry Compression
+# Function spec: M4 F1 — Telemetry compression
 
-Status: First minimal slice implemented. M1 format and field preservation confirmed on 2026-10-11; contract integration and other team decisions remain pending.
+Status: Minimal F1 slice and contract v1 integration implemented. M1 format and field preservation were confirmed on 2026-10-11. W2-08 remains incomplete; token counting and savings await model/tokenizer selection.
 Owner: Nethmi Herath
 
 | Field | Description |
@@ -10,11 +10,11 @@ Owner: Nethmi Herath
 | Input | `TelemetryBatch`; initial test data is `data/fixtures/telemetry_sample.json`, a hand-written sample, not live telemetry. |
 | Processing logic | Build columns in first-seen order, JSON-encode present values, and write TSV using `csv.writer`. Keep missing fields separate from null and empty strings. Measure UTF-8 bytes. |
 | Output | `CompressedTelemetry` with TSV content and original and output sizes in UTF-8 bytes, not tokens. |
-| Dependencies | Existing shared models and Python's standard library. M1 format and field preservation confirmed; contract v1 integration remains pending. |
+| Dependencies | Existing shared models and Python's standard library. M1 format and field preservation confirmed; contract v1 `alert_time` integration implemented. |
 | Test evidence | Local checks are listed below. Unit tests: `tests/unit/orchestration/test_service.py`. Pipeline tests: `tests/integration/test_pipeline.py`. CI status has not been verified. |
 
 ## Input
-TelemetryBatch containing logs, metrics and traces.
+TelemetryBatch containing metrics, logs, spans and Kubernetes records, with optional `alert_time`.
 Initial sample: data/fixtures/telemetry_sample.json
 
 ## Processing
@@ -37,6 +37,8 @@ Initial sample: data/fixtures/telemetry_sample.json
    `json.dumps(batch.records, ensure_ascii=False)`. Measure `compressed_size`
    from the UTF-8 bytes of the TSV payload. These are byte counts, not token
    counts. TSV can be larger than the original JSON for small inputs.
+8. Copy `batch.alert_time` unchanged to `CompressedTelemetry.alert_time`,
+   including `None` when omitted or explicitly null under contract v1.
 
 This slice accepts JSON-compatible values. A value that JSON cannot encode
 raises `TypeError`; it is not silently converted into a string.
@@ -53,8 +55,8 @@ The function signature and existing shared models are unchanged.
 - Existing TelemetryBatch and CompressedTelemetry models.
 - Confirmed: M1 format and field preservation agreement from Minidu
   Weerasinghe, received on 2026-10-11, as recorded below.
-- Pending: M1 contract PR and `alert_time` integration, as recorded below.
-- Draft: team agreement on contract v1. This slice does not finalize it.
+- Contract PR #11 is merged. Both telemetry models support optional
+  `alert_time`; M4 now copies it unchanged. Shared contracts are unchanged.
 
 ## M1 confirmation for W1-09
 
@@ -79,27 +81,31 @@ Fields to preserve when present:
 | Span | `trace_id`, `span_id`, `parent_span_id`, `operation`, `span_kind`, `start_time`, `duration_ms`, `otel_status_code`, `http_status_code`, `grpc_status_code` |
 | K8s | `name`, `namespace`, `resource`, `status`, `restart_count`, `replicas` |
 
-Every record is expected to carry `kind` under the planned contract.
+Every typed record carries `kind` under contract v1.
 Timestamps are ISO 8601 UTC strings. These are contract expectations;
 this documentation change adds no required-field validation.
 
-Do not drop or merge rows without agreement with M1. Noise pruning belongs
-to M1 and affects its evaluation. This field list does not authorize
-removing other fields. The current slice keeps every record key and row.
+The confirmed M4 rule is to preserve every record, duplicate, field and
+original record order. Do not drop, merge, deduplicate or select rows.
+Noise pruning belongs to M1 and affects its evaluation. The field list does
+not authorize removing other fields. Use one shared header for all records.
 
-## Pending M1 contract integration
+## Contract v1 integration
 
-Inspected on 2026-10-11: `src/argus/contracts/telemetry.py` has no
-`alert_time` field on either `TelemetryBatch` or `CompressedTelemetry`.
-`src/argus/orchestration/service.py` does not copy `batch.alert_time`, and
-`tests/unit/orchestration/test_service.py` has no test for its preservation.
-The copy is not implemented in the current slice.
+Contract PR #11 added optional `alert_time: datetime | None = None` to
+`TelemetryBatch` and `CompressedTelemetry`. M4 copies `batch.alert_time`
+unchanged. Unit tests cover a supplied time, explicit null, and the omitted
+default, with empty and nonempty records. Mixed metric, log, span and Kubernetes
+tests verify all contract fields, defaults and omitted optional fields, exact
+decoded JSON values/types, unchanged field names, duplicates and record order.
+Existing tests still cover byte sizes and missing/null/empty distinctions.
+`tests/integration/test_m1_reads_m4_output.py` checks M1 reads the real TSV.
+M4 adds no record validation and does not change shared contracts.
 
-M1's pending contract PR will add `alert_time` to `TelemetryBatch` and
-`alert_time: datetime | None = None` to `CompressedTelemetry`. Once those
-fields are available, `compress()` must copy `batch.alert_time` to the
-output, and tests must verify preservation. Contract integration remains
-pending; this confirmation does not finalize other contract v1 decisions.
+PP1 measurements use UTF-8 bytes for `original_size` and `compressed_size`.
+Token counting and savings remain pending model/tokenizer selection and the
+measurement decisions in [token-counting proposal](m4-token-counting-proposal.md).
+No dependencies were added and historical experiment evidence is unchanged.
 
 ## Test evidence
 Actual test file paths:
@@ -127,10 +133,41 @@ Verified on Windows on 2026-10-10 using `.venv\Scripts\python.exe`:
   action.
 - `git diff --check`: passed with no whitespace errors.
 
+## W2-08 contract integration checks
+
+Checked on Windows on 2026-10-13 using `.venv\Scripts\python.exe`:
+
+- Full `python -m pytest`: collected 231 tests, then stalled in the existing
+  `tests/unit/safety/test_sandbox.py::test_timeout_returns_no_result` test.
+  The run was stopped; the full suite is not reported as passing.
+- `python -m pytest -k "not test_timeout_returns_no_result"`: 229 passed,
+  1 skipped (Unix-only memory cap), 1 deselected in 5.13 seconds.
+- M4 unit tests plus `tests/integration/test_m1_reads_m4_output.py`:
+  29 passed in 0.08 seconds after the final test changes.
+- `python -m ruff check .`: all checks passed.
+- `python -m ruff format --check .`: 83 files already formatted.
+- `python -m argus`: exit code 0. M1 reported that the existing sample
+  metric lacks required `timestamp`; M3 blocked the write and M4 executed
+  nothing. The fixture was not changed in this M4-only task.
+- `git diff --check`: passed with no whitespace errors.
+
+These checks do not establish token savings or complete W2-08. Historical
+experiment files and the earlier test evidence above remain unchanged.
+
+PR preparation checks on 2026-10-13: 31 targeted M4/M1 and pipeline tests
+passed in 0.12 seconds; Ruff lint passed, Ruff format reported 85 files
+formatted, and `git diff --check` passed. The known full-suite timeout was
+not rerun. Default demo-fixture migration is still pending.
+
 ## Objective -> function -> metric -> evidence
 
-No compression savings, token savings, or performance targets are claimed.
-The implemented size fields count UTF-8 bytes; token counting is not implemented.
+The [contract v1 byte evaluation](../../experiments/2026-10-13_m4_contract_v1/NOTES.md)
+records one synthetic sample with 27 records: 4,798 input UTF-8 bytes and
+3,746 TSV UTF-8 bytes, a 21.93% byte reduction for this sample only. All
+records, fields, exact decoded values/types and order match; alert time is
+preserved. The sample has no exact duplicate records; unit tests cover them.
+No token savings, RCA accuracy or general benchmark performance is claimed.
+PP1 byte evaluation can proceed without selecting a tokenizer.
 
 | Objective | This function | Metric | Evidence | Baseline | Evaluation plan |
 |---|---|---|---|---|---|
@@ -144,8 +181,9 @@ This document records only the first minimal F1 slice. W1-09 is not marked
 complete. Its full acceptance checklist was not found in the repository,
 so it still needs to be checked against the team task record. M1 format
 and field preservation are confirmed by Minidu Weerasinghe above.
-The `alert_time` contract integration and other unresolved team contract
-decisions remain pending. The token-counting proposal belongs to W2-08
-and is unchanged; W2-08 is not marked complete.
+The `alert_time` contract integration is implemented. Other unresolved team
+contract and evaluation decisions remain pending. The token-counting proposal
+belongs to W2-08 and remains supporting documentation. The byte evaluation
+is recorded; W2-08 is not marked complete.
 Later compression and routing work must follow the agreed task scope;
 it is not included in this implementation.

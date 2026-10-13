@@ -1,4 +1,4 @@
-# Function spec: F2 - Budget-aware model routing and execution handling
+# Function spec: M4 F2 — Model routing and execution handling
 
 Status: Draft for W1-09. This is a planned design, not an implemented function.
 
@@ -14,7 +14,7 @@ Status: Draft for W1-09. This is a planned design, not an implemented function.
 
 ## Existing code and contracts
 
-- [F1.md](F1.md) describes the implemented JSON-records-to-TSV conversion.
+- [M4 F1](m4-F1-telemetry-compression.md) describes the implemented JSON-records-to-TSV conversion.
   Its size fields count UTF-8 bytes, not tokens or model costs.
 - `src/argus/orchestration/pipeline.py` currently calls F1, M1, and M2
   in order. It sends each write action to M3 and calls `execute()` only when
@@ -32,8 +32,9 @@ Status: Draft for W1-09. This is a planned design, not an implemented function.
 - `diagnose(context, feedback=...)` accepts a list of `SafetyVerdict` objects.
   The current pipeline does not run the next feedback round, and the M2 stub
   does not use that feedback yet.
-- The shared models remain draft v0 as described in
-  [../../contracts.md](../../contracts.md). They do not define model
+- The existing shared models are described in
+  [../contracts.md](../contracts.md). Telemetry contract v1 is integrated
+  into F1. The shared models do not define model
   selection, task quality requirements, or an incident budget contract.
 
 ## Confirmed team decisions
