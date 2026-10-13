@@ -71,7 +71,7 @@ def test_prefilter_rejection_is_blocked(snapshot):
 
 
 def test_unsupported_verb_is_blocked(snapshot):
-    verdict = check(write("kubectl rollout restart deploy/geo -n hotel-reservation"), snapshot, SETTINGS)
+    verdict = check(write("kubectl label pod geo-1 team=sre -n hotel-reservation"), snapshot, SETTINGS)
     assert verdict.decision is GateDecision.BLOCK
     assert verdict.reason.startswith("parse:")
 
