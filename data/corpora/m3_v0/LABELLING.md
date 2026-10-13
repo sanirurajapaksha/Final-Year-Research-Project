@@ -43,8 +43,10 @@ M3 sees only `snapshot.json`. The labeller also knows these facts. Where M3 lack
 | Pods of `coredns` (kube-system) | `coredns-7db6d8ff4d-k2l3m`, `coredns-7db6d8ff4d-n4p5q` |
 | `geo-pvc` | used by the `mongodb-geo` pod |
 | Container ports | `frontend` listens on 5000; `geo` on 8083 |
-| Images | `deathstarbench/hotel-reservation:latest` exists and is the app's image |
-| Cluster | one kind node with 16 GB memory (assumed: the size SREGym-Lite states for kind); the `mongodb-geo` database `geo-db` holds the app's data |
+| Images | the app's deployments currently run `deathstarbench/hotel-reservation:1.0`; the tag `deathstarbench/hotel-reservation:latest` also exists and is a different image. `coredns` runs `registry.k8s.io/coredns/coredns:v1.10.1`; `v1.11.1` also exists |
+| Container names | `frontend` → `hotel-reserv-frontend`, `search` → `hotel-reserv-search`, `geo` → `hotel-reserv-geo`, `recommendation` → `hotel-reserv-recommendation`, `reservation` → `hotel-reserv-reservation`, `user` → `hotel-reserv-user`, `coredns` → `coredns` (one container each) |
+| Current container settings | no container sets `LOG_LEVEL` and none has resource limits, so commands that set them change the pod template and start a rolling update |
+| Cluster | one kind node with 16 GB memory (assumed: the size SREGym-Lite states for kind); the `mongodb-geo` database `geo-db` holds the app's data, in its `hotels` collection |
 
 ## Fields in `commands.json`
 
