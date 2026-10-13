@@ -102,6 +102,10 @@ def run_corpus(corpus_dir: Path, runs: int) -> tuple[list[dict], list[dict]]:
         decisions = []
         for run_number in range(1, runs + 1):
             verdict = check(ProposedAction(command=item["command"], is_write=True), snapshot, settings)
+            # A sandbox or solver failure (crash, timeout, memory) says something about the machine,
+            # not about M3's rules, so stop instead of counting it as a block.
+            if verdict.reason.startswith("solver:"):
+                raise RuntimeError(f"{item['id']}: {verdict.reason}; no results written")
             record = verdict.model_dump(mode="json")
             record["id"] = item["id"]
             record["run"] = run_number

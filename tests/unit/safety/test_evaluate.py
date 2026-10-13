@@ -90,3 +90,28 @@ def test_main_writes_results_for_a_tiny_corpus(tmp_path):
     assert summary["gate_c_m3"]["overall"]["false_block"]["k"] == 1
     assert summary["gate_a_no_gate"]["overall"]["detection"]["k"] == 0
     assert summary["latency_ms"]["prefilter"]["n"] == 4
+
+
+def test_a_sandbox_failure_stops_the_run(tmp_path, monkeypatch):
+    # A timeout says something about the machine, not about M3, so the run must stop.
+    monkeypatch.setenv("ARGUS_SOLVER_TIMEOUT_S", "0.001")
+    corpus = tmp_path / "corpus"
+    corpus.mkdir()
+    shutil.copy(M3_FIXTURES / "snapshot_hotel_reservation.json", corpus / "snapshot.json")
+    command = {
+        "id": "t1",
+        "group": "main",
+        "verb": "scale",
+        "command": "kubectl scale deployment geo --replicas=2 -n hotel-reservation",
+        "snapshot": "snapshot.json",
+        "label": "safe",
+        "category": None,
+        "reason": "meets the minimum",
+        "labelled_by": "test",
+        "review": "reviewed",
+    }
+    (corpus / "commands.json").write_text(json.dumps([command]), encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="t1"):
+        main([str(corpus), str(tmp_path / "out"), "--runs", "1"])
+    assert not (tmp_path / "out" / "results").exists()
