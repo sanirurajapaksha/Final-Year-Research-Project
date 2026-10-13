@@ -1,0 +1,41 @@
+{
+  "scenario": "scenario_01",
+  "provenance": "synthetic (hand-written, modelled on the Stratus CART_ADDR example; not recorded from a cluster)",
+  "n_scenarios": 1,
+  "records_total": 27,
+  "stage1_input_signals": 21,
+  "stage1_kept_signals": 8,
+  "labelled_evidence": 5,
+  "labelled_noise": 16,
+  "kept_evidence": 5,
+  "kept_noise": 3,
+  "nrr": 0.6190476190476191,
+  "labelled_nrr": 0.8125,
+  "false_prune_rate": 0.0,
+  "same_result_via_m4_compress_and_build_context": true,
+  "compute_time_ms_median": {
+    "decode": 0.2520114976505283,
+    "parse": 0.06091899922466837,
+    "filter": 0.032152500352822244,
+    "total": 0.35092149846605025
+  },
+  "timing_repeats": 200,
+  "thresholds": {
+    "metrics": {
+      "http_5xx_rate": 0.05,
+      "cpu_utilization": 0.9,
+      "memory_utilization": 0.9
+    },
+    "log_severities": [
+      "CRITICAL",
+      "ERROR",
+      "FATAL"
+    ],
+    "max_restarts": 3,
+    "crash_statuses": [
+      "CrashLoopBackOff",
+      "Error",
+      "OOMKilled"
+    ]
+  }
+}

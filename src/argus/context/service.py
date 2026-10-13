@@ -1,11 +1,36 @@
 """M1 entry point.
 
-STUB: replace the body. Keep the signature until contract v1 changes it.
+F1 is wired in: M4's TSV -> typed records -> Stage 1 filter. F2 (service dependency graph and
+Stage 2 pruning) is not built yet, so the context holds the Stage 1 anomaly set only.
 """
 
+from argus.context.filters import Thresholds, extract_anomalies
+from argus.context.ingest import IngestError, decode_tsv, parse_records
 from argus.contracts import CompressedTelemetry, SemanticContext
 
+STRATEGY = "stage1"
 
-def build_context(telemetry: CompressedTelemetry) -> SemanticContext:
-    """Turn M4's compressed telemetry into the Semantic Context Object for M2."""
-    return SemanticContext(notes="stub: M1 not implemented yet")
+
+def build_context(telemetry: CompressedTelemetry, thresholds: Thresholds | None = None) -> SemanticContext:
+    """Turn M4's compressed telemetry into the Semantic Context Object for M2.
+
+    Telemetry M1 can't use (IngestError) gives an empty context whose `notes` say why, so the
+    failure is visible to M2 and in the pipeline output instead of stopping the whole run.
+    Any other exception is a bug in M1 and is raised, not hidden in `notes`.
+    """
+    try:
+        parsed = parse_records(decode_tsv(telemetry.content))
+        signals = extract_anomalies(parsed, thresholds)
+    except IngestError as error:
+        return SemanticContext(strategy=STRATEGY, notes=f"M1 could not read the telemetry: {error}")
+
+    return SemanticContext(
+        strategy=STRATEGY,
+        kept_signals=signals,
+        anomalies=[f"{signal.service}: {signal.name} ({signal.evidence})" for signal in signals],
+        services=sorted({signal.service for signal in signals}),
+        notes=(
+            f"Stage 1 only: {len(signals)} anomalies from {parsed.total} records. "
+            "Graph-based pruning (F2) is not built yet."
+        ),
+    )
