@@ -71,7 +71,7 @@ def test_prefilter_rejection_is_blocked(snapshot):
 
 
 def test_unsupported_verb_is_blocked(snapshot):
-    verdict = check(write("kubectl delete pod geo-123 -n hotel-reservation"), snapshot, SETTINGS)
+    verdict = check(write("kubectl rollout restart deploy/geo -n hotel-reservation"), snapshot, SETTINGS)
     assert verdict.decision is GateDecision.BLOCK
     assert verdict.reason.startswith("parse:")
 
@@ -81,6 +81,62 @@ def test_solver_timeout_is_blocked(snapshot):
     verdict = check(write("kubectl scale deployment geo --replicas=2 -n hotel-reservation"), snapshot, tiny)
     assert verdict.decision is GateDecision.BLOCK
     assert "timeout" in verdict.reason
+
+
+@pytest.mark.parametrize(
+    ("command", "z3_result", "decision", "violated"),
+    [
+        ("kubectl delete pod geo-1 -n hotel-reservation", Z3Result.UNSAT, GateDecision.APPROVE, []),
+        ("kubectl delete pvc old-pvc -n hotel-reservation", Z3Result.UNSAT, GateDecision.APPROVE, []),
+        (
+            "kubectl delete pod coredns-1 -n kube-system",
+            Z3Result.SAT,
+            GateDecision.BLOCK,
+            ["protected_namespace"],
+        ),
+        ("kubectl delete ns kube-system", Z3Result.SAT, GateDecision.BLOCK, ["protected_namespace"]),
+        ("kubectl delete pod geo-1 -A", Z3Result.SAT, GateDecision.BLOCK, ["protected_namespace"]),
+        ("kubectl delete pvc geo-pvc -n hotel-reservation", Z3Result.SAT, GateDecision.BLOCK, ["pvc_in_use"]),
+        (
+            "kubectl delete pvc mystery-pvc -n hotel-reservation",
+            Z3Result.SAT,
+            GateDecision.BLOCK,
+            ["pvc_in_use"],
+        ),
+        (
+            "kubectl scale deploy coredns --replicas=0 -n kube-system",
+            Z3Result.SAT,
+            GateDecision.BLOCK,
+            ["min_replicas", "protected_namespace"],
+        ),
+    ],
+)
+def test_protected_namespace_and_pvc_rules(snapshot, command, z3_result, decision, violated):
+    verdict = check(write(command), snapshot, SETTINGS)
+    assert verdict.z3_result is z3_result
+    assert verdict.decision is decision
+    assert verdict.violated_invariants == violated
+
+
+def test_deleting_an_unprotected_namespace_is_blocked_without_the_solver(snapshot):
+    verdict = check(write("kubectl delete ns hotel-reservation"), snapshot, SETTINGS)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.z3_result is None
+    assert "deletes everything in it" in verdict.reason
+
+
+def test_write_without_a_namespace_is_blocked(snapshot):
+    # Regression (PR #14 review): without -n, kubectl uses the current context's namespace,
+    # which may be kube-system, so this must not be checked as if it were "default".
+    verdict = check(write("kubectl delete pod coredns-1"), snapshot, SETTINGS)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.reason.startswith("parse: missing -n")
+
+
+def test_unknown_pvc_is_blocked(snapshot):
+    verdict = check(write("kubectl delete pvc ghost-pvc -n hotel-reservation"), snapshot, SETTINGS)
+    assert verdict.decision is GateDecision.BLOCK
+    assert "resource not in snapshot: pvc" in verdict.reason
 
 
 def test_missing_fact_blocks_and_says_so(snapshot):
