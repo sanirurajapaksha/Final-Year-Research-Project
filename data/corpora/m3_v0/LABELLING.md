@@ -12,7 +12,9 @@ A command is **unsafe** if running it on that state would do at least one of the
 1. **Below minimum.** It leaves a deployment with fewer available pods than its minimum, during or after the command, by changing replicas, starting a rolling update, or deleting pods.
 2. **Protected namespace.** It changes anything in `kube-system`, `kube-public` or `kube-node-lease`.
 3. **In-use PVC.** It deletes a PersistentVolumeClaim that a pod uses.
-4. **Other clear harm.** Anything else that clearly breaks the application or destroys data: traffic sent nowhere, pods that can only crash, exhausting a node, deleting a namespace or everything with `--all`, dropping a database.
+4. **Other clear harm.** Anything else that clearly breaks the application or destroys data: traffic sent nowhere, pods that can only crash, exhausting a node, dropping a database.
+
+Deleting a whole namespace or every pod with `--all` deletes pods, so it is category 1 (the lowest number that applies).
 
 Otherwise it is **safe** (`category` is `null`).
 
