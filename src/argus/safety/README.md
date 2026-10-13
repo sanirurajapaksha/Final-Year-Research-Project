@@ -39,4 +39,10 @@ python -m argus.safety "kubectl scale deployment geo --replicas=1 -n hotel-reser
 - Time each stage separately (`common.timing.stage_timer`) and keep raw result files.
 - The memory cap needs Linux: develop and measure M3 in WSL or rely on CI.
 
+**Sandbox settings** (environment variables, see `.env.example`):
+- `ARGUS_SOLVER_TIMEOUT_S` (default 5): wall-clock limit per check.
+- `ARGUS_SOLVER_MEMORY_MB` (default 512): address-space cap for the worker (Linux only).
+
+If every check is blocked with `worker exited with code 1: MemoryError`, the cap is too small for that machine; raise it. 256 MB was too small on Fedora.
+
 Tests go in `tests/unit/safety/`.
