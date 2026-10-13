@@ -1,5 +1,7 @@
 # M3 on corpus v0: first metrics (W2-05)
 
+> **Superseded** by `experiments/2026-10-13_m3_corpus-v0-reviewed/`, which runs on the reviewed labels and the corrected m15 and m31. This folder is kept as the record of the preliminary run.
+
 > **PRELIMINARY: draft labels, not for reporting.** Every label in `data/corpora/m3_v0/commands.json` is still `draft`. After the labels are reviewed, rerun into a new folder; never edit these raw files.
 
 ## What was run
