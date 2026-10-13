@@ -212,11 +212,11 @@ def restart_facts(replicas, min_replicas, max_unavailable) -> dict:
     [
         (3, 2, 1, "unsat"),  # at most 1 down: 2 stay, minimum 2
         (3, 2, 2, "sat"),  # 2 down leaves 1
-        (3, 2, 0, "unsat"),  # nothing goes down before its replacement is ready
+        (3, 2, 0, "unsat"),  # 0 with unknown maxSurge counts as 1: 2 stay, minimum 2
         (1, 1, 1, "sat"),  # the only pod may go down
         (3, 2, "50%", "unsat"),  # 50% of 3 = 1.5, rounded down to 1
         (2, 2, "50%", "sat"),  # 50% of 2 = 1, leaves 1 of minimum 2
-        (2, 1, "25%", "unsat"),  # 25% of 2 = 0.5, rounded down to 0
+        (2, 1, "25%", "unsat"),  # 25% of 2 rounds down to 0, counts as 1: 1 stays, minimum 1
         (3, 0, 5, "unsat"),  # no minimum: even all pods down is allowed
     ],
 )
@@ -260,3 +260,34 @@ def test_restart_in_a_protected_namespace_is_sat():
 def test_malformed_max_unavailable_is_rejected(max_unavailable):
     with pytest.raises(EncodingError):
         solve(restart_request(restart_facts(3, 2, max_unavailable)))
+
+
+# Kubernetes takes 1 pod down when maxUnavailable and maxSurge both resolve to 0 (PR #16 review).
+
+
+@pytest.mark.parametrize(
+    ("max_unavailable", "max_surge", "z3_result"),
+    [
+        ("25%", None, "sat"),  # 25% of 2 rounds down to 0; unknown surge counts as 0, so 1 goes down
+        ("25%", "25%", "unsat"),  # surge 25% of 2 rounds UP to 1, so nothing needs to go down
+        ("25%", "0%", "sat"),  # both 0, so Kubernetes takes 1 down
+        (0, None, "sat"),
+        (0, 1, "unsat"),
+    ],
+)
+def test_both_limits_zero_means_one_pod_down(max_unavailable, max_surge, z3_result):
+    facts = restart_facts(2, 2, max_unavailable)
+    if max_surge is not None:
+        facts["max_surge"] = max_surge
+    result = solve(restart_request(facts))
+    assert result["z3_result"] == z3_result
+    if z3_result == "sat":
+        assert result["counterexample"]["during"] == {"pods_down": 1, "available": 1}
+
+
+@pytest.mark.parametrize("max_surge", ["150%", "abc%", -1])
+def test_malformed_max_surge_is_rejected(max_surge):
+    facts = restart_facts(3, 2, 0)
+    facts["max_surge"] = max_surge
+    with pytest.raises(EncodingError):
+        solve(restart_request(facts))

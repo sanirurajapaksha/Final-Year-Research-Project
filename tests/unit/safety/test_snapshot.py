@@ -2,7 +2,7 @@ from argus.safety.snapshot import facts_for
 
 
 def test_deployment_facts(snapshot):
-    geo = {"replicas": 3, "min_replicas": 2, "max_unavailable": 1}
+    geo = {"replicas": 3, "min_replicas": 2, "max_unavailable": 1, "max_surge": None}
     assert facts_for(snapshot, "deployment", "hotel-reservation", "geo") == geo
     profile = facts_for(snapshot, "deployment", "hotel-reservation", "profile")
     assert profile["max_unavailable"] == "50%"

@@ -29,6 +29,7 @@ The gate blocks deletes of unprotected namespaces before they reach this module 
 because deleting a namespace deletes everything in it, which F1 doesn't model.
 """
 
+import math
 import time
 from typing import Any
 
@@ -80,20 +81,24 @@ def _fact(facts: dict[str, Any], key: str) -> int | None:
     return value
 
 
-def _max_unavailable_fact(facts: dict[str, Any], replicas: int | None) -> int | None:
-    """maxUnavailable as a number of pods, or None if it isn't known.
+def _pods_fact(facts: dict[str, Any], key: str, replicas: int | None, round_up: bool) -> int | None:
+    """A rolling-update limit (max_unavailable or max_surge) as a number of pods, or None if unknown.
 
-    A percentage is a percentage of the replicas, rounded down (Kubernetes docs, Deployment).
+    A percentage is a percentage of the replicas. Kubernetes rounds maxUnavailable down and
+    maxSurge up (Deployment docs; ResolveFenceposts in the deployment controller).
     """
-    value = facts.get("max_unavailable")
+    value = facts.get(key)
     if isinstance(value, str) and value.endswith("%"):
         digits = value[:-1]
         if not digits.isdigit() or int(digits) > 100:
-            raise EncodingError(f"fact 'max_unavailable' is not a valid percentage: {value!r}")
+            raise EncodingError(f"fact {key!r} is not a valid percentage: {value!r}")
         if replicas is None:
             return None  # a percentage of an unknown replica count is unknown
-        return replicas * int(digits) // 100
-    return _fact(facts, "max_unavailable")
+        pods = replicas * int(digits) / 100
+        if round_up:
+            return math.ceil(pods)
+        return math.floor(pods)
+    return _fact(facts, key)
 
 
 def _bool_fact(facts: dict[str, Any], key: str) -> bool | None:
@@ -227,7 +232,12 @@ def _solve_rollout_restart(action: dict[str, Any], facts: dict[str, Any], timeou
     to maxUnavailable. Z3 searches that range for a number that leaves too few pods available."""
     known_replicas = _fact(facts, "replicas")
     known_min = _fact(facts, "min_replicas")
-    known_max_unavailable = _max_unavailable_fact(facts, known_replicas)
+    known_max_unavailable = _pods_fact(facts, "max_unavailable", known_replicas, round_up=False)
+    known_max_surge = _pods_fact(facts, "max_surge", known_replicas, round_up=True)
+    # If both limits come to 0, Kubernetes takes 1 pod down anyway (ResolveFenceposts).
+    # An unknown maxSurge counts as 0, the unsafe case (fail-safe).
+    if known_max_unavailable == 0 and (known_max_surge is None or known_max_surge == 0):
+        known_max_unavailable = 1
 
     replicas = z3.Int("replicas")
     min_replicas = z3.Int("min_replicas")
