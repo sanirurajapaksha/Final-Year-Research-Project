@@ -78,7 +78,10 @@ class K8sEntity(BaseModel):
     namespace: str
     # The Kubernetes object type, e.g. "Pod" or "Deployment".
     resource: str
-    # e.g. "Running", "CrashLoopBackOff".
+    # For a Pod, the most informative container state, not the Pod phase: a crash-looping Pod's
+    # phase stays "Running". Use containerStatuses[].state.waiting.reason (e.g. "CrashLoopBackOff")
+    # or lastState.terminated.reason (e.g. "OOMKilled", "Error") when present; otherwise the phase.
+    # For other objects, a short state such as "Available".
     status: str
     restart_count: int = Field(default=0, ge=0)
     replicas: int | None = Field(default=None, ge=0)

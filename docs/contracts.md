@@ -36,6 +36,8 @@ Every record has `kind` and `service`. Send timestamps as ISO 8601 UTC strings.
 | `span` | `Span` | `trace_id`, `span_id`, `parent_span_id`, `operation`, `span_kind` (`CLIENT`, `SERVER`, `INTERNAL`, `PRODUCER`, `CONSUMER`), `start_time`, `duration_ms`, `otel_status_code` (`OK`, `ERROR`, `UNSET`), `http_status_code`, `grpc_status_code` |
 | `k8s` | `K8sEntity` | `name`, `namespace`, `resource` (e.g. `Pod`, `Deployment`), `status`, `restart_count`, `replicas` |
 
+For a Pod, `status` carries the container state, not the Pod phase, because a crash-looping Pod's phase stays `Running`. Take `containerStatuses[].state.waiting.reason` (e.g. `CrashLoopBackOff`) or `lastState.terminated.reason` (e.g. `OOMKilled`, `Error`) when present, otherwise the phase. M1's Stage 1 filter flags crashes from this field, so filling it with the phase would hide real crash loops.
+
 The span's CLIENT/SERVER field is `span_kind` because `kind` names the record type. M1 draws dependency edges from CLIENT→SERVER hops and treats the callee of a failed CLIENT span as failing, which is why `span_kind`, `start_time` and the status codes must be kept.
 
 `data/fixtures/telemetry_sample.json` still uses the v0 shape (an `event` record, no timestamps). It will move to these models once the owners approve them, together with M4's tests and evidence that read it.
