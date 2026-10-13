@@ -89,20 +89,19 @@ $$I_3 \equiv r - d \ge m \qquad I_2 \equiv p \Rightarrow c$$
 12. **Known gaps of the delete encoding:** a pod's existence isn't checked (deleting a missing pod does nothing), and the pod's owning deployment isn't modelled, so deleting one pod of a deployment that is at its minimum is approved. The labelling rule (W2-03) should record such cases rather than hide them.
 13. **Why block an in-use PVC delete when Kubernetes protects it?** Kubernetes' docs say an in-use PVC "is not removed immediately"; removal waits until no pod uses it. So the harm is delayed rather than prevented: once the pod using it goes away (e.g. it is rescheduled), the claim is removed and the replacement pod can't use it. I4 blocks the command up front.
 
-## First metrics on corpus v0 (W2-05, PRELIMINARY: draft labels)
+## First metrics on corpus v0 (W2-05, reviewed labels)
 
-Run: `python -m argus.safety.evaluate data/corpora/m3_v0 experiments/2026-10-13_m3_corpus-v0 --runs 5` (needs the `eval` extra). Raw results and notes: `experiments/2026-10-13_m3_corpus-v0/`.
+Run: `python -m argus.safety.evaluate data/corpora/m3_v0 experiments/2026-10-13_m3_corpus-v0-reviewed --runs 5` (needs the `eval` extra). Raw results and notes: `experiments/2026-10-13_m3_corpus-v0-reviewed/`. An earlier PRELIMINARY run on draft labels is kept in `experiments/2026-10-13_m3_corpus-v0/`.
 
 | Gate | Detection | False-block |
 |---|---|---|
 | (a) no gate | 0/25 | 0/25 |
-| (c) M3 | 24/25, 95% CI [0.80, 1.00] | 20/25, 95% CI [0.59, 0.93] |
+| (c) M3 | 24/25, 95% CI [0.80, 1.00] | 19/25, 95% CI [0.55, 0.91] |
 
-- **Most of the detection is fail-closed blocking, not semantic detection.** 18 of the 24 detections are commands M3 can't model yet (`patch`, `set`, `run`, `--all`), and the same accounts for 16 of the 20 false blocks.
+- **Most of the detection is fail-closed blocking, not semantic detection.** 18 of the 24 detections are commands M3 can't model yet (`patch`, `set`, `run`, `--all`). The same accounts for 15 of the 19 false blocks.
 - **The one miss** is the known pod-ownership gap (design choice 12).
-- **Latency.** The solver median is 62 ms (p95 120 ms); the sandbox round trip median is 478 ms (p95 635 ms), on WSL with the repo on `/mnt/c`. The proposal's "solver < 10 ms" is not met in this setup. Options: a long-lived worker process, or in-process solving.
-
-These numbers are not for reporting until every label is reviewed and the run is repeated (`LABELLING.md`). Gate (b) (Stratus's rules + `kubectl --dry-run=server`) waits for the dev cluster.
+- **Latency.** The solver median is 98 ms (p95 171 ms); the sandbox round trip median is 682 ms (p95 947 ms), on WSL with the repo on `/mnt/c`. The preliminary run on the same machine measured 62 ms and 478 ms, so single-machine timings are indicative only. The proposal's "solver < 10 ms" is not met. Options: a long-lived worker process, or in-process solving.
+- **Scope of the claim.** The corpus is synthetic: n = 25 per class, labels reviewed by one teammate. Gate (b) (Stratus's rules + `kubectl --dry-run=server`) waits for the dev cluster.
 
 ## Objective → function → metric → evidence
 
