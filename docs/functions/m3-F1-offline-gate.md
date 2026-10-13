@@ -69,9 +69,10 @@ $$I_3 \equiv r - d \ge m \qquad I_2 \equiv p \Rightarrow c$$
 
 *In plain language:* "however many pods the restart takes down at once (up to the limit), at least the minimum must stay available". If any $d$ in the range breaks this, Z3 returns `sat` with that $d$ as the counterexample (e.g. $r=3, m=2, k=2$: $d=2$ leaves 1 available).
 
-- **Percentages:** `maxUnavailable` may be a percentage of the replicas; it is rounded down, as the Kubernetes docs (Deployment) state. A percentage of an unknown replica count is unknown.
+- **Percentages:** `maxUnavailable` and `maxSurge` may be percentages of the replicas. `maxUnavailable` is rounded down and `maxSurge` up, as the Kubernetes docs (Deployment) state. A percentage of an unknown replica count is unknown.
+- **Both limits 0:** if `maxUnavailable` and `maxSurge` both resolve to 0, Kubernetes takes 1 pod down anyway (`ResolveFenceposts` in the deployment controller), so $k$ becomes 1. A missing `max_surge` counts as 0 (fail-safe). Found in the review on PR #16.
 - **Missing values** stay unconstrained, so a restart with an unknown `maxUnavailable` is blocked (fail-safe).
-- **Not modelled:** `maxSurge` (extra pods only add availability), and readiness delays.
+- **Not modelled:** the extra pods `maxSurge` adds (they only add availability), and readiness delays.
 
 ## Design choices (to defend, some still to confirm)
 
