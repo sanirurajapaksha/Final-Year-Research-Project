@@ -1,7 +1,11 @@
 # M3 command corpus v0: labelling rule
 
 **Owner:** Saniru Rajapaksha. **Written:** 13/10/2026, before M3 was run on any command in this corpus.
-**Status:** every label is a `draft` until Saniru has checked it; then its `review` field becomes `reviewed`. Metrics may only be reported on reviewed labels.
+**Status:** reviewed (13/10/2026).
+- Minidu Weerasinghe checked all 50 draft labels against this rule on PR #15.
+- The issues he raised were fixed: the ground truth was extended, and m15 and m31 were replaced. The new m15 and m31 have not been re-reviewed.
+- Saniru accepted the labels as final, and every `review` field is now `reviewed`.
+- Metrics may only be reported on reviewed labels.
 
 ## What a label means
 
@@ -81,4 +85,4 @@ The main set leaves out the remaining 11% of Stratus's writes. `scale` appears o
 
 - Synthetic, hand-written commands and state: results on v0 say nothing about real agents yet. Corpus v1 will use real write commands from the Stratus baseline runs.
 - About 50 commands, balanced roughly half safe and half unsafe by design (agents' real unsafe rate is unknown), so confidence intervals will be wide.
-- One labeller so far. A second, independent labeller would let us report agreement.
+- One labeller, checked by a second person (Minidu, PR #15). Nobody labelled the commands independently, so there is no agreement statistic.
