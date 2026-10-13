@@ -14,10 +14,10 @@
   "false_prune_rate": 0.0,
   "same_result_via_m4_compress_and_build_context": true,
   "compute_time_ms_median": {
-    "decode": 0.3462804997980129,
-    "parse": 0.08287349919555709,
-    "filter": 0.04409849861986004,
-    "total": 0.48235450231004506
+    "decode": 0.2520114976505283,
+    "parse": 0.06091899922466837,
+    "filter": 0.032152500352822244,
+    "total": 0.35092149846605025
   },
   "timing_repeats": 200,
   "thresholds": {

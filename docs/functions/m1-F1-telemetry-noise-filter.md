@@ -38,7 +38,7 @@ Status: complete for PP1 scope (W2-06). Wired into `service.build_context`, with
 
 | Objective | This function | Metric | Evidence | Baseline | Evaluation plan |
 |---|---|---|---|---|---|
-| Reduce the telemetry an LLM diagnoser must read, without losing the fault | Ingest all signal types and keep only threshold-crossing signals (Stage 1) | Noise-reduction ratio (1 − kept / raw, and labelled noise pruned / labelled noise), with *n* stated; false-prune rate | `experiments/2026-10-11_m1_stage1_nrr/` (n = 1, synthetic): NRR 0.619 (1 − 8/21), labelled NRR 0.813 (13/16 noise removed), false-prune rate 0 (5/5 evidence kept), median compute 0.48 ms | Raw telemetry (no filtering), as in direct ingestion | PP1: hand-written synthetic scenarios (label *n* and "synthetic" on the slide). After PP1: SREGym-Lite drills and RCAEval RE2 |
+| Reduce the telemetry an LLM diagnoser must read, without losing the fault | Ingest all signal types and keep only threshold-crossing signals (Stage 1) | Noise-reduction ratio (1 − kept / raw, and labelled noise pruned / labelled noise), with *n* stated; false-prune rate | `experiments/2026-10-11_m1_stage1_nrr/` (n = 1, synthetic): NRR 0.619 (1 − 8/21), labelled NRR 0.813 (13/16 noise removed), false-prune rate 0 (5/5 evidence kept), median compute 0.35 ms | Raw telemetry (no filtering), as in direct ingestion | PP1: hand-written synthetic scenarios (label *n* and "synthetic" on the slide). After PP1: SREGym-Lite drills and RCAEval RE2 |
 
 ## Known limits of this slice
 - Thresholds are first guesses, not tuned. They are reported with every result.

@@ -1,6 +1,6 @@
 {
   "command": "python experiments/2026-10-11_m1_stage1_nrr/run.py",
-  "commit": "3053ffbf4a590c64874b680eedbfad5a4add63cf",
+  "commit": "ffdab8dbe90a9a62694332d11053ffb60507be08",
   "uncommitted_changes_outside_this_folder": false,
   "python": "3.12.12",
   "platform": "Linux-7.2.8-200.fc44.x86_64-x86_64-with-glibc2.43",
