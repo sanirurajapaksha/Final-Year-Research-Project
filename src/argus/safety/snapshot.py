@@ -18,8 +18,8 @@ A missing field is allowed: the compiler leaves it unconstrained (fail-safe).
 Where "min_replicas" comes from on a live cluster is still open (PodDisruptionBudget,
 annotation or project config). "in_use" means a Pod object exists that uses the PVC
 (the Kubernetes docs' definition of "in active use"); the extractor will work it out from the pods.
-"max_unavailable" is the deployment's rolling-update maxUnavailable: a number of pods or a
-percentage string such as "25%" (the compiler converts it).
+"max_unavailable" and "max_surge" are the deployment's rolling-update limits: a number of pods
+or a percentage string such as "25%" (the compiler converts them).
 The protected namespaces are M3 policy, not cluster facts, so they live in policy.py.
 """
 
@@ -44,6 +44,7 @@ def deployment_facts(snapshot: dict[str, Any], namespace: str, name: str) -> dic
                 "replicas": item.get("replicas"),
                 "min_replicas": item.get("min_replicas"),
                 "max_unavailable": item.get("max_unavailable"),
+                "max_surge": item.get("max_surge"),
             }
     return None
 
