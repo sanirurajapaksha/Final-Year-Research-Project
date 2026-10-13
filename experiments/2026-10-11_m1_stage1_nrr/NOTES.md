@@ -5,7 +5,9 @@ Task: W2-06
 Owner: Minidu Weerasinghe
 
 ## What was run
-`python experiments/2026-10-11_m1_stage1_nrr/run.py` from the repository root, on commit `79d1a41` with no other uncommitted changes (see `config.json`).
+`python experiments/2026-10-11_m1_stage1_nrr/run.py` from the repository root, on commit `3053ffb` with no other uncommitted changes (see `config.json`).
+
+**Re-run on 2026-10-13:** the first run (11 Oct) recorded commit `79d1a41`, which no longer exists after the branch was rebased onto `main`. The script was run again unchanged on `3053ffb`, so the recorded hash can be checked out. The counts and ratios are identical; only the timings differ slightly (machine noise). The results files are the script's output, not edited by hand.
 
 - **Data:** `data/fixtures/m1/scenario_01/telemetry.json`. One hand-written, **synthetic** scenario (Stratus CART_ADDR example), 27 records. **n = 1.** It is not recorded telemetry: the dev cluster isn't up yet.
 - **Labels:** `ground_truth.json`, `stage1_expected.relevant`. 5 evidence signals; every other Stage 1 input signal counts as noise.
@@ -19,7 +21,7 @@ Owner: Minidu Weerasinghe
 | NRR | **0.619** | 1 − kept / raw = 1 − 8 / 21 |
 | Labelled NRR | **0.813** | Noise removed / labelled noise = 13 / 16 |
 | False-prune rate | **0.0** | Evidence removed / labelled evidence = 0 / 5 |
-| Compute time, median of 200 | 0.39 ms | Decode 0.27 ms, parse 0.07 ms, filter 0.04 ms. In-memory input, so no fetch time is included |
+| Compute time, median of 200 | 0.48 ms | Decode 0.35 ms, parse 0.08 ms, filter 0.04 ms. In-memory input, so no fetch time is included |
 
 - The same 8 signals come out whether F1 runs on the records directly or through M4's real `compress()` and `build_context()` (`same_result_via_m4_compress_and_build_context: true`).
 - `results/anomalies.json` lists the 8 kept signals.
