@@ -1,7 +1,7 @@
 """M4 entry points: telemetry preprocessing and the execution handler.
 
 compress() converts JSON records to TSV. execute() remains a stub.
-Keep the signatures until contract v1 changes them.
+Compression preserves contract v1 records and the batch alert time.
 """
 
 import csv
@@ -26,6 +26,7 @@ def compress(batch: TelemetryBatch) -> CompressedTelemetry:
     content = output.getvalue()
     return CompressedTelemetry(
         content=content,
+        alert_time=batch.alert_time,
         original_size=len(original.encode("utf-8")),
         compressed_size=len(content.encode("utf-8")),
     )

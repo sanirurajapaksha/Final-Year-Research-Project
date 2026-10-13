@@ -2,11 +2,13 @@ import csv
 import io
 import json
 from copy import deepcopy
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from argus.contracts import CompressedTelemetry, ExecutionResult, ProposedAction
+from argus.contracts import CompressedTelemetry, ExecutionResult, ProposedAction, TelemetryBatch
+from argus.contracts.telemetry import K8sEntity, LogRecord, MetricSample, Span
 from argus.orchestration.service import compress, execute
 
 
@@ -155,3 +157,113 @@ def test_saved_experiment_tsv_matches_fixture(sample_batch):
     original = json.dumps(sample_batch.records, ensure_ascii=False).encode("utf-8")
     assert len(original) == summary["original_size_utf8_bytes"] == 241
     assert payload == compress(sample_batch).content.encode("utf-8")
+
+
+@pytest.mark.parametrize(
+    "alert_fields",
+    [{}, {"alert_time": None}, {"alert_time": datetime(2026, 10, 13, 12, 30, tzinfo=UTC)}],
+)
+@pytest.mark.parametrize(
+    "records",
+    [
+        [],
+        [
+            {
+                "kind": "log",
+                "service": "checkout",
+                "severity": "ERROR",
+                "message": "alert",
+                "timestamp": "2026-10-13T12:30:00Z",
+            }
+        ],
+    ],
+)
+def test_compress_preserves_contract_alert_time(sample_batch, alert_fields, records):
+    fields = sample_batch.model_dump(exclude={"alert_time", "records"})
+    batch = TelemetryBatch(**fields, **alert_fields, records=records)
+    before = deepcopy(batch)
+
+    result = compress(batch)
+
+    assert result.alert_time == batch.alert_time
+    assert type(result.alert_time) is type(batch.alert_time)
+    assert batch == before
+
+
+@pytest.mark.parametrize("exclude_unset", [False, True])
+def test_compress_preserves_all_contract_record_fields(sample_batch, exclude_unset):
+    timestamp = "2026-10-13T12:30:00Z"
+    metric = MetricSample(
+        kind="metric",
+        service="checkout",
+        name="request_latency",
+        timestamp=timestamp,
+        value=1.0,
+        labels={"route": "/café", "method": "GET"},
+    )
+    log = LogRecord(
+        kind="log",
+        service="checkout",
+        severity="ERROR",
+        message="retry\tfailed\n🚀",
+        timestamp=timestamp,
+    )
+    span = Span(
+        kind="span",
+        service="checkout",
+        trace_id="trace-1",
+        span_id="span-1",
+        parent_span_id="parent-1",
+        operation="GET /checkout",
+        span_kind="SERVER",
+        start_time=timestamp,
+        duration_ms=7.0,
+        otel_status_code="ERROR",
+        http_status_code=503,
+        grpc_status_code=14,
+    )
+    k8s = K8sEntity(
+        kind="k8s",
+        service="checkout",
+        name="checkout-1",
+        namespace="demo",
+        resource="Pod",
+        status="CrashLoopBackOff",
+        restart_count=3,
+        replicas=2,
+    )
+    root_span = Span(
+        kind="span",
+        service="checkout",
+        trace_id="trace-2",
+        span_id="span-2",
+        operation="root",
+        span_kind="INTERNAL",
+        start_time=timestamp,
+        duration_ms=0.0,
+    )
+    default_metric = MetricSample(
+        kind="metric", service="checkout", name="requests", timestamp=timestamp, value=0.0
+    )
+    default_k8s = K8sEntity(
+        kind="k8s",
+        service="checkout",
+        name="checkout-2",
+        namespace="demo",
+        resource="Pod",
+        status="Running",
+    )
+    records = [
+        record.model_dump(mode="json", exclude_unset=exclude_unset)
+        for record in [metric, log, span, k8s, root_span, default_metric, default_k8s, log]
+    ]
+    sample_batch.records = records
+    before = deepcopy(records)
+
+    result = compress(sample_batch)
+
+    rows = list(csv.reader(io.StringIO(result.content, newline=""), delimiter="\t"))
+    assert rows[0] == list(dict.fromkeys(key for record in records for key in record))
+    assert len(rows) == len(records) + 1
+    assert_json_equal(read_records(result.content), before)
+    assert_json_equal(sample_batch.records, before)
