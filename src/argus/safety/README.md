@@ -28,6 +28,7 @@ python -m argus.safety "kubectl scale deployment geo --replicas=1 -n hotel-reser
 | 2b | `compiler.py` | Action + facts → Z3 constraints; solves them. Hand-written encodings, no generated code. | I1, I2, I3, I4 |
 | 3 | `worker.py`, `sandbox.py` | Runs the compiler in a subprocess with a timeout (and CPU/memory caps on Linux). | done |
 | — | `gate.py` | Wires the steps; maps the raw result to APPROVE/BLOCK; records per-stage timings. | done |
+| — | `evaluate.py` | Runs a labelled corpus through the gate: detection and false-block rates with exact 95% CIs, latency per stage (`python -m argus.safety.evaluate CORPUS OUT --runs 5`; needs the `eval` extra). | done (corpus v0) |
 
 **Rules**
 - Keep Z3's raw result (`sat` / `unsat` / `unknown`) separate from the gate decision (APPROVE / BLOCK).
