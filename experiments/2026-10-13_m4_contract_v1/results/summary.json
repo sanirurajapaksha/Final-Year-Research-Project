@@ -11,11 +11,25 @@
     "span": 6,
     "k8s": 4
   },
-  "baseline_serialization": "json.dumps(batch.records, ensure_ascii=False); all other options use Python defaults: sort_keys=False, indent=None, separators=(', ', ': '), allow_nan=True. Encode the exact result as UTF-8, with no added newline. Records only, not batch metadata.",
-  "original_size_utf8_bytes": 4798,
+  "serialization": {
+    "compact": "json.dumps(batch.records, ensure_ascii=False, separators=(\",\", \":\"))",
+    "default": "json.dumps(batch.records, ensure_ascii=False)",
+    "common": "sort_keys=False, indent=None, allow_nan=True; exact UTF-8, no added newline; records only",
+    "default_separators": [
+      ", ",
+      ": "
+    ],
+    "tsv": "exact compress(batch).content encoded as UTF-8; includes header and CRLF rows"
+  },
+  "main_baseline": "compact JSON",
+  "compact_json_utf8_bytes": 4438,
+  "default_json_utf8_bytes": 4798,
+  "compressor_original_size_utf8_bytes": 4798,
   "compressed_size_utf8_bytes": 3746,
-  "byte_reduction_percentage": 21.92580241767403,
-  "baseline_sha256": "431d199b43803f9679b4cebec147d744f16e1d59d3bf2a211a2a7c4a5b8887a5",
+  "compact_json_byte_reduction_percentage": 15.592609283461018,
+  "default_json_byte_reduction_percentage": 21.92580241767403,
+  "compact_json_sha256": "5b52047c654b5a2728e30ac88857f064d59f092e4f886a9a3863f427368fa9c9",
+  "default_json_sha256": "431d199b43803f9679b4cebec147d744f16e1d59d3bf2a211a2a7c4a5b8887a5",
   "tsv_sha256": "5ec9ed8c5e6d7979dce990ef714cc63b10a269e075f78b5e0783b84ffa9f9965",
   "format": "tsv",
   "header": [
