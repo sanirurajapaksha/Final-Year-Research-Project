@@ -1,11 +1,11 @@
-# F1 token-counting proposal
+# M4 token-counting proposal
 
 Status: Proposal for W2-08. Decisions are pending. W2-08 remains incomplete.
 No tokenizer was installed and no token measurements were made for this document.
 
 ## Current behaviour and decisions
 
-[F1.md](F1.md) and `src/argus/orchestration/service.py` measure UTF-8 bytes.
+[M4 F1](m4-F1-telemetry-compression.md) and `src/argus/orchestration/service.py` measure UTF-8 bytes.
 `original_size` and `compressed_size` must keep that meaning.
 A byte count measures encoded storage size. A token count measures how a
 particular tokenizer splits text into token IDs. There is no fixed conversion
@@ -14,11 +14,21 @@ token boundaries. A smaller TSV byte count does not prove fewer tokens.
 
 No model, provider, tokenizer, encoding, or tokenizer package version is
 confirmed in the repository. All of these choices are **pending**.
-[Architecture](../../architecture.md) lists the provider and models as open.
+[Architecture](../architecture.md) lists the provider and models as open.
 `src/argus/llm/README.md` also leaves provider and client choices open.
-[F2.md](F2.md) does not agree on model choices or budget values.
+[M4 F2](m4-F2-model-routing-execution.md) does not agree on model choices or budget values.
 `pyproject.toml` declares no tokenizer dependency. The existing minimal F1
 experiment used no model and makes no token-savings claim.
+
+M4 contract v1 integration is now implemented: `alert_time` is copied unchanged,
+and one shared JSON-encoded TSV header is retained. Every record, duplicate,
+field and original record order must be preserved. Do not drop, merge,
+deduplicate or select rows. PP1 measurements remain UTF-8 byte counts.
+This integration does not implement token counting or establish token savings.
+This is supporting documentation, not a third function specification.
+PP1 may report UTF-8 byte counts now; tokenizer selection is not a blocker
+for byte evaluation. The [byte evaluation](../../experiments/2026-10-13_m4_contract_v1/NOTES.md)
+records a separate result on one synthetic scenario.
 
 ## Proposed interface
 
@@ -85,7 +95,7 @@ Keep negative savings and larger outputs visible. No target is approved.
 Accurate model-specific counting needs access to that model's tokenizer.
 A new package may be needed once the choice is made. Do not substitute a
 byte-based estimate and call it an exact token count.
-[CONTRIBUTING.md](../../../CONTRIBUTING.md) requires team agreement before
+[CONTRIBUTING.md](../../CONTRIBUTING.md) requires team agreement before
 adding any dependency and an exact version pin in `pyproject.toml`.
 No package or version is proposed as approved here. Shared contracts do not
 need to change for this local measurement proposal.
@@ -100,8 +110,9 @@ need to change for this local measurement proposal.
 4. Where should the helper live, who owns it, and how is tokenizer selection
    passed to the evaluation runner? What behaviour is agreed for an unavailable
    tokenizer or unknown model mapping? No fallback policy is introduced here.
-5. Does M1 accept the current TSV rules and baseline comparison, and which
-   fields must later compression preserve?
+5. M1 accepts the current JSON-encoded TSV rules with one shared header.
+   All records and fields must remain unchanged, including duplicates and order.
+   Does the team approve the proposed baseline comparison for token evaluation?
 6. Which data, repeat counts, metrics, and acceptance criteria define W2-08?
    Is there an agreed token budget or target? None is assumed here.
 
@@ -143,4 +154,6 @@ need to change for this local measurement proposal.
 
 AI assistance: Codex read the repository instructions, F1 spec, dependency
 file, compressor, and recorded model decisions, then drafted this proposal.
-No packages, application code, shared contracts, or dependencies were changed.
+The original proposal changed no packages, application code, shared contracts,
+or dependencies. The later contract integration updates M4 code and tests,
+with no new dependencies or changes to historical experiment evidence.

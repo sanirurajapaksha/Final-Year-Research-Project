@@ -1,7 +1,7 @@
 """F1 ingestion: turn telemetry records into typed models.
 
 Two entry routes, both ending in `parse_records`:
-- M4's compressed TSV (`decode_tsv`), the format described in docs/functions/m4/F1.md.
+- M4's compressed TSV (`decode_tsv`), the format described in docs/functions/m4-F1-telemetry-compression.md.
 - `TelemetryBatch.records` directly, for fixtures and evaluation without M4.
 """
 

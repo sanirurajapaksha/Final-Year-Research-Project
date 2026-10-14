@@ -1,0 +1,31 @@
+{
+  "command": "python experiments/2026-10-13_m4_contract_v1/run.py",
+  "actual_python_invocation": ".venv/Scripts/python.exe",
+  "source_commit": "789f7f1398854a4cc827175f62854b7f0510d336",
+  "branch": "feat/m4-f1-contract-integration",
+  "upstream": "origin/feat/m4-f1-contract-integration",
+  "source_state": "clean working tree",
+  "python": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "pydantic_version": "2.14.0",
+  "run_time_utc": "2026-10-14T04:54:36.973509+00:00",
+  "input": "data/fixtures/m1/scenario_01/telemetry.json",
+  "input_sha256": "df08c51e622392980970f039860f131b44a2286354fc432bb1b1ced69994f151",
+  "provenance_source": "data/fixtures/m1/scenario_01/ground_truth.json",
+  "provenance_source_sha256": "30e76d6bb4a11ab1e431b50a7ac3f264a10ffccc91e0fb1e99a83af4dab62c5a",
+  "data_type": "synthetic",
+  "provenance": "synthetic (hand-written, modelled on the Stratus CART_ADDR example; not recorded from a cluster)",
+  "serialization": {
+    "compact": "json.dumps(batch.records, ensure_ascii=False, separators=(\",\", \":\"))",
+    "default": "json.dumps(batch.records, ensure_ascii=False)",
+    "common": "sort_keys=False, indent=None, allow_nan=True; exact UTF-8, no added newline; records only",
+    "default_separators": [
+      ", ",
+      ": "
+    ],
+    "tsv": "exact compress(batch).content encoded as UTF-8; includes header and CRLF rows"
+  },
+  "byte_reduction_formula": "100 * (original_utf8_bytes - tsv_utf8_bytes) / original_utf8_bytes",
+  "model": "None; no model calls",
+  "token_counting": "not performed; not required for PP1 byte evaluation"
+}
