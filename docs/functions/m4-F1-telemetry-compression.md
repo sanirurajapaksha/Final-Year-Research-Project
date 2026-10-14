@@ -11,7 +11,7 @@ Owner: Nethmi Herath
 | Processing logic | Build columns in first-seen order, JSON-encode present values, and write TSV using `csv.writer`. Keep missing fields separate from null and empty strings. Measure UTF-8 bytes. |
 | Output | `CompressedTelemetry` with TSV content and original and output sizes in UTF-8 bytes, not tokens. |
 | Dependencies | Existing shared models and Python's standard library. M1 format and field preservation confirmed; contract v1 `alert_time` integration implemented. |
-| Test evidence | Local checks are listed below. Unit tests: `tests/unit/orchestration/test_service.py`. Pipeline tests: `tests/integration/test_pipeline.py`. CI status has not been verified. |
+| Test evidence | Local checks are listed below. Unit tests: `tests/unit/orchestration/test_service.py`. Pipeline tests: `tests/integration/test_pipeline.py`. Remote PR #18 checks passed on 2026-10-14 for head `0d91dac`; the local review commits have not been pushed. |
 
 ## Input
 TelemetryBatch containing metrics, logs, spans and Kubernetes records, with optional `alert_time`.
@@ -116,7 +116,7 @@ Actual test file paths:
 - `tests/integration/test_pipeline.py`: existing pipeline safety checks.
   These do not prove live execution or completed model routing.
 
-CI status has not been verified. The results below are local checks only.
+Remote PR #18 checks passed on 2026-10-14 for head `0d91dac`; the local review commits have not been pushed. The results below are local checks only.
 
 Verified on Windows on 2026-10-10 using `.venv\Scripts\python.exe`:
 
@@ -162,8 +162,10 @@ not rerun. Default demo-fixture migration is still pending.
 ## Objective -> function -> metric -> evidence
 
 The [contract v1 byte evaluation](../../experiments/2026-10-13_m4_contract_v1/NOTES.md)
-records one synthetic sample with 27 records: 4,798 input UTF-8 bytes and
-3,746 TSV UTF-8 bytes, a 21.93% byte reduction for this sample only. All
+records a byte-only evaluation on one synthetic sample with 27 records:
+4,438 compact JSON UTF-8 bytes and 3,746 TSV UTF-8 bytes, a 15.59% reduction.
+The secondary default JSON baseline is 4,798 bytes, a 21.93% reduction.
+The compressor retains default JSON `original_size` semantics. All
 records, fields, exact decoded values/types and order match; alert time is
 preserved. The sample has no exact duplicate records; unit tests cover them.
 No token savings, RCA accuracy or general benchmark performance is claimed.

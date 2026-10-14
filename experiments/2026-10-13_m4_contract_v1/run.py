@@ -26,11 +26,13 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 INPUT = Path("data/fixtures/m1/scenario_01/telemetry.json")
 TRUTH = INPUT.with_name("ground_truth.json")
-BASELINE_RULE = (
-    "json.dumps(batch.records, ensure_ascii=False); all other options use Python defaults: "
-    "sort_keys=False, indent=None, separators=(', ', ': '), allow_nan=True. "
-    "Encode the exact result as UTF-8, with no added newline. Records only, not batch metadata."
-)
+SERIALIZATION = {
+    "compact": 'json.dumps(batch.records, ensure_ascii=False, separators=(",", ":"))',
+    "default": "json.dumps(batch.records, ensure_ascii=False)",
+    "common": "sort_keys=False, indent=None, allow_nan=True; exact UTF-8, no added newline; records only",
+    "default_separators": [", ", ": "],
+    "tsv": "exact compress(batch).content encoded as UTF-8; includes header and CRLF rows",
+}
 
 
 def git(*args: str) -> bytes:
@@ -72,6 +74,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, default=HERE)
     args = parser.parse_args()
+    status = git("status", "--porcelain=v1", "--untracked-files=all")
+    if status:
+        parser.error("clean Git working tree required before measurement or output creation")
+    source_commit = git("rev-parse", "HEAD").decode().strip()
     output = args.output_dir.resolve()
     if (output / "config.json").exists() or (output / "results").exists():
         parser.error("saved evidence exists; use --output-dir with a fresh directory")
@@ -86,7 +92,8 @@ def main() -> int:
     # Validate with M1, without serializing typed models or inserting default fields.
     parsed = parse_records(batch.records)
     before = deepcopy(batch)
-    baseline = json.dumps(batch.records, ensure_ascii=False).encode("utf-8")
+    compact = json.dumps(batch.records, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    default = json.dumps(batch.records, ensure_ascii=False).encode("utf-8")
     compressed = compress(batch)
     payload = compressed.content.encode("utf-8")
     restored = decode_tsv(compressed.content)
@@ -96,7 +103,7 @@ def main() -> int:
         raise ValueError("input batch changed")
     if type(compressed.alert_time) is not type(batch.alert_time) or compressed.alert_time != batch.alert_time:
         raise ValueError("alert_time changed")
-    if compressed.original_size != len(baseline) or compressed.compressed_size != len(payload):
+    if compressed.original_size != len(default) or compressed.compressed_size != len(payload):
         raise ValueError("compressor byte counts differ from the exact payloads")
     if compressed.format != "tsv" or parsed.total != len(batch.records):
         raise ValueError("unexpected format or validated record count")
@@ -108,33 +115,15 @@ def main() -> int:
     if duplicate_counts(restored) != multiplicities:
         raise ValueError("duplicate multiplicities changed")
 
-    status = git("status", "--porcelain=v1", "--untracked-files=all").decode("utf-8")
-    patch = git("diff", "HEAD", "--binary")
-    source_paths = [
-        "src/argus/orchestration/service.py",
-        "src/argus/context/ingest.py",
-        "src/argus/contracts/telemetry.py",
-        "pyproject.toml",
-        "tests/unit/orchestration/test_service.py",
-        "tests/integration/test_m1_reads_m4_output.py",
-    ]
     configuration = {
         "command": f"python {Path(__file__).resolve().relative_to(ROOT).as_posix()}",
         "actual_python_invocation": ".venv/Scripts/python.exe"
         if sys.platform == "win32"
         else ".venv/bin/python",
-        "source_commit": git("rev-parse", "HEAD").decode().strip(),
+        "source_commit": source_commit,
         "branch": git("branch", "--show-current").decode().strip(),
         "upstream": git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}").decode().strip(),
-        "source_state": "uncommitted changes present" if status else "clean working tree",
-        "uncommitted_changes": bool(status),
-        "git_status_at_run_start": status.splitlines(),
-        "source_note": (
-            "The commit alone does not identify dirty source. See source hashes and source_changes.patch."
-        ),
-        "source_changes_patch_sha256": sha256(patch),
-        "source_file_sha256": {name: sha256((ROOT / name).read_bytes()) for name in source_paths},
-        "runner_sha256": sha256(Path(__file__).read_bytes()),
+        "source_state": "clean working tree",
         "python": sys.version,
         "platform": platform.platform(),
         "pydantic_version": version("pydantic"),
@@ -145,7 +134,7 @@ def main() -> int:
         "provenance_source_sha256": sha256(truth_bytes),
         "data_type": "synthetic",
         "provenance": provenance,
-        "baseline_serialization": BASELINE_RULE,
+        "serialization": SERIALIZATION,
         "byte_reduction_formula": "100 * (original_utf8_bytes - tsv_utf8_bytes) / original_utf8_bytes",
         "model": "None; no model calls",
         "token_counting": "not performed; not required for PP1 byte evaluation",
@@ -158,13 +147,16 @@ def main() -> int:
         "sample_count": 1,
         "record_count": len(batch.records),
         "record_counts_by_kind": dict(Counter(record["kind"] for record in batch.records)),
-        "baseline_serialization": BASELINE_RULE,
-        "original_size_utf8_bytes": len(baseline),
+        "serialization": SERIALIZATION,
+        "main_baseline": "compact JSON",
+        "compact_json_utf8_bytes": len(compact),
+        "default_json_utf8_bytes": len(default),
+        "compressor_original_size_utf8_bytes": compressed.original_size,
         "compressed_size_utf8_bytes": len(payload),
-        "byte_reduction_percentage": 100 * (len(baseline) - len(payload)) / len(baseline)
-        if baseline
-        else None,
-        "baseline_sha256": sha256(baseline),
+        "compact_json_byte_reduction_percentage": 100 * (len(compact) - len(payload)) / len(compact),
+        "default_json_byte_reduction_percentage": 100 * (len(default) - len(payload)) / len(default),
+        "compact_json_sha256": sha256(compact),
+        "default_json_sha256": sha256(default),
         "tsv_sha256": sha256(payload),
         "format": compressed.format,
         "header": header,
@@ -186,73 +178,17 @@ def main() -> int:
         "claims": "one synthetic sample; byte sizes only",
     }
 
-    commands = [
-        (
-            "targeted_m4_m1",
-            [
-                sys.executable,
-                "-m",
-                "pytest",
-                "tests/unit/orchestration/test_service.py",
-                "tests/integration/test_m1_reads_m4_output.py",
-            ],
-        ),
-        ("ruff_check", [sys.executable, "-m", "ruff", "check", "."]),
-        ("ruff_format_check", [sys.executable, "-m", "ruff", "format", "--check", "."]),
-        ("git_diff_check", ["git", "diff", "--check"]),
-    ]
-    checks = []
-    logs = {}
-    for name, command in commands:
-        result = subprocess.run(command, cwd=ROOT, capture_output=True, check=False, timeout=60)
-        checks.append(
-            {
-                "name": name,
-                "command": ["python", *command[1:]] if command[0] == sys.executable else command,
-                "exit_code": result.returncode,
-                "stdout": f"results/{name}.stdout.txt",
-                "stderr": f"results/{name}.stderr.txt",
-            }
-        )
-        logs[f"{name}.stdout.txt"] = result.stdout
-        logs[f"{name}.stderr.txt"] = result.stderr
-        print(name, "exit", result.returncode)
-    verification = {
-        "checks": checks,
-        "full_suite": {
-            "status": "blocked; not run in this evaluation",
-            "test": "tests/unit/safety/test_sandbox.py::test_timeout_returns_no_result",
-            "prior_investigation": (
-                "Windows Python 3.12.10: exceeded a 15-second external limit; "
-                "worker remained alive after launcher termination. No M4 modules loaded."
-            ),
-        },
-        "default_demo": {
-            "status": "not run; existing fixture remains incompatible with contract v1",
-            "input": "data/fixtures/telemetry_sample.json",
-            "issues": [
-                "metric missing timestamp",
-                "log missing timestamp and severity",
-                "unsupported kind: event",
-            ],
-        },
-    }
     # Save outputs once. Reproduction must use a fresh output directory.
     output.mkdir(parents=True, exist_ok=True)
     results = output / "results"
     results.mkdir()
-    (results / "input.telemetry.json").write_bytes(input_bytes)
-    (results / "input.ground_truth.json").write_bytes(truth_bytes)
-    (results / "baseline.json").write_bytes(baseline)
+    (results / "compact.json").write_bytes(compact)
+    (results / "default.json").write_bytes(default)
     (results / "telemetry.tsv").write_bytes(payload)
-    (results / "source_changes.patch").write_bytes(patch)
-    for name, content in logs.items():
-        (results / name).write_bytes(content)
     write_json(output / "config.json", configuration)
     write_json(results / "summary.json", summary)
-    write_json(results / "checks.json", verification)
     print(json.dumps(summary, indent=2))
-    return int(any(check["exit_code"] != 0 for check in checks))
+    return 0
 
 
 if __name__ == "__main__":
