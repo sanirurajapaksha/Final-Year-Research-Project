@@ -28,6 +28,7 @@ python -m argus.safety "kubectl scale deployment geo --replicas=1 -n hotel-reser
 | 2b | `compiler.py` | Action + facts → Z3 constraints; solves them. Hand-written encodings, no generated code. | I1, I2, I3, I4 |
 | 3 | `worker.py`, `sandbox.py` | Runs the compiler in a subprocess with a timeout (and CPU/memory caps on Linux). | done |
 | — | `gate.py` | Wires the steps; maps the raw result to APPROVE/BLOCK; records per-stage timings. | done |
+| — | `evaluate.py` | Runs a labelled corpus through the gate: detection and false-block rates with exact 95% CIs, latency per stage (`python -m argus.safety.evaluate CORPUS OUT --runs 5`; needs the `eval` extra). | done (corpus v0) |
 
 **Rules**
 - Keep Z3's raw result (`sat` / `unsat` / `unknown`) separate from the gate decision (APPROVE / BLOCK).
@@ -37,5 +38,11 @@ python -m argus.safety "kubectl scale deployment geo --replicas=1 -n hotel-reser
 - Every invariant needs tests with at least one safe and one unsafe case, plus edge cases: 0 or negative replicas, integer overflow, missing resources.
 - Time each stage separately (`common.timing.stage_timer`) and keep raw result files.
 - The memory cap needs Linux: develop and measure M3 in WSL or rely on CI.
+
+**Sandbox settings** (environment variables, see `.env.example`):
+- `ARGUS_SOLVER_TIMEOUT_S` (default 5): wall-clock limit per check.
+- `ARGUS_SOLVER_MEMORY_MB` (default 512): address-space cap for the worker (Linux only).
+
+If every check is blocked with `worker exited with code 1: MemoryError`, the cap is too small for that machine; raise it. 256 MB was too small on Fedora.
 
 Tests go in `tests/unit/safety/`.

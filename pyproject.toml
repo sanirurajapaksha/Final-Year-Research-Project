@@ -19,6 +19,9 @@ dev = [
     "pytest==9.1.1",
     "ruff==0.17.0",
 ]
+eval = [
+    "scipy==1.18.1",  # M3 evaluation: exact (Clopper-Pearson) confidence intervals
+]
 
 [project.scripts]
 argus = "argus.__main__:main"

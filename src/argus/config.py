@@ -14,9 +14,10 @@ class Settings:
     llm_model: str = ""
     # Context name of the disposable dev cluster; empty means no cluster is configured.
     kube_context: str = ""
-    # M3 sandbox limits (placeholders until measured).
+    # M3 sandbox limits (placeholders until measured). The memory cap limits address space (RLIMIT_AS);
+    # 256 MB made every solver call fail with MemoryError on Fedora (PR #14 review), 512 MB works.
     solver_timeout_s: float = 5.0
-    solver_memory_mb: int = 256
+    solver_memory_mb: int = 512
 
 
 def load_settings() -> Settings:
