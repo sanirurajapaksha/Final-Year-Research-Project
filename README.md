@@ -81,6 +81,9 @@ The last command runs one pass of the stub pipeline on `data/fixtures/telemetry_
 Copy `.env.example` to `.env` for local settings. `.env` is git-ignored.
 
 ## Working together
+
+For a browser view of live M4 compression measurements and readable telemetry tables,
+see [the optional local dashboard](demo/README.md). It also provides a short terminal summary command.
 See [CONTRIBUTING.md](CONTRIBUTING.md): feature branches and PRs, tests for every function, module ownership, no secrets, and cluster safety.
 
 ## Not decided yet
