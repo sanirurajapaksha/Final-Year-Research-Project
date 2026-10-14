@@ -39,6 +39,12 @@ def git(*args: str) -> bytes:
     return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, check=True).stdout
 
 
+def git_ref(*args: str) -> str | None:
+    """Return optional branch metadata; detached or untracked branches have none."""
+    result = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, check=False)
+    return (result.stdout.decode().strip() or None) if result.returncode == 0 else None
+
+
 def sha256(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
@@ -121,8 +127,8 @@ def main() -> int:
         if sys.platform == "win32"
         else ".venv/bin/python",
         "source_commit": source_commit,
-        "branch": git("branch", "--show-current").decode().strip(),
-        "upstream": git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}").decode().strip(),
+        "branch": git_ref("symbolic-ref", "--quiet", "--short", "HEAD"),
+        "upstream": git_ref("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"),
         "source_state": "clean working tree",
         "python": sys.version,
         "platform": platform.platform(),
