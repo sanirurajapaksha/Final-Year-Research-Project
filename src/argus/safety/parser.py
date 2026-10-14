@@ -1,10 +1,11 @@
 """Deterministic parser: command string -> structured action (no LLM).
 
-Template path for common verbs. The F1 slice supports two forms:
+Template path for common verbs. The F1 slice supports these forms:
 
     kubectl scale (deployment NAME | deployment/NAME) --replicas=N -n NAMESPACE
     kubectl delete (pod | pvc) NAME (-n NAMESPACE | -A)
     kubectl delete namespace NAME
+    kubectl rollout restart (deployment NAME | deployment/NAME) -n NAMESPACE
 
 Anything else raises ParseError, which the gate turns into BLOCK. Unknown flags are rejected
 rather than ignored, because ignoring a flag could change what the command does.
@@ -66,7 +67,11 @@ def parse(command: str) -> Action:
         return _parse_scale(tokens)
     if subcommand == "delete":
         return _parse_delete(tokens)
-    raise ParseError(f"'kubectl {subcommand}' is not supported in the F1 slice (only 'scale' and 'delete')")
+    if subcommand == "rollout":
+        return _parse_rollout(tokens)
+    raise ParseError(
+        f"'kubectl {subcommand}' is not supported in the F1 slice (only scale, delete, rollout restart)"
+    )
 
 
 def _parse_scale(tokens: list[str]) -> Action:
@@ -115,6 +120,21 @@ def _parse_delete(tokens: list[str]) -> Action:
         params["all_namespaces"] = True
 
     return Action(verb="delete", kind=kind, name=name, namespace=namespace, params=params)
+
+
+def _parse_rollout(tokens: list[str]) -> Action:
+    positional, flags = _split_args(tokens)
+    _reject_unknown_flags(flags, {"namespace"})
+
+    # The first word after 'rollout' is the rollout action (restart, undo, pause, ...).
+    if not positional or positional[0] != "restart":
+        raise ParseError("only 'kubectl rollout restart' is supported in the F1 slice")
+
+    kind, name = _resource(positional[1:])
+    if kind not in DEPLOYMENT_ALIASES:
+        raise ParseError(f"only deployments are supported in the F1 slice, got {kind!r}")
+
+    return Action(verb="rollout-restart", kind="deployment", name=name, namespace=_namespace(flags))
 
 
 def _split_args(tokens: list[str]) -> tuple[list[str], dict[str, str]]:

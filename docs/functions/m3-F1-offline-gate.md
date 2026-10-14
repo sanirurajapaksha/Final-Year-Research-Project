@@ -57,6 +57,23 @@ Rules that run before the solver (all BLOCK, fail-closed):
 - a PVC or deployment that is not in the snapshot;
 - delete with a selector (`-l`), `--all`, `--force`, `--grace-period` or any other flag the parser doesn't know.
 
+### Rolling restart (I3), added in W2-04: the rule Z3 has to search
+
+For `scale` and `delete` the end state is fixed by the command, so checking it is close to plain evaluation. A rolling restart is different: Kubernetes may take down **any number of pods from 0 up to `maxUnavailable`** at once, and the command doesn't say which. Z3 searches that whole range.
+
+Variables: $r$ replicas, $m$ minimum replicas, $k$ = `maxUnavailable` as a number of pods, $d$ pods down at one moment, $p$ protected namespace, $c$ = the pods are unchanged.
+
+$$\mathit{Facts}(S_0) \equiv 0 \le r, m \le 2^{31}-1 \;\land\; k \ge 0 \;\land\; (r, m, k \text{ equal their snapshot values, when present}) \;\land\; p = \hat p$$
+$$T \equiv \lnot c \;\land\; 0 \le d \le k \;\land\; d \le r$$
+$$I_3 \equiv r - d \ge m \qquad I_2 \equiv p \Rightarrow c$$
+
+*In plain language:* "however many pods the restart takes down at once (up to the limit), at least the minimum must stay available". If any $d$ in the range breaks this, Z3 returns `sat` with that $d$ as the counterexample (e.g. $r=3, m=2, k=2$: $d=2$ leaves 1 available).
+
+- **Percentages:** `maxUnavailable` and `maxSurge` may be percentages of the replicas. `maxUnavailable` is rounded down and `maxSurge` up, as the Kubernetes docs (Deployment) state. A percentage of an unknown replica count is unknown.
+- **Both limits 0:** if `maxUnavailable` and `maxSurge` both resolve to 0, Kubernetes takes 1 pod down anyway (`ResolveFenceposts` in the deployment controller), so $k$ becomes 1. A missing `max_surge` counts as 0 (fail-safe). Found in the review on PR #16.
+- **Missing values** stay unconstrained, so a restart with an unknown `maxUnavailable` is blocked (fail-safe).
+- **Not modelled:** the extra pods `maxSurge` adds (they only add availability), and readiness delays.
+
 ## Design choices (to defend, some still to confirm)
 
 1. **Fail-closed** for `unknown`, timeouts and errors (plan decision D4). Applied in code; Saniru to confirm.
@@ -66,7 +83,7 @@ Rules that run before the solver (all BLOCK, fail-closed):
 5. **Z3 integers are unbounded**, Kubernetes replica counts are int32. The range is therefore an explicit invariant (overflow edge case).
 6. **Fixed worker, not generated code.** The compiler is a hand-written module run in a subprocess; it reads JSON and never executes generated code. The proposal's FR-04 says "compile to a Python Z3 script"; this would become "compile to Z3 constraints solved in a sandboxed worker". **Saniru to decide.**
 7. **Sandbox limits:** wall-clock timeout everywhere; CPU-time and memory caps on Linux only (the `resource` module doesn't exist on Windows). Z3's own timeout is 80% of the process timeout.
-8. **Parser scope:** `kubectl scale deployment` and `kubectl delete` of one pod, PVC or namespace by name. Unknown flags are rejected (not ignored). A namespaced write must name its namespace with `-n` (or `-A` for delete); otherwise it is blocked, because kubectl would use its current context's namespace, which M3 can't see (PR #14 review). Negative counts parse on purpose, so the encoding (not the parser) is what blocks them.
+8. **Parser scope:** `kubectl scale deployment`, `kubectl delete` of one pod, PVC or namespace by name, and `kubectl rollout restart` of one deployment. Unknown flags are rejected (not ignored). A namespaced write must name its namespace with `-n` (or `-A` for delete); otherwise it is blocked, because kubectl would use its current context's namespace, which M3 can't see (PR #14 review). Negative counts parse on purpose, so the encoding (not the parser) is what blocks them.
 9. **Where `min_replicas` comes from on a live cluster** (PodDisruptionBudget, annotation or project config) is open; F1 reads it from the fixture.
 10. **The protected list is M3 policy, not a cluster fact.** It is a constant in `policy.py`: the namespaces Kubernetes creates for its own components (kubernetes.io docs, "Namespaces"). `default` is not protected, because it is meant for user workloads.
 11. **Deleting any other namespace is blocked (fail-closed).** Decided by Saniru, 13/10. Modelling it properly would mean checking every object inside the namespace.

@@ -71,7 +71,7 @@ def test_prefilter_rejection_is_blocked(snapshot):
 
 
 def test_unsupported_verb_is_blocked(snapshot):
-    verdict = check(write("kubectl rollout restart deploy/geo -n hotel-reservation"), snapshot, SETTINGS)
+    verdict = check(write("kubectl label pod geo-1 team=sre -n hotel-reservation"), snapshot, SETTINGS)
     assert verdict.decision is GateDecision.BLOCK
     assert verdict.reason.startswith("parse:")
 
@@ -145,3 +145,53 @@ def test_missing_fact_blocks_and_says_so(snapshot):
     )
     assert verdict.decision is GateDecision.BLOCK
     assert "min_replicas" in verdict.reason
+
+
+@pytest.mark.parametrize(
+    ("command", "decision", "violated"),
+    [
+        ("kubectl rollout restart deployment/geo -n hotel-reservation", GateDecision.APPROVE, []),
+        ("kubectl rollout restart deployment/profile -n hotel-reservation", GateDecision.APPROVE, []),
+        (
+            "kubectl rollout restart deployment/frontend -n hotel-reservation",
+            GateDecision.BLOCK,
+            ["min_available_during_restart"],
+        ),
+        (
+            "kubectl rollout restart deployment/coredns -n kube-system",
+            GateDecision.BLOCK,
+            ["protected_namespace"],
+        ),
+    ],
+)
+def test_rollout_restart(snapshot, command, decision, violated):
+    verdict = check(write(command), snapshot, SETTINGS)
+    assert verdict.decision is decision
+    assert verdict.violated_invariants == violated
+
+
+def test_restart_with_missing_facts_blocks_and_says_so(snapshot):
+    verdict = check(
+        write("kubectl rollout restart deployment/search -n hotel-reservation"), snapshot, SETTINGS
+    )
+    assert verdict.decision is GateDecision.BLOCK
+    assert "max_unavailable" in verdict.reason
+
+
+def test_malformed_max_unavailable_is_blocked():
+    bad = {
+        "deployments": [
+            {"namespace": "hr", "name": "geo", "replicas": 3, "min_replicas": 2, "max_unavailable": "150%"}
+        ]
+    }
+    verdict = check(write("kubectl rollout restart deployment/geo -n hr"), bad, SETTINGS)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.z3_result is None
+    assert verdict.reason.startswith("solver:")
+
+
+def test_restart_solver_timeout_is_blocked(snapshot):
+    tiny = Settings(solver_timeout_s=0.001, solver_memory_mb=512)
+    verdict = check(write("kubectl rollout restart deployment/geo -n hotel-reservation"), snapshot, tiny)
+    assert verdict.decision is GateDecision.BLOCK
+    assert "timeout" in verdict.reason
