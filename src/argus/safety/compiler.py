@@ -25,6 +25,7 @@ F1 slice:
     delete pod / namespace    -> I2 protected namespaces
     delete pvc                -> I2 protected namespaces, I4 in-use PVC
     rollout restart           -> I3 minimum available during the restart, I2 protected namespaces
+    patch-metadata            -> I2 protected namespaces (a patch that changes no pods; from formulation.py)
 The gate blocks deletes of unprotected namespaces before they reach this module (fail-closed),
 because deleting a namespace deletes everything in it, which F1 doesn't model.
 """
@@ -60,6 +61,8 @@ def solve(request: dict[str, Any]) -> dict[str, Any]:
         return _solve_delete(action, facts, timeout_ms)
     if action.get("verb") == "rollout-restart" and action.get("kind") == "deployment":
         return _solve_rollout_restart(action, facts, timeout_ms)
+    if action.get("verb") == "patch-metadata" and action.get("kind") == "deployment":
+        return _solve_metadata_change(action, timeout_ms)
     raise EncodingError(f"no encoding for {action.get('verb')!r} on {action.get('kind')!r}")
 
 
@@ -310,6 +313,28 @@ def _solve_rollout_restart(action: dict[str, Any], facts: dict[str, Any], timeou
         return _result("sat", started, missing, checked, violated, counterexample, pre_state_violations)
 
     return _result(str(answer), started, missing, checked, pre_state_violations=pre_state_violations)
+
+
+def _solve_metadata_change(action: dict[str, Any], timeout_ms: int) -> dict[str, Any]:
+    """A change to the object's metadata only (e.g. a label). No pod changes, so only I2 applies."""
+    in_protected = z3.Bool("in_protected_namespace")
+    unchanged_after = z3.Bool("unchanged_after")
+
+    state_facts = [in_protected == _in_protected_namespace(action)]
+    # T(S0, A, S1): the object changes.
+    transition = [z3.Not(unchanged_after)]
+    # I2: an object in a protected namespace is unchanged.
+    invariants_after = {"protected_namespace": z3.Implies(in_protected, unchanged_after)}
+    checked = list(invariants_after)
+
+    started = time.perf_counter()
+    answer, model, error = _check(state_facts, transition, invariants_after, timeout_ms)
+    if error:
+        return _result(None, started, [], checked, error=error)
+    if answer == z3.sat:
+        counterexample = {"before": {"in_protected_namespace": True}, "after": {"changed": True}}
+        return _result("sat", started, [], checked, _violated(model, invariants_after), counterexample)
+    return _result(str(answer), started, [], checked)
 
 
 def _check(
