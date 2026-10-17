@@ -1,0 +1,9 @@
+{
+  "command": "python experiments/2026-10-18_m1_stage2_failing_path/run.py",
+  "commit": "895b8303a83f82496f13c2dd743a43af3fd8b9f2",
+  "uncommitted_changes_outside_this_folder": false,
+  "python": "3.12.12",
+  "platform": "Linux-7.2.10-200.fc44.x86_64-x86_64-with-glibc2.43",
+  "input": "data/fixtures/m1/scenario_01/telemetry.json",
+  "model": "None; M1 makes no model calls."
+}
