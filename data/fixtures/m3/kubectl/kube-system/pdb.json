@@ -1,0 +1,8 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {"apiVersion": "policy/v1", "kind": "PodDisruptionBudget", "metadata": {"name": "coredns-pdb", "namespace": "kube-system"}, "spec": {"minAvailable": 1, "selector": {"matchLabels": {"k8s-app": "kube-dns"}}}}
+  ],
+  "metadata": {"resourceVersion": ""}
+}
