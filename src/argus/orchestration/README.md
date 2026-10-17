@@ -7,7 +7,23 @@
 **Entry points:**
 - `service.compress(TelemetryBatch) -> CompressedTelemetry`: implemented JSON-encoded TSV with one shared header. Copies contract v1 `alert_time`, including its optional `None` default.
 - `service.execute(ProposedAction) -> ExecutionResult`. Call it only for reads, or for writes M3 approved. The stub never runs anything.
+- `execution.handle_action(ProposedAction) -> ActionResult`: W3-03 handler.
+  Writes call M3 in-process and reach the executor only with an `APPROVE`
+  verdict for the exact command. Gate errors, missing verdicts and mismatched
+  commands produce a fail-closed `BLOCK`. Reads bypass the gate.
 - `pipeline.run_once(TelemetryBatch)`: the end-to-end wiring, framework-agnostic until the team picks CrewAI or LangGraph.
+
+W3-03 hands all blocked verdicts, including their reasons and available
+counterexamples, back to `diagnose(context, feedback=...)` once after the initial
+action batch. Its response is retained in `PipelineResult.feedback_diagnosis`;
+revised actions are not automatically executed. M2 remains a stub that does not
+interpret feedback yet.
+
+The handler and pipeline accept optional gate/executor callables for recorded
+integration runs. `tests/integration/test_m4_gate_handoff.py` uses the real M3
+gate with the existing hotel-reservation snapshot and a recording executor stub.
+By default M3 blocks writes without a snapshot and the executor runs no commands.
+Live fact collection, model routing and cluster execution remain separate work.
 
 **Planned work** (from the proposal and the PP1 plan; yours to confirm or replace):
 - Function 1: further compression must preserve every record, duplicate, field and original record order. Do not drop, merge, deduplicate or select rows. Noise pruning belongs to M1.
