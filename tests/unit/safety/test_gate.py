@@ -1,9 +1,11 @@
+import json
 from pathlib import Path
 
 import pytest
 
 from argus.config import Settings
 from argus.contracts import GateDecision, ProposedAction, Z3Result
+from argus.safety import formulation
 from argus.safety.gate import check, decision_for
 
 SETTINGS = Settings(solver_timeout_s=30.0, solver_memory_mb=512)
@@ -228,3 +230,72 @@ def test_extractor_failure_is_blocked():
     verdict = check(write("kubectl scale deployment geo --replicas=2 -n nowhere"), None, WITH_EXTRACTOR)
     assert verdict.decision is GateDecision.BLOCK
     assert verdict.reason.startswith("extractor: LookupError")
+
+
+# Commands the parser can't read (patch) go to the Formulation Agent; the LLM is a fake here.
+
+
+def fake_llm(monkeypatch, answer: dict) -> None:
+    def fake_complete_json(prompt, schema, model, timeout_s):
+        return json.dumps(answer), {}
+
+    monkeypatch.setattr(formulation, "complete_json", fake_complete_json)
+
+
+def patch_ir(name: str, effect: str, replicas: int = 0) -> dict:
+    return {
+        "kind": "deployment",
+        "name": name,
+        "namespace": "hotel-reservation",
+        "effect": effect,
+        "replicas": replicas,
+    }
+
+
+@pytest.mark.parametrize(
+    ("command", "answer", "decision", "violated"),
+    [
+        (
+            'kubectl patch deployment geo -n hotel-reservation -p \'{"spec":{"replicas":1}}\'',
+            patch_ir("geo", "set_replicas", 1),
+            GateDecision.BLOCK,
+            ["min_replicas"],
+        ),
+        (
+            'kubectl patch deployment geo -n hotel-reservation -p \'{"spec":{"replicas":4}}\'',
+            patch_ir("geo", "set_replicas", 4),
+            GateDecision.APPROVE,
+            [],
+        ),
+        (
+            'kubectl patch deployment frontend -n hotel-reservation -p \'{"spec":{"template":{}}}\'',
+            patch_ir("frontend", "pod_template_change"),
+            GateDecision.BLOCK,
+            ["min_available_during_restart"],
+        ),
+        (
+            'kubectl patch deployment frontend -n hotel-reservation -p \'{"metadata":{"labels":{"t":"x"}}}\'',
+            patch_ir("frontend", "metadata_only"),
+            GateDecision.APPROVE,
+            [],
+        ),
+    ],
+)
+def test_patch_goes_through_the_formulation_agent(
+    snapshot, monkeypatch, tmp_path, command, answer, decision, violated
+):
+    fake_llm(monkeypatch, answer)
+    settings = Settings(solver_timeout_s=30.0, solver_memory_mb=512, m3_llm_log=str(tmp_path / "llm.jsonl"))
+    verdict = check(write(command), snapshot, settings)
+    assert verdict.decision is decision
+    assert verdict.violated_invariants == violated
+    assert "formulation" in verdict.timings_ms
+
+
+def test_patch_blocks_when_the_llm_is_unreachable(snapshot, tmp_path):
+    # No model is set, so the LLM client raises before any network call, and the gate blocks.
+    settings = Settings(solver_timeout_s=30.0, solver_memory_mb=512, m3_llm_log=str(tmp_path / "llm.jsonl"))
+    command = 'kubectl patch deployment geo -n hotel-reservation -p \'{"spec":{"replicas":4}}\''
+    verdict = check(write(command), snapshot, settings)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.reason.startswith("formulation: LLM:")
