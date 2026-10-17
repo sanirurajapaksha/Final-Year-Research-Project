@@ -1,6 +1,7 @@
 import pytest
 
-from argus.safety.parser import Action, ParseError, parse
+from argus.safety.parser import Action, ParseError, parse, required_namespace, resource, split_args
+from argus.safety.prefilter import tokenize
 
 GEO_TO_3 = Action(verb="scale", kind="deployment", name="geo", namespace="hr", params={"replicas": 3})
 
@@ -99,3 +100,18 @@ def test_rollout_restart_forms(command):
 def test_unsupported_or_malformed_commands_raise(command, reason_part):
     with pytest.raises(ParseError, match=reason_part):
         parse(command)
+
+
+def test_split_args_reads_the_patch_value_and_type():
+    # Used by the Formulation Agent: -p, --patch and --type take a value.
+    tokens = tokenize('kubectl patch deploy/geo -n hr --type merge -p \'{"spec":{"replicas":1}}\'')
+    positional, flags = split_args(tokens)
+    assert resource(positional) == ("deploy", "geo")
+    assert required_namespace(flags) == "hr"
+    assert flags["type"] == "merge"
+    assert flags["patch"] == '{"spec":{"replicas":1}}'
+
+
+def test_patch_is_still_not_a_template_verb():
+    with pytest.raises(ParseError, match="not supported"):
+        parse('kubectl patch deployment geo -n hr -p \'{"spec":{"replicas":1}}\'')
