@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from argus.config import Settings
@@ -195,3 +197,34 @@ def test_restart_solver_timeout_is_blocked(snapshot):
     verdict = check(write("kubectl rollout restart deployment/geo -n hotel-reservation"), snapshot, tiny)
     assert verdict.decision is GateDecision.BLOCK
     assert "timeout" in verdict.reason
+
+
+# Facts from the extractor (saved kubectl output) instead of a snapshot passed in.
+
+KUBECTL_OUTPUT = Path(__file__).resolve().parents[3] / "data" / "fixtures" / "m3" / "kubectl"
+WITH_EXTRACTOR = Settings(solver_timeout_s=30.0, solver_memory_mb=512, m3_kubectl_output=str(KUBECTL_OUTPUT))
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "kubectl scale deployment geo --replicas=2 -n hotel-reservation",
+        "kubectl scale deployment geo --replicas=1 -n hotel-reservation",
+        "kubectl scale deployment search --replicas=2 -n hotel-reservation",
+        "kubectl rollout restart deployment/frontend -n hotel-reservation",
+        "kubectl delete pvc geo-pvc -n hotel-reservation",
+        "kubectl delete pod coredns-7db6d8ff4d-k2l3m -n kube-system",
+    ],
+)
+def test_extractor_and_hand_written_snapshot_agree(snapshot, command):
+    from_snapshot = check(write(command), snapshot, SETTINGS)
+    from_extractor = check(write(command), None, WITH_EXTRACTOR)
+    assert from_extractor.decision is from_snapshot.decision
+    assert from_extractor.violated_invariants == from_snapshot.violated_invariants
+    assert "extractor" in from_extractor.timings_ms
+
+
+def test_extractor_failure_is_blocked():
+    verdict = check(write("kubectl scale deployment geo --replicas=2 -n nowhere"), None, WITH_EXTRACTOR)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.reason.startswith("extractor: LookupError")

@@ -2,7 +2,8 @@
 
 Pipeline:
     0. prefilter.py  syntactic checks, no LLM
-    1. snapshot.py   facts about the target (F1: fixture; F2: extractor.py reads the live cluster)
+    1. extractor.py  cluster facts from read-only kubectl output (saved output now, a live cluster later),
+       snapshot.py   unless the caller passes a snapshot; then the target's facts are looked up
     2. parser.py     command -> structured action (templates; formulation.py adds the LLM path in F2)
        compiler.py   action + facts -> Z3 constraints, solved inside the worker
     3. sandbox.py    runs the worker in a subprocess with a timeout (and CPU/memory limits on Linux)
@@ -16,14 +17,24 @@ The raw result (`z3_result`) and the decision (`decision`) are separate fields o
 Every early exit also BLOCKs, and its `reason` names the stage that stopped the command.
 """
 
+from pathlib import Path
 from typing import Any
 
 from argus.common.timing import stage_timer
 from argus.config import Settings, load_settings
 from argus.contracts import GateDecision, ProposedAction, SafetyVerdict, Z3Result
-from argus.safety import parser, prefilter, sandbox
+from argus.safety import extractor, parser, prefilter, sandbox
 from argus.safety.policy import PROTECTED_NAMESPACES
 from argus.safety.snapshot import facts_for
+
+
+def _fact_source(settings: Settings) -> extractor.Runner | None:
+    """Where the extractor reads cluster facts: saved kubectl output (PP1), or the live dev cluster."""
+    if settings.m3_kubectl_output:
+        return extractor.saved_output(Path(settings.m3_kubectl_output))
+    if settings.kube_context:
+        return extractor.live_kubectl(settings.kube_context)
+    return None
 
 
 def decision_for(z3_result: Z3Result | None) -> GateDecision:
@@ -40,12 +51,13 @@ def check(
 ) -> SafetyVerdict:
     """Check one write command against the cluster facts in `snapshot`.
 
-    `snapshot` is optional so existing callers keep working: without one (until the live
-    extractor exists) every command is blocked.
+    Without a `snapshot`, the extractor reads the facts from the source in `settings`
+    (saved kubectl output or the live cluster). With neither, every command is blocked.
     """
     settings = settings or load_settings()
     timings: dict[str, float] = {}
 
+    # Helper function
     def block(reason: str) -> SafetyVerdict:
         return SafetyVerdict(
             command=action.command, decision=GateDecision.BLOCK, reason=reason, timings_ms=timings
@@ -71,8 +83,21 @@ def check(
             f"deleting namespace {parsed.name!r} deletes everything in it; not modelled in F1 (fail-closed)"
         )
 
+    # No snapshot passed in: the extractor builds one for the command's namespace.
     if snapshot is None:
-        return block("no cluster snapshot: the live Constraint Extractor isn't built yet (fail-closed)")
+        run = _fact_source(settings)
+        if run is None:
+            return block(
+                "no cluster snapshot and no fact source "
+                "(set ARGUS_M3_KUBECTL_OUTPUT or ARGUS_KUBE_CONTEXT) (fail-closed)"
+            )
+        with stage_timer(timings, "extractor"):
+            try:
+                snapshot = extractor.extract(parsed.namespace, run)
+            except Exception as exc:  # any extractor failure blocks; it never approves
+                snapshot, extract_error = None, f"{type(exc).__name__}: {exc}"
+        if snapshot is None:
+            return block(f"extractor: {extract_error} (fail-closed)")
 
     with stage_timer(timings, "facts"):
         facts = facts_for(snapshot, parsed.kind, parsed.namespace, parsed.name)

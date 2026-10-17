@@ -18,6 +18,9 @@ class Settings:
     # 256 MB made every solver call fail with MemoryError on Fedora (PR #14 review), 512 MB works.
     solver_timeout_s: float = 5.0
     solver_memory_mb: int = 512
+    # Folder of saved `kubectl get -o json` output that M3's extractor reads instead of a cluster
+    # (PP1 has no cluster). Empty: M3 reads the live cluster in kube_context, if one is set.
+    m3_kubectl_output: str = ""
 
 
 def load_settings() -> Settings:
@@ -27,4 +30,5 @@ def load_settings() -> Settings:
         kube_context=os.environ.get("ARGUS_KUBE_CONTEXT", Settings.kube_context),
         solver_timeout_s=float(os.environ.get("ARGUS_SOLVER_TIMEOUT_S", Settings.solver_timeout_s)),
         solver_memory_mb=int(os.environ.get("ARGUS_SOLVER_MEMORY_MB", Settings.solver_memory_mb)),
+        m3_kubectl_output=os.environ.get("ARGUS_M3_KUBECTL_OUTPUT", Settings.m3_kubectl_output),
     )
