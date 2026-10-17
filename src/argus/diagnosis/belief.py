@@ -13,6 +13,7 @@ LAMBDA = {
     "strong-refute": 0.1,
 }
 
+
 @dataclass
 class Params:
     pi0: float = 0.15  # starting belief of H0
@@ -21,6 +22,7 @@ class Params:
     eps: float = 0.05  # prune hypotheses below this
     rho: float = 0.30  # if the best real belief is below this, think again
     inherit: float = 0.8  # share of H0's mass given to new hypotheses
+
 
 @dataclass
 class BeliefState:
@@ -40,7 +42,6 @@ class BeliefState:
         self.status = {h: "active" for h in self.belief}
         self._log("init")
 
-
     def active(self) -> list[str]:
         """Real hypotheses still in play (never H0)."""
         return [h for h, s in self.status.items() if s == "active" and h != H0]
@@ -51,8 +52,8 @@ class BeliefState:
             self.belief[h] *= LAMBDA[verdicts.get(h, "neutral")]
         self._normalize()
         self._prune()
-        self._log("update", evidence=evidence_id, verdicts=dict(verdicts))  
-        
+        self._log("update", evidence=evidence_id, verdicts=dict(verdicts))
+
     def decide(self) -> str:
         """'stop', 'continue' or 'rehypothesize'."""
         real = sorted((b for h, b in self.belief.items() if h != H0), reverse=True)
@@ -66,7 +67,7 @@ class BeliefState:
 
     def ranked(self) -> list[tuple[str, float]]:
         """All hypotheses, highest belief first."""
-        return sorted(self.belief.items(), key=lambda kv: -kv[1])   
+        return sorted(self.belief.items(), key=lambda kv: -kv[1])
 
     def add_hypotheses(self, new_ids: list[str]) -> None:
         """New hypotheses inherit part of H0's mass (used after rehypothesize)."""
@@ -91,4 +92,6 @@ class BeliefState:
             self.status[h] = "pruned" if b < self.params.eps else "active"
 
     def _log(self, event: str, **data) -> None:
-        self.history.append({"event": event, "belief": dict(self.belief), "status": dict(self.status), **data})
+        self.history.append(
+            {"event": event, "belief": dict(self.belief), "status": dict(self.status), **data}
+        )
