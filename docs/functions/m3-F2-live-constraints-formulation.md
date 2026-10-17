@@ -1,6 +1,6 @@
 # Function spec: M3 F2 — live constraints and LLM formulation
 
-Status: spec only (planned for Week 3).
+Status: Constraint Extractor built on saved kubectl output (W3-01); Formulation Agent planned (W3-02).
 
 | Field | |
 |---|---|
@@ -12,7 +12,31 @@ Status: spec only (planned for Week 3).
 | Dependencies | F1; the dev cluster (W2-11); a shared read-only cluster client in `src/argus/integrations/`; an LLM provider (plan decision D2); contract v1. |
 | Test evidence | Extractor tests against the dev cluster; translation accuracy on a small hand-checked set (parses, runs, matches dry-run or observed state, verdict matches the label); failure paths (cluster unreachable, LLM timeout or invalid JSON) end in BLOCK. |
 
+## Constraint Extractor (built in W3-01, on saved kubectl output)
+
+The dev cluster is deferred past PP1, so the extractor runs on saved kubectl output for now. The code is the same as for a live cluster.
+
+- **What it reads.** `extractor.extract(namespace, run)` sends four read-only commands: `kubectl get deployments|pdb|pods|pvc -n NS -o json`. From them it builds the snapshot in F1's format.
+- **Where it reads from.** Every command goes through a `run(command)` function, chosen by the settings:
+  - `ARGUS_M3_KUBECTL_OUTPUT`: a folder of saved output, the PP1 setting (`data/fixtures/m3/kubectl/`);
+  - `ARGUS_KUBE_CONTEXT`: live kubectl, always run with that `--context`;
+  - later, SREGym's Kubernetes MCP server, which wraps the kubectl CLI (SREGym CAIS '26, §2.2), so it can take the same commands. Its exact tool interface is unverified until we have a cluster.
+- **Read-only.** The extractor only builds `kubectl get` commands, and both runners refuse anything else.
+- **Where each fact comes from:**
+
+| Fact | Source |
+|---|---|
+| `replicas` | `spec.replicas` |
+| `max_unavailable`, `max_surge` | `spec.strategy.rollingUpdate`. The `Recreate` strategy counts as `100%` / `0`. |
+| `min_replicas` | The one PodDisruptionBudget whose selector picks the deployment's pods: its `minAvailable`, with a percentage rounded up (Kubernetes docs). No PDB, more than one, a PDB with only `maxUnavailable`, or `matchExpressions` → unknown, so M3 blocks (fail-safe). |
+| PVC `in_use` | A pod in the namespace mounts it (`spec.volumes[].persistentVolumeClaim.claimName`). |
+
+- **Gate.** With no snapshot passed in, the gate calls the extractor for the command's namespace and times it as the `extractor` stage. Any extractor error blocks.
+- **Check against F1.** On six commands, the extractor-built facts and the hand-written snapshot give the same decisions (`test_gate.py`).
+
 ## Open points
+- PodDisruptionBudget as the source of the minimum was decided 17/10. A PDB limits voluntary disruptions; reading it as M3's minimum is our interpretation, and we need to be able to defend it.
+- `-A` (all namespaces) can't be extracted one namespace at a time, so it blocks with an extractor error.
 - Direct reads vs reads through M4 (RESEARCH_CONTEXT §5): proposed direct, read-only; needs team agreement and a check of SREGym's rules.
 - The snapshot can change between the check and the write: record the snapshot time (or `resourceVersion`) and list it as a limitation.
 - Model tier: develop on a cheap model; evaluate on a stronger one (NSVIF got worse with a small model).

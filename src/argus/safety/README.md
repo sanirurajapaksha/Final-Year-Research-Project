@@ -22,7 +22,7 @@ python -m argus.safety "kubectl scale deployment geo --replicas=1 -n hotel-reser
 | 0 | `prefilter.py` | Syntactic checks (single kubectl command; no pipes, compound commands, substitution, `$` or `#`, redirects, interactive or stdin forms; no `exec`/`edit`/…). No LLM. | done |
 | 1 | `snapshot.py` | Looks up the target's facts in a snapshot (the format the extractor will produce). | done (fixture) |
 | — | `policy.py` | M3's own policy values: the protected namespaces. | done |
-| 1 | `extractor.py` | Read-only cluster queries → snapshot. No LLM. | F2 |
+| 1 | `extractor.py` | Read-only `kubectl get` output → snapshot (minimum from PodDisruptionBudgets). No LLM. | done (saved output; live untested) |
 | 2a | `parser.py` | Command → structured action (deterministic templates). | `scale`, `delete`, `rollout restart` |
 | 2a | `formulation.py` | LLM → typed JSON action for commands the parser doesn't support. | F2 |
 | 2b | `compiler.py` | Action + facts → Z3 constraints; solves them. Hand-written encodings, no generated code. | I1, I2, I3, I4 |
@@ -44,5 +44,11 @@ python -m argus.safety "kubectl scale deployment geo --replicas=1 -n hotel-reser
 - `ARGUS_SOLVER_MEMORY_MB` (default 512): address-space cap for the worker (Linux only).
 
 If every check is blocked with `worker exited with code 1: MemoryError`, the cap is too small for that machine; raise it. 256 MB was too small on Fedora.
+
+**Cluster facts.** Without a `snapshot` argument, the gate asks the extractor:
+- `ARGUS_M3_KUBECTL_OUTPUT=data/fixtures/m3/kubectl`: saved kubectl output (PP1, no cluster);
+- `ARGUS_KUBE_CONTEXT=<context>`: the live dev cluster, read-only.
+
+With neither set, every write is blocked.
 
 Tests go in `tests/unit/safety/`.
