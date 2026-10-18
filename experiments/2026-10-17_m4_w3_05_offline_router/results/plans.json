@@ -1,0 +1,53 @@
+{
+  "budget-5": {
+    "status": "infeasible",
+    "assignments": [],
+    "total_estimated_cost_units": 0,
+    "total_estimated_quality": 0,
+    "reason": "no complete assignment fits the shared budget"
+  },
+  "budget-9": {
+    "status": "optimal",
+    "assignments": [
+      {
+        "task_id": "diagnose",
+        "model_id": "fixture-frontier-a",
+        "layer": "frontier",
+        "estimated_cost_units": 4,
+        "quality": 85
+      },
+      {
+        "task_id": "parse",
+        "model_id": "fixture-low-b",
+        "layer": "low_cost",
+        "estimated_cost_units": 4,
+        "quality": 90
+      }
+    ],
+    "total_estimated_cost_units": 8,
+    "total_estimated_quality": 175,
+    "reason": ""
+  },
+  "budget-11": {
+    "status": "optimal",
+    "assignments": [
+      {
+        "task_id": "diagnose",
+        "model_id": "fixture-frontier-b",
+        "layer": "frontier",
+        "estimated_cost_units": 7,
+        "quality": 98
+      },
+      {
+        "task_id": "parse",
+        "model_id": "fixture-low-b",
+        "layer": "low_cost",
+        "estimated_cost_units": 4,
+        "quality": 90
+      }
+    ],
+    "total_estimated_cost_units": 11,
+    "total_estimated_quality": 188,
+    "reason": ""
+  }
+}
