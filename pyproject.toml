@@ -10,8 +10,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 # Direct dependencies are pinned to exact versions. Add a dependency only after the team agrees.
 dependencies = [
-    "pydantic==2.14.0",   # typed contracts between modules
-    "z3-solver==5.1.0.0", # M3 SMT solver (decided 01/09/2026)
+    "pydantic==2.14.0",      # typed contracts between modules
+    "python-dotenv==1.2.4",  # reads settings and keys from the git-ignored .env file
+    "z3-solver==5.1.0.0",    # M3 SMT solver (decided 01/09/2026)
 ]
 
 [project.optional-dependencies]
@@ -22,6 +23,7 @@ dev = [
 eval = [
     "scipy==1.18.1",  # M3 evaluation: exact (Clopper-Pearson) confidence intervals
 ]
+demo = ["streamlit==1.65.0"]  # the demo web page (same pin as M4's dashboard branch)
 
 [project.scripts]
 argus = "argus.__main__:main"

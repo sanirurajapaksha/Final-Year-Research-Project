@@ -291,3 +291,29 @@ def test_malformed_max_surge_is_rejected(max_surge):
     facts["max_surge"] = max_surge
     with pytest.raises(EncodingError):
         solve(restart_request(facts))
+
+
+# A patch that changes only metadata (from the Formulation Agent): only I2 applies.
+
+
+def metadata_request(namespace: str) -> dict:
+    action = {
+        "verb": "patch-metadata",
+        "kind": "deployment",
+        "name": "geo",
+        "namespace": namespace,
+        "params": {},
+    }
+    return {"action": action, "facts": {}, "timeout_ms": 2000}
+
+
+def test_metadata_patch_outside_protected_namespaces_is_unsat():
+    result = solve(metadata_request("hr"))
+    assert result["z3_result"] == "unsat"
+    assert result["checked_invariants"] == ["protected_namespace"]
+
+
+def test_metadata_patch_in_kube_system_is_sat():
+    result = solve(metadata_request("kube-system"))
+    assert result["z3_result"] == "sat"
+    assert result["violated_invariants"] == ["protected_namespace"]

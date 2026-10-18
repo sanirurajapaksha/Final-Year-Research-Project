@@ -4,7 +4,8 @@ Pipeline:
     0. prefilter.py  syntactic checks, no LLM
     1. extractor.py  cluster facts from read-only kubectl output (saved output now, a live cluster later),
        snapshot.py   unless the caller passes a snapshot; then the target's facts are looked up
-    2. parser.py     command -> structured action (templates; formulation.py adds the LLM path in F2)
+    2. parser.py     command -> structured action (templates for scale, delete, rollout restart)
+       formulation.py  the LLM path for commands the parser can't read (v0: kubectl patch)
        compiler.py   action + facts -> Z3 constraints, solved inside the worker
     3. sandbox.py    runs the worker in a subprocess with a timeout (and CPU/memory limits on Linux)
 
@@ -23,7 +24,7 @@ from typing import Any
 from argus.common.timing import stage_timer
 from argus.config import Settings, load_settings
 from argus.contracts import GateDecision, ProposedAction, SafetyVerdict, Z3Result
-from argus.safety import extractor, parser, prefilter, sandbox
+from argus.safety import extractor, formulation, parser, prefilter, sandbox
 from argus.safety.policy import PROTECTED_NAMESPACES
 from argus.safety.snapshot import facts_for
 
@@ -72,6 +73,16 @@ def check(
             parsed = parser.parse(action.command)
         except parser.ParseError as exc:
             parsed, parse_error = None, str(exc)
+
+    # Commands the fixed parser can't read (v0: kubectl patch) go to the LLM Formulation Agent.
+    if parsed is None and formulation.handles(action.command):
+        with stage_timer(timings, "formulation"):
+            try:
+                parsed = formulation.formulate(action.command, settings.llm_model, settings.m3_llm_log)
+            except (formulation.FormulationError, parser.ParseError) as exc:
+                formulation_error = str(exc)
+        if parsed is None:
+            return block(f"formulation: {formulation_error} (fail-closed)")
     if parsed is None:
         return block(f"parse: {parse_error}")
 

@@ -10,6 +10,8 @@ import argparse
 import json
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 from argus.contracts import GateDecision, ProposedAction
 from argus.safety.gate import check
 
@@ -31,4 +33,6 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    # Settings and the LLM key from .env in the current folder; variables already set win.
+    load_dotenv(".env")
     raise SystemExit(main())

@@ -24,7 +24,7 @@ python -m argus.safety "kubectl scale deployment geo --replicas=1 -n hotel-reser
 | — | `policy.py` | M3's own policy values: the protected namespaces. | done |
 | 1 | `extractor.py` | Read-only `kubectl get` output → snapshot (minimum from PodDisruptionBudgets). No LLM. | done (saved output; live untested) |
 | 2a | `parser.py` | Command → structured action (deterministic templates). | `scale`, `delete`, `rollout restart` |
-| 2a | `formulation.py` | LLM → typed JSON action for commands the parser doesn't support. | F2 |
+| 2a | `formulation.py` | LLM → typed JSON action for commands the parser doesn't support; cross-checked against the command text. | v0: `patch deployment` |
 | 2b | `compiler.py` | Action + facts → Z3 constraints; solves them. Hand-written encodings, no generated code. | I1, I2, I3, I4 |
 | 3 | `worker.py`, `sandbox.py` | Runs the compiler in a subprocess with a timeout (and CPU/memory caps on Linux). | done |
 | — | `gate.py` | Wires the steps; maps the raw result to APPROVE/BLOCK; records per-stage timings. | done |
@@ -37,7 +37,7 @@ python -m argus.safety "kubectl scale deployment geo --replicas=1 -n hotel-reser
 - The extractor uses read-only verbs only: get, list, watch.
 - Every invariant needs tests with at least one safe and one unsafe case, plus edge cases: 0 or negative replicas, integer overflow, missing resources.
 - Time each stage separately (`common.timing.stage_timer`) and keep raw result files.
-- The memory cap needs Linux: develop and measure M3 in WSL or rely on CI.
+- The CPU and memory caps need Linux or macOS. On Windows only the timeout applies; CI (Linux) tests the caps, and evaluation results record the platform they ran on.
 
 **Sandbox settings** (environment variables, see `.env.example`):
 - `ARGUS_SOLVER_TIMEOUT_S` (default 5): wall-clock limit per check.
