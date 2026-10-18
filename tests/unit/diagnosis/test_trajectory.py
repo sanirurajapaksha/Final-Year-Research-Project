@@ -6,7 +6,9 @@ from argus.diagnosis.loop.controller import Controller
 from argus.diagnosis.loop.trajectory import run_logged
 from argus.diagnosis.ports.fakes import FakeLLM, FakeReadExecutor
 
-CTX = DiagContext(namespace="demo", candidates=[Candidate(service="frontend", weight=1.5), Candidate(service="cart")])
+CTX = DiagContext(
+    namespace="demo", candidates=[Candidate(service="frontend", weight=1.5), Candidate(service="cart")]
+)
 FRONTEND_YAML = "kubectl get deployment frontend -n demo -o yaml"
 CART_YAML = "kubectl get deployment cart -n demo -o yaml"
 REFUTE_ALL = {"H1": "strong-refute", "H2": "strong-refute", "H3": "strong-refute"}
@@ -14,10 +16,21 @@ REFUTE_ALL = {"H1": "strong-refute", "H2": "strong-refute", "H3": "strong-refute
 
 def _example_b(name: str) -> Controller:
     """Example B: the real fault is in cart, but frontend looks guilty first. Fresh fakes per run."""
-    llm = FakeLLM({"score": [
-        {"verdicts": REFUTE_ALL},
-        {"verdicts": {**REFUTE_ALL, "H4": "strong-support", "H5": "strong-refute", "H6": "strong-refute"}},
-    ]})
+    llm = FakeLLM(
+        {
+            "score": [
+                {"verdicts": REFUTE_ALL},
+                {
+                    "verdicts": {
+                        **REFUTE_ALL,
+                        "H4": "strong-support",
+                        "H5": "strong-refute",
+                        "H6": "strong-refute",
+                    }
+                },
+            ]
+        }
+    )
     reads = FakeReadExecutor({FRONTEND_YAML: "env looks fine", CART_YAML: "env: REDIS_ADDR missing"})
     return Controller(preset(name, namespace="demo"), llm, reads)
 

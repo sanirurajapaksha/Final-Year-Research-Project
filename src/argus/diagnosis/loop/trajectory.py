@@ -13,7 +13,9 @@ from argus.diagnosis.core.models import DiagContext
 from argus.diagnosis.loop.controller import Controller, LoopResult
 
 
-def run_logged(controller: Controller, ctx: DiagContext, run: str, path: Path | None = None) -> tuple[LoopResult, dict]:
+def run_logged(
+    controller: Controller, ctx: DiagContext, run: str, path: Path | None = None
+) -> tuple[LoopResult, dict]:
     """Run the loop, time it, optionally append its trajectory to `path`. Returns (result, summary)."""
     start = time.perf_counter()
     result = controller.run(ctx)
@@ -27,19 +29,33 @@ def run_logged(controller: Controller, ctx: DiagContext, run: str, path: Path | 
 
 def to_events(result: LoopResult, controller: Controller, run: str, elapsed_ms: float) -> list[dict]:
     cfg = controller.cfg
-    events = [{
-        "run": run, "event": "start",
-        "config": {"k": cfg.k, "use_h0": cfg.use_h0, "use_eig": cfg.use_eig,
-                   "backtracking": cfg.backtracking, "graph_priors": cfg.graph_priors},
-    }]
+    events = [
+        {
+            "run": run,
+            "event": "start",
+            "config": {
+                "k": cfg.k,
+                "use_h0": cfg.use_h0,
+                "use_eig": cfg.use_eig,
+                "backtracking": cfg.backtracking,
+                "graph_priors": cfg.graph_priors,
+            },
+        }
+    ]
     events += [{"run": run, "event": "hypothesis", **h.model_dump()} for h in result.hypotheses.values()]
     evidence = {e.id: e for e in result.evidence}
     for step in result.belief.history:
         line = {"run": run, "event": step["event"], "belief": _rounded(step["belief"])}
         if "evidence" in step:  # an update: say which read caused it and what the LLM concluded
             e = evidence[step["evidence"]]
-            line.update(evidence=e.id, hyp_id=e.hyp_id, command=e.command, ok=e.ok,
-                        output_chars=len(e.output), verdicts=step["verdicts"])
+            line.update(
+                evidence=e.id,
+                hyp_id=e.hyp_id,
+                command=e.command,
+                ok=e.ok,
+                output_chars=len(e.output),
+                verdicts=step["verdicts"],
+            )
         if "added" in step:
             line["added"] = step["added"]
         events.append(line)
@@ -52,7 +68,8 @@ def summary(result: LoopResult, run: str, elapsed_ms: float) -> dict:
     ranked = [(h, p) for h, p in result.belief.ranked() if h != H0]
     top, p = ranked[0] if ranked else (None, 0.0)
     return {
-        "run": run, "event": "finish",
+        "run": run,
+        "event": "finish",
         "top": top,
         "top_label": result.hypotheses[top].label() if top else None,
         "p": round(p, 4),
