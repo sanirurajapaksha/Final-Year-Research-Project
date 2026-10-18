@@ -38,3 +38,27 @@ def validate(
         if len(kept) == k:
             break
     return kept
+
+
+class RuleGenerator:
+    """Signature table x candidates, highest graph prior first. Deterministic."""
+
+    def draft(
+        self,
+        ctx: DiagContext,
+        k: int,
+        refuted: set[tuple[str, str]] = frozenset(),
+        next_id: int = 1,
+    ) -> list[HypothesisSpec]:
+        specs = [
+            HypothesisSpec(
+                component=c.service,
+                layer=layer,
+                fault=fault,
+                test=test.format(svc=c.service, ns=ctx.namespace),
+                expected=expected,
+            )
+            for c in ctx.candidates
+            for layer, fault, test, expected in SIGNATURES
+        ]
+        return validate(specs, ctx, refuted, k, next_id)
