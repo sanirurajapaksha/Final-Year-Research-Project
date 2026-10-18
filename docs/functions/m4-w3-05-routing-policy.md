@@ -71,6 +71,14 @@ task with no eligible candidate produces an infeasible plan.
 
 ## Proposed optimization
 
+M4's `router.REQUIRED_LAYER` is the task-to-model-layer policy source for this
+offline prototype. M2's `diagnosis/core/config.py` (on the M2 feature branch)
+configures diagnosis loop limits and ablation flags; it defines no model-layer
+mapping and is not imported by the router. There is no duplicated routing config
+to keep in sync. Keep eligibility in M4 while M2 consumes routing decisions. If
+another module needs this mapping, agree on a shared policy interface with the
+affected owners before moving or duplicating it.
+
 For each candidate pair, use a binary variable `x[task, model]`:
 
 - Choose exactly one candidate for every task.

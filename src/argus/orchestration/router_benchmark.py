@@ -38,7 +38,14 @@ def _positive(value: str) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        epilog=(
+            "Exit codes: 0 = completed with optimal or infeasible plans; "
+            "1 = at least one solver_error plan; "
+            "2 = invalid input, non-repeatable plans, or I/O/provenance errors."
+        ),
+    )
     parser.add_argument("request", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--budgets", type=_nonnegative, nargs="+")

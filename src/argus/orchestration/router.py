@@ -16,6 +16,9 @@ Cost = Annotated[StrictInt, Field(ge=0)]
 TaskKind = Literal["telemetry_parsing", "diagnostic_reasoning"]
 Layer = Literal["low_cost", "frontier"]
 Objective = Literal["max_quality", "min_cost"]
+# M4 owns task-to-model-layer eligibility for this offline prototype. M2's
+# diagnosis/core/config.py controls diagnosis loops and ablations, not routing;
+# there is no layer mapping to synchronize or import from that module.
 REQUIRED_LAYER: dict[TaskKind, Layer] = {
     "telemetry_parsing": "low_cost",
     "diagnostic_reasoning": "frontier",
@@ -79,9 +82,12 @@ class RoutingPlan(RoutingModel):
 def route(request: RoutingRequest, *, timeout_ms: int = 5000) -> RoutingPlan:
     """Return a complete optimal assignment or an empty failure plan.
 
-    max_quality: maximize total quality, then minimize cost.
-    min_cost: minimize total cost, then maximize quality.
-    Both use model-ID order per sorted task ID to resolve remaining ties.
+    Objectives are lexicographic: each earlier objective takes precedence over
+    every later objective, rather than contributing to a weighted sum.
+    max_quality: maximize total quality, then minimize total cost.
+    min_cost: minimize total cost, then maximize total quality.
+    Remaining ties choose the lexicographically smallest tuple of model IDs
+    in ascending task-ID order (using Python's string ordering).
     timeout_ms bounds solver checking, not the entire Python call.
     """
     request = RoutingRequest.model_validate(request)

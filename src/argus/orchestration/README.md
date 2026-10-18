@@ -42,6 +42,9 @@ The runner saves exact input, source snapshots/hashes, environment and Git
 provenance, plans, raw timing CSV and per-budget summaries. It refuses existing
 output directories. The first call in the process and per-case warmups are
 separate from repeated measurements. Timing excludes imports and provider calls.
+Run with `--help` for options and exit codes: `0` means completed with optimal
+or infeasible plans, `1` means a solver-error plan was recorded, and `2` means
+invalid input, non-repeatable plans, or an I/O/provenance error.
 The sample's scores and costs are synthetic; this is not API cost or diagnosis
 accuracy evidence. See [the routing policy](../../../docs/functions/m4-w3-05-routing-policy.md).
 
