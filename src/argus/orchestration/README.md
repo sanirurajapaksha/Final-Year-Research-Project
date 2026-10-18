@@ -11,6 +11,12 @@
   Writes call M3 in-process and reach the executor only with an `APPROVE`
   verdict for the exact command. Gate errors, missing verdicts and mismatched
   commands produce a fail-closed `BLOCK`. Reads bypass the gate.
+- `router.route(RoutingRequest) -> RoutingPlan`: W3-05 offline prototype.
+  Solves a binary linear assignment with the existing Z3 dependency. Budget,
+  integer cost units, quality-estimate provenance and objective (`max_quality`
+  or `min_cost`) are required inputs. Basic parsing uses low-cost candidates;
+  diagnostic reasoning uses frontier candidates. Returns a complete optimal
+  assignment or an empty infeasible/solver-error result. It makes no model calls.
 - `pipeline.run_once(TelemetryBatch)`: the end-to-end wiring, framework-agnostic until the team picks CrewAI or LangGraph.
 
 W3-03 hands all blocked verdicts, including their reasons and available
@@ -23,11 +29,27 @@ The handler and pipeline accept optional gate/executor callables for recorded
 integration runs. `tests/integration/test_m4_gate_handoff.py` uses the real M3
 gate with the existing hotel-reservation snapshot and a recording executor stub.
 By default M3 blocks writes without a snapshot and the executor runs no commands.
-Live fact collection, model routing and cluster execution remain separate work.
+Live fact collection, provider calls and cluster execution remain separate work.
+
+Run an offline routing measurement from the checkout with the existing project
+dependencies, using a fresh output directory:
+
+```powershell
+python -m argus.orchestration.router_benchmark data/fixtures/m4/routing_synthetic.json --budgets 5 9 11 --repetitions 20 --output-dir scratch/m4-routing-measurement
+```
+
+The runner saves exact input, source snapshots/hashes, environment and Git
+provenance, plans, raw timing CSV and per-budget summaries. It refuses existing
+output directories. The first call in the process and per-case warmups are
+separate from repeated measurements. Timing excludes imports and provider calls.
+The sample's scores and costs are synthetic; this is not API cost or diagnosis
+accuracy evidence. See [the routing policy](../../../docs/functions/m4-w3-05-routing-policy.md).
 
 **Planned work** (from the proposal and the PP1 plan; yours to confirm or replace):
 - Function 1: further compression must preserve every record, duplicate, field and original record order. Do not drop, merge, deduplicate or select rows. Noise pruning belongs to M1.
-- Function 2: ILP model router and the execution handler, which routes writes to M3 and executes approved ones on the dev cluster.
+- Function 2: connect the offline router to agreed model adapters and incident
+  accounting, then implement the agreed timeout/fallback policy. W3-03 handles
+  gate integration; the default executor remains a labelled stub.
 - PP1 measurements: `original_size` and `compressed_size` are UTF-8 byte counts. Token counting and savings remain pending model/tokenizer selection and agreed measurement rules. Orchestration latency and API cost evaluation remain planned.
 - Contract v1 integration is implemented; W2-08 is not complete. See [F1](../../../docs/functions/m4-F1-telemetry-compression.md) and the [token-counting proposal](../../../docs/functions/m4-token-counting-proposal.md).
 
