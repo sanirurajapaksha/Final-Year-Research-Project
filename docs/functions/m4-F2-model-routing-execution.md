@@ -4,6 +4,18 @@ Status: W1-09 design with W3-03 gate/feedback integration merged and a W3-05
 offline router implemented for review. Provider routing and live execution remain
 planned. See [the prototype routing policy](m4-w3-05-routing-policy.md).
 
+The next local W3-05 slice adds a scripted fake model adapter, explicit retry and
+fallback policy, output validators and sequential estimated-budget reservations.
+See [the fallback runtime](m4-w3-05-fallback-runtime.md). This does not add real
+provider calls, actual billing settlement or a new cluster execution path.
+
+The shared-model entry point is now `function2.run_function2(SemanticContext,
+...) -> Function2Result` for one diagnostic task. It validates the configured
+adapter's output as `DiagnosisResult` before invoking the same W3-03 action and
+feedback handling used by the original pipeline. All shared models are unchanged.
+See [the entry-point contract](m4-w3-05-function2-entry.md) for arguments,
+failures, default stubs and integration evidence.
+
 | Field | Description |
 |---|---|
 | Name | F2: Budget-aware model routing and execution handling |
