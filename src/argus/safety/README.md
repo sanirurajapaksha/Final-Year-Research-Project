@@ -37,7 +37,7 @@ python -m argus.safety "kubectl scale deployment geo --replicas=1 -n hotel-reser
 - The extractor uses read-only verbs only: get, list, watch.
 - Every invariant needs tests with at least one safe and one unsafe case, plus edge cases: 0 or negative replicas, integer overflow, missing resources.
 - Time each stage separately (`common.timing.stage_timer`) and keep raw result files.
-- The memory cap needs Linux: develop and measure M3 in WSL or rely on CI.
+- The CPU and memory caps need Linux or macOS. On Windows only the timeout applies; CI (Linux) tests the caps, and evaluation results record the platform they ran on.
 
 **Sandbox settings** (environment variables, see `.env.example`):
 - `ARGUS_SOLVER_TIMEOUT_S` (default 5): wall-clock limit per check.

@@ -24,6 +24,7 @@ import subprocess
 from dataclasses import replace
 from pathlib import Path
 
+from dotenv import load_dotenv
 from scipy.stats import beta
 
 from argus.config import Settings, load_settings
@@ -235,4 +236,6 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    # Settings and the LLM key from .env in the current folder; variables already set win.
+    load_dotenv(".env")
     raise SystemExit(main())

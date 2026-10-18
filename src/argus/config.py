@@ -1,5 +1,8 @@
 """Runtime settings. Defaults live here; override them with environment variables (see .env.example).
 
+The command-line entry points load the git-ignored .env file into the environment first
+(python-dotenv); this module itself only reads the environment, so tests stay independent of .env.
+
 Secrets such as API keys are deliberately not stored on Settings, so they can't leak into logs.
 The code that needs a key reads it from the environment itself.
 """

@@ -1,0 +1,9 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {"apiVersion": "policy/v1", "kind": "PodDisruptionBudget", "metadata": {"name": "frontend-pdb", "namespace": "default"}, "spec": {"minAvailable": 1, "selector": {"matchLabels": {"app": "frontend"}}}},
+    {"apiVersion": "policy/v1", "kind": "PodDisruptionBudget", "metadata": {"name": "cart-pdb", "namespace": "default"}, "spec": {"minAvailable": 1, "selector": {"matchLabels": {"app": "cart"}}}}
+  ],
+  "metadata": {"resourceVersion": ""}
+}

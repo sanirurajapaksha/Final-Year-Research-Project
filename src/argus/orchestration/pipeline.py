@@ -7,6 +7,7 @@ LangGraph) isn't chosen yet. When it is, this function becomes the graph or crew
 rule stays: read actions run freely, and every write action passes M3 before it executes.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from argus.context.service import build_context
@@ -22,6 +23,9 @@ from argus.diagnosis.service import diagnose
 from argus.orchestration.execution import Executor, Gate, handle_action
 from argus.orchestration.service import compress
 
+# Called like M2's diagnose(): diagnoser(context) and diagnoser(context, feedback=blocked).
+Diagnoser = Callable[..., DiagnosisResult]
+
 
 @dataclass
 class PipelineResult:
@@ -33,16 +37,23 @@ class PipelineResult:
 
 
 def run_once(
-    batch: TelemetryBatch, *, gate: Gate | None = None, executor: Executor | None = None
+    batch: TelemetryBatch,
+    *,
+    gate: Gate | None = None,
+    executor: Executor | None = None,
+    diagnoser: Diagnoser | None = None,
 ) -> PipelineResult:
     """Process one action batch and hand any blocked verdicts back to M2 once.
 
     Retain M2's feedback response for the next round without executing its actions.
     Automatic retries and incident-round limits belong to the later routing work.
+    `diagnoser` replaces M2's diagnose() (e.g. a labelled simulation in the demo); by default
+    M2's own diagnose() runs.
     """
+    diagnoser = diagnoser if diagnoser is not None else diagnose
     compressed = compress(batch)
     context = build_context(compressed)
-    diagnosis = diagnose(context)
+    diagnosis = diagnoser(context)
     result = PipelineResult(context=context, diagnosis=diagnosis)
 
     for action in diagnosis.actions:
@@ -54,6 +65,6 @@ def run_once(
 
     blocked = [verdict for verdict in result.verdicts if verdict.decision is GateDecision.BLOCK]
     if blocked:
-        result.feedback_diagnosis = diagnose(context, feedback=blocked)
+        result.feedback_diagnosis = diagnoser(context, feedback=blocked)
 
     return result
