@@ -1,6 +1,7 @@
 """M4's routed diagnostic entry point using existing shared contract models."""
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from argus.contracts import DiagnosisResult, SemanticContext
@@ -23,7 +24,9 @@ def _diagnosis_from_output(value: object) -> DiagnosisResult:
     # without revalidating its current contents at the model-output boundary.
     if isinstance(value, DiagnosisResult):
         value = value.model_dump(mode="json")
-    return DiagnosisResult.model_validate(value)
+    if isinstance(value, str):
+        return DiagnosisResult.model_validate_json(value, strict=True)
+    return DiagnosisResult.model_validate(value, strict=True)
 
 
 def run_function2(
@@ -36,11 +39,15 @@ def run_function2(
     gate: Gate | None = None,
     executor: Executor | None = None,
     feedback_handler: FeedbackHandler | None = None,
+    prompt_builder: Callable[[SemanticContext], str] | None = None,
 ) -> Function2Result:
     """Route one diagnostic task, validate DiagnosisResult, and handle its actions.
 
-    The adapter receives JSON with output_contract='DiagnosisResult' and the M1
-    context under 'context'. It supplies model output, not shell execution.
+    M2 owns diagnostic prompts and hypothesis construction; M4 owns routing,
+    budget and dispatch. Supply M2's prompt_builder for its reasoning adapter.
+    The default JSON envelope is a fake-adapter placeholder with no diagnostic
+    instructions or schema; it is not a real-provider prompt or an M2 replacement.
+    The adapter supplies model output, not shell execution.
     Caller-owned configuration and metadata stay within M4's local interfaces.
     Failed planning/calls return no pipeline result and perform no action handling.
 
@@ -58,11 +65,17 @@ def run_function2(
         raise ValueError("Function 2 requires exactly one diagnostic_reasoning task")
     if feedback_handler is not None and not callable(feedback_handler):
         raise ValueError("feedback_handler must be callable")
+    if prompt_builder is not None and not callable(prompt_builder):
+        raise ValueError("prompt_builder must be callable")
 
     task_id = request.tasks[0].task_id
-    prompt = json.dumps(
-        {"output_contract": "DiagnosisResult", "context": context.model_dump(mode="json")},
-        ensure_ascii=False,
+    prompt = (
+        prompt_builder(context.model_copy(deep=True))
+        if prompt_builder is not None
+        else json.dumps(
+            {"output_contract": "DiagnosisResult", "context": context.model_dump(mode="json")},
+            ensure_ascii=False,
+        )
     )
     routed = dispatch(
         request,

@@ -17,6 +17,7 @@ result = run_function2(
     budget=budget,
     # Optional: gate=recorded_gate, executor=labelled_stub,
     # feedback_handler=local_m2_feedback_handler,
+    # prompt_builder=m2_prompt_builder,
 )
 ```
 
@@ -42,7 +43,16 @@ budget ledger and attempt metadata stay in local M4 types.
 
 ## Adapter input and output
 
-The adapter receives an ordinary JSON string with two keys:
+M2 owns the diagnostic prompt and hypothesis construction. M4 owns routing,
+budget and dispatch around that reasoning. Supply `prompt_builder(context)` to
+provide M2's prompt; it must return a string and receives an isolated context
+copy. Builder errors or invalid return values fail before any budget is spent.
+This hook does not implement or replace M2's diagnosis algorithm. Agreement on
+the real M2 adapter remains with its owner before integration/merge.
+
+Without a builder, the fake adapter receives a placeholder JSON envelope with
+two keys. It contains no diagnostic instructions or schema and must not be
+treated as a real-provider prompt:
 
 ```json
 {
@@ -53,10 +63,10 @@ The adapter receives an ordinary JSON string with two keys:
 
 All context fields are retained, including Unicode, dependency edges and signal
 timestamps under the shared model's JSON serialization rules. The adapter
-returns an `AdapterReply` whose output is a decoded diagnosis object or a shared
-`DiagnosisResult` instance. Raw JSON response strings must be decoded by the
-adapter first; the entry does not invent a provider parsing format or prompt
-template. Commands within valid diagnoses are never trimmed or rewritten.
+returns an `AdapterReply` whose output is a decoded diagnosis object, raw JSON
+text or a shared `DiagnosisResult` instance. All three are revalidated with
+strict types: string probabilities and string/integer booleans are rejected
+rather than coerced. Commands within valid diagnoses are never trimmed or rewritten.
 
 ## Result and failures
 
@@ -68,15 +78,20 @@ template. Commands within valid diagnoses are never trimmed or rewritten.
   `None` and no gate/executor/feedback call occurs.
 
 `PipelineResult` holds the shared context, diagnosis, verdicts, execution results
-and optional feedback diagnosis. Its action-handling implementation is shared
+and optional feedback diagnosis plus `feedback_error` (empty on success).
+Feedback is retained as a validated copy, isolated from the handler's object.
+Its action-handling implementation is shared
 with the original `pipeline.run_once()`, which otherwise retains its existing
 behavior and signature.
 
 Wrong context types, invalid context contents and unsupported task shapes fail
 before model calls. Initial routing infeasibility, exhausted model attempts and
 invalid model output return no pipeline result. Model validation failures can
-trigger only the configured fallback policy. Feedback validation errors
-propagate and do not trigger another model call or execute revised actions.
+trigger only the configured fallback policy. Feedback handler or validation
+errors populate `pipeline.feedback_error` and leave `feedback_diagnosis=None`.
+The caller still receives dispatch attempts, budget spend, gate verdicts and
+execution records for actions already handled. No revised actions execute and
+feedback errors do not trigger another model call.
 
 ## Default stubs and ownership
 
@@ -92,6 +107,19 @@ provider transports, actual usage settlement and production deadline enforcement
 remain separate work. M2's diagnostic algorithm and shared schemas are unchanged.
 
 ## Evidence
+
+Review fixes validated on 2026-10-18: the full suite passed **453 tests with one
+platform skip and no deselections**, including optional SciPy evaluation tests.
+The skip is the Unix-only memory-cap test. Ruff lint, formatting and
+`git diff --check` passed. Validation used bundled Python with checkout `src`,
+existing `.venv/Lib/site-packages` and ignored `scratch/validation-eval-site` on
+`PYTHONPATH`, disabled pytest caching and a writable scratch temporary directory.
+New regressions cover mixed APPROVE/BLOCK actions followed by invalid feedback
+or handler failure, isolated feedback copies, strict JSON/dictionary output,
+M2 prompt injection and failures before spend, and non-copyable provider errors.
+Codex implemented these review fixes and tests without changing shared models,
+dependencies or other owners' modules. M2 owner agreement on the prompt hook is
+still required before merge.
 
 Final follow-up on 2026-10-18: the previously excluded sandbox timeout test
 passed in a guarded isolated process under the current Python 3.12.14 runtime.

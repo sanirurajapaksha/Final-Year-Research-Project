@@ -72,3 +72,17 @@ def test_wrong_task_candidate_does_not_consume_a_script():
     with pytest.raises(ValueError):
         adapter.call(other, CANDIDATE, "prompt", timeout_ms=1)
     assert adapter.calls == ()
+
+
+def test_script_preserves_errors_that_cannot_be_deepcopied():
+    class ProviderError(Exception):
+        def __init__(self, message, *, status):
+            super().__init__(message)
+            self.status = status
+
+    error = ProviderError("provider failed", status=503)
+    adapter = ScriptedAdapter({("parse", "fake"): [FakeStep(error=error)]})
+    with pytest.raises(ProviderError) as caught:
+        adapter.call(TASK, CANDIDATE, "prompt", timeout_ms=5)
+    assert caught.value is error
+    assert caught.value.status == 503

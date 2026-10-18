@@ -31,6 +31,7 @@ class PipelineResult:
     verdicts: list[SafetyVerdict] = field(default_factory=list)
     executions: list[ExecutionResult] = field(default_factory=list)
     feedback_diagnosis: DiagnosisResult | None = None
+    feedback_error: str = ""
 
 
 class FeedbackHandler(Protocol):
@@ -61,14 +62,15 @@ def process_diagnosis(
     blocked = [verdict for verdict in result.verdicts if verdict.decision is GateDecision.BLOCK]
     if blocked:
         handler = diagnose if feedback_handler is None else feedback_handler
-        revised = handler(context, feedback=blocked)
-        if isinstance(revised, DiagnosisResult):
-            # Shared models are mutable: validate their current contents, not
-            # just their class, while retaining the existing feedback object.
-            DiagnosisResult.model_validate(revised.model_dump(mode="json"))
-            result.feedback_diagnosis = revised
-        else:
+        try:
+            revised = handler(context, feedback=blocked)
+            if isinstance(revised, DiagnosisResult):
+                revised = revised.model_dump(mode="json")
             result.feedback_diagnosis = DiagnosisResult.model_validate(revised)
+        except Exception as error:
+            # Actions have already run. Retain their records even when the
+            # feedback handler fails or returns invalid data.
+            result.feedback_error = f"{type(error).__name__}: {error}"
     return result
 
 

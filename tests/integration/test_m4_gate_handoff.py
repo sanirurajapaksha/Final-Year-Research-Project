@@ -61,7 +61,7 @@ def test_real_gate_handoff_and_feedback(sample_batch, monkeypatch, recorded_gate
         assert diagnose.call_count == 2
         assert diagnose.call_args.kwargs["feedback"] == [verdict]
         assert diagnose.call_args.kwargs["feedback"][0] is verdict
-        assert result.feedback_diagnosis is revised
+        assert result.feedback_diagnosis == revised
 
 
 def test_block_without_counterexample_reaches_m2(sample_batch, monkeypatch):

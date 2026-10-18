@@ -137,7 +137,10 @@ def test_shared_context_to_diagnosis_gate_execution_and_feedback(setup, replicas
         assert [call.args[0].command for call in executor.call_args_list] == [read]
         assert pipeline.verdicts[0].counterexample["after"] == {"replicas": 1}
         feedback.assert_called_once_with(pipeline.context, feedback=[pipeline.verdicts[0]])
-        assert pipeline.feedback_diagnosis is revised
+        assert pipeline.feedback_diagnosis == revised
+        assert pipeline.feedback_diagnosis is not revised
+        revised.actions[0].command = "changed after validation"
+        assert pipeline.feedback_diagnosis.actions[0].command == "revised command must not run"
 
 
 @pytest.mark.parametrize("failure", ["infeasible", "invalid_output", "timeouts"])
@@ -259,11 +262,123 @@ def test_invalid_feedback_result_is_visible_and_never_executes_revised_actions(s
     else:
         feedback = {"hypotheses": [{"root_cause": "invalid", "probability": 2}]}
     handler = Mock(return_value=feedback)
-    with pytest.raises(ValidationError):
-        invoke(setup, adapter, executor=executor, feedback_handler=handler)
+    result = invoke(setup, adapter, executor=executor, feedback_handler=handler)
+    assert result.pipeline.feedback_diagnosis is None
+    assert "ValidationError" in result.pipeline.feedback_error
+    assert result.dispatch.budget.spent_units == 2
     handler.assert_called_once()
     executor.assert_not_called()
     assert setup["budget"].snapshot().spent_units == 2
+
+
+@pytest.mark.parametrize("failure", ["invalid_dict", "invalid_model", "handler_error"])
+def test_feedback_failure_retains_approved_execution_and_dispatch_records(setup, failure):
+    approved = "kubectl scale deployment geo --replicas=2 -n hotel-reservation"
+    blocked = "kubectl scale deployment geo --replicas=1 -n hotel-reservation"
+    adapter = ScriptedAdapter(
+        {
+            ("diagnose", "primary"): [
+                FakeStep(
+                    {
+                        "actions": [
+                            {"command": approved, "is_write": True},
+                            {"command": blocked, "is_write": True},
+                        ]
+                    }
+                )
+            ]
+        }
+    )
+    snapshot = json.loads(
+        (Path(__file__).resolve().parents[2] / "data/fixtures/m3/snapshot_hotel_reservation.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    gate = partial(check, snapshot=snapshot, settings=Settings(solver_timeout_s=30))
+    execution = ExecutionResult(command=approved, executed=True, output="test executor recorded")
+    executor = Mock(return_value=execution)
+    invalid = {"hypotheses": [{"root_cause": "invalid", "probability": 2}]}
+    if failure == "invalid_model":
+        invalid = DiagnosisResult(hypotheses=[{"root_cause": "invalid", "probability": 1}])
+        invalid.hypotheses[0].probability = 2
+    handler = (
+        Mock(side_effect=RuntimeError("feedback failed"))
+        if failure == "handler_error"
+        else Mock(return_value=invalid)
+    )
+
+    result = invoke(setup, adapter, gate=gate, executor=executor, feedback_handler=handler)
+
+    executor.assert_called_once()
+    assert executor.call_args.args[0].command == approved
+    assert result.pipeline.executions == [execution]
+    assert [v.decision for v in result.pipeline.verdicts] == [GateDecision.APPROVE, GateDecision.BLOCK]
+    assert result.pipeline.feedback_diagnosis is None
+    assert result.pipeline.feedback_error
+    assert result.dispatch.tasks[0].status == "succeeded"
+    assert len(result.dispatch.attempts) == 1
+    assert result.dispatch.budget.spent_units == 2
+
+
+@pytest.mark.parametrize("as_json", [False, True])
+def test_json_text_and_decoded_diagnoses_are_accepted(setup, as_json):
+    output = {"hypotheses": [{"root_cause": "fixture", "probability": 0.9}], "actions": []}
+    adapter = ScriptedAdapter(
+        {("diagnose", "primary"): [FakeStep(json.dumps(output) if as_json else output)]}
+    )
+    result = invoke(setup, adapter)
+    assert result.pipeline.diagnosis.hypotheses[0].probability == 0.9
+
+
+@pytest.mark.parametrize("as_json", [False, True])
+@pytest.mark.parametrize(
+    "output",
+    [
+        {"actions": [{"command": "kubectl get pods", "is_write": "no"}]},
+        {"actions": [{"command": "kubectl get pods", "is_write": 0}]},
+        {"hypotheses": [{"root_cause": "fixture", "probability": "0.9"}]},
+    ],
+)
+def test_model_output_rejects_coerced_types_before_action_handling(setup, as_json, output):
+    step = FakeStep(json.dumps(output) if as_json else output)
+    adapter = ScriptedAdapter({("diagnose", "primary"): [step], ("diagnose", "fallback"): [step]})
+    executor = Mock()
+    result = invoke(setup, adapter, executor=executor)
+    assert result.pipeline is None
+    assert all(attempt.status == "invalid_output" for attempt in result.dispatch.attempts)
+    executor.assert_not_called()
+
+
+def test_m2_prompt_builder_owns_prompt_and_cannot_mutate_pipeline_context(setup):
+    before = setup["context"].model_dump(mode="json")
+
+    def build_prompt(context):
+        assert context.model_dump(mode="json") == before
+        context.services.clear()
+        return "M2-owned instructions and schema"
+
+    adapter = ScriptedAdapter({("diagnose", "primary"): [FakeStep({})]})
+    result = invoke(setup, adapter, prompt_builder=build_prompt)
+    assert adapter.calls[0].prompt == "M2-owned instructions and schema"
+    assert result.pipeline.context.model_dump(mode="json") == before
+    assert setup["context"].model_dump(mode="json") == before
+
+
+@pytest.mark.parametrize("builder", ["not callable", lambda context: None])
+def test_invalid_prompt_builder_does_not_spend(setup, builder):
+    adapter = ScriptedAdapter({})
+    with pytest.raises(ValueError):
+        invoke(setup, adapter, prompt_builder=builder)
+    assert adapter.calls == ()
+    assert setup["budget"].snapshot().spent_units == 0
+
+
+def test_prompt_builder_failure_does_not_spend(setup):
+    adapter = ScriptedAdapter({})
+    with pytest.raises(RuntimeError, match="M2 prompt failed"):
+        invoke(setup, adapter, prompt_builder=Mock(side_effect=RuntimeError("M2 prompt failed")))
+    assert adapter.calls == ()
+    assert setup["budget"].snapshot().spent_units == 0
 
 
 def test_default_gate_and_feedback_stub_are_labelled_and_fail_closed(setup):

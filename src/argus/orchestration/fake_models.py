@@ -36,7 +36,10 @@ class ScriptedAdapter:
     """Consume caller-supplied steps per task/model; an exhausted script errors."""
 
     def __init__(self, scripts: Mapping[tuple[str, str], Sequence[FakeStep]]):
-        self._scripts = {key: deque(deepcopy(steps)) for key, steps in scripts.items()}
+        self._scripts = {
+            key: deque(FakeStep(deepcopy(step.output), step.elapsed_ms, step.error) for step in steps)
+            for key, steps in scripts.items()
+        }
         self._calls: list[FakeCall] = []
 
     @property

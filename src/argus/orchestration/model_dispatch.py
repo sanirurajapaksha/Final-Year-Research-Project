@@ -33,6 +33,12 @@ class FallbackRule(RoutingModel):
 
 
 class DispatchPolicy(RoutingModel):
+    """Cap attempts at the initial call plus explicitly listed fallbacks.
+
+    max_attempts_per_task does not create retries. To retry the same model,
+    repeat its ID in the task's fallback rule.
+    """
+
     max_attempts_per_task: Annotated[StrictInt, Field(ge=1)]
     timeout_ms: Annotated[StrictInt, Field(gt=0)]
     retry_on: tuple[FailureKind, ...]

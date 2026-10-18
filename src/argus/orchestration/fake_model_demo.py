@@ -5,7 +5,7 @@ import json
 import sys
 from dataclasses import asdict
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 
 from argus.orchestration.budget import EstimatedBudget
 from argus.orchestration.fake_models import FakeStep, ScriptedAdapter
@@ -97,7 +97,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         result = run_demo(args.budget)
-    except (ValueError, ValidationError) as error:
+    except ValueError as error:
         print(f"fake model demo: {error}", file=sys.stderr)
         return 2
     print(
