@@ -11,7 +11,7 @@ python -m argus.demo                          # prints the run; add --save run.j
 python -m streamlit run src/argus/demo/app.py # the same run as a web page (http://localhost:8501)
 ```
 
-Round 2's fix is a `kubectl patch`, which M3 reads with its LLM Formulation Agent. That needs an OpenRouter key in `ARGUS_LLM_API_KEY`. Without one, M3 blocks the patch (fail-closed), and the page and printout say why. To keep the key out of the repo on WSL, put `export ARGUS_LLM_API_KEY=...` in `~/.argus.env` and run `source ~/.argus.env` first.
+Round 2's fix is a `kubectl patch`, which M3 reads with its LLM Formulation Agent. That needs an OpenRouter key in `ARGUS_LLM_API_KEY`. Copy `.env.example` to `.env` in the repo root and put the key there; `.env` is git-ignored, and both commands read it. Without a key, M3 blocks the patch (fail-closed), and the page and printout say why.
 
 ## What you should see
 

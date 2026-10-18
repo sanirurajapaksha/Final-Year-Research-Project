@@ -4,7 +4,7 @@ Runs the solver worker (worker.py) in a separate process:
 - wall-clock timeout: the process is killed after `timeout_s`;
 - on Linux/macOS also a CPU-time limit and an address-space (memory) cap, set in the child
   before it starts. Windows has no equivalent in the standard library, so there only the
-  timeout applies: develop and evaluate M3 on Linux (WSL) or rely on CI;
+  timeout applies. CI runs on Linux, so the limits are tested there; results record the platform;
 - Z3's own timeout is set a little lower than the process timeout, so Z3 normally answers
   `unknown` before the process is killed.
 

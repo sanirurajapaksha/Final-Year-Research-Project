@@ -9,8 +9,13 @@ prints. M2 is simulated (and says so); nothing is executed on any cluster.
 import os
 
 import streamlit as st
+from dotenv import load_dotenv
 
 from argus.demo.run import demo_settings, run_demo, verdict_line
+
+# Settings and the LLM key from .env in the folder the page is started from (the repo root).
+# Variables already set in the shell win over .env.
+load_dotenv(".env")
 
 
 def show_action(action: dict) -> None:
