@@ -62,6 +62,11 @@ Other metadata (`ownerReferences`, `finalizers`, a `null` metadata, ...) counts 
 - **Privacy.** The whole command, including values in the patch such as env values, is sent to OpenRouter and written to the log. Redaction isn't built, so patches must not carry secrets.
 - **Prompt-tuned, not fine-tuned (D8, decided 17/10).** One fixed prompt plus a JSON schema. Fine-tuning is future work.
 - **Model tier.** A cheap model for development and the demo. The final numbers should use a stronger one (NSVIF got worse with a small model).
+- **First results (W3-10, 19/10, `experiments/2026-10-19_m3_corpus-v0-formulation/`).**
+  - Corpus v0 with `deepseek/deepseek-v4-flash-0731`, 5 runs each, $0.0027 in total.
+  - False blocks fell from 19/25 to 16/25. Detection stayed at 24/25, and 12 of those detections now come from an encoded rule (6 before).
+  - The LLM changed its answer between runs for one command (m12: the wrong `kind` in 2 of 5 runs). The cross-check blocked those runs, fail-closed.
+  - With the LLM, a whole M3 check had a median of 3.6 s on a Windows laptop under memory pressure. The LLM call alone had a median of about 1.0 s.
 
 ## Open points
 - PodDisruptionBudget as the source of the minimum was decided 17/10. A PDB limits voluntary disruptions; reading it as M3's minimum is our interpretation, and we need to be able to defend it.
