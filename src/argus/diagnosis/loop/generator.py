@@ -9,14 +9,27 @@ from argus.diagnosis.core.readonly import is_read_only
 
 # (layer, fault, test template, what the test shows if the fault is real)
 SIGNATURES = [
-    ("app-config", "missing or wrong dependency address env var",
-     "kubectl get deployment {svc} -n {ns} -o yaml", "env var for a callee is absent or points nowhere"),
-    ("k8s-network", "Service selects no ready pods",
-     "kubectl get endpoints {svc} -n {ns}", "no ready addresses"),
-    ("resources", "container OOMKilled or crash-looping",
-     "kubectl describe pods -n {ns} -l app={svc}", "Last State: Terminated (OOMKilled) or CrashLoopBackOff"),
+    (
+        "app-config",
+        "missing or wrong dependency address env var",
+        "kubectl get deployment {svc} -n {ns} -o yaml",
+        "env var for a callee is absent or points nowhere",
+    ),
+    (
+        "k8s-network",
+        "Service selects no ready pods",
+        "kubectl get endpoints {svc} -n {ns}",
+        "no ready addresses",
+    ),
+    (
+        "resources",
+        "container OOMKilled or crash-looping",
+        "kubectl describe pods -n {ns} -l app={svc}",
+        "Last State: Terminated (OOMKilled) or CrashLoopBackOff",
+    ),
 ]
-        
+
+
 def validate(
     specs: list[HypothesisSpec],
     ctx: DiagContext,

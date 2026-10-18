@@ -24,6 +24,7 @@ class DiagContext(BaseModel):
     failing_path: list[str] = []
     notes: str = ""  # M1's notes, e.g. why the context is empty
 
+
 class HypothesisSpec(BaseModel):
     """One rival explanation plus the read that can confirm or refute it."""
 

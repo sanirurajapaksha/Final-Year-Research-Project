@@ -1,7 +1,9 @@
 from argus.diagnosis.core.models import Candidate, DiagContext, HypothesisSpec
 from argus.diagnosis.loop.generator import RuleGenerator, validate
 
-CTX = DiagContext(namespace="demo", candidates=[Candidate(service="frontend", weight=1.5), Candidate(service="cart")])
+CTX = DiagContext(
+    namespace="demo", candidates=[Candidate(service="frontend", weight=1.5), Candidate(service="cart")]
+)
 
 
 def test_rule_generator_gives_k_ids_in_order():
