@@ -8,6 +8,7 @@ rule stays: read actions run freely, and every write action passes M3 before it 
 """
 
 from dataclasses import dataclass, field
+from typing import Protocol
 
 from argus.context.service import build_context
 from argus.contracts import (
@@ -32,6 +33,45 @@ class PipelineResult:
     feedback_diagnosis: DiagnosisResult | None = None
 
 
+class FeedbackHandler(Protocol):
+    def __call__(self, context: SemanticContext, *, feedback: list[SafetyVerdict]) -> DiagnosisResult: ...
+
+
+def process_diagnosis(
+    context: SemanticContext,
+    diagnosis: DiagnosisResult,
+    *,
+    gate: Gate | None = None,
+    executor: Executor | None = None,
+    feedback_handler: FeedbackHandler | None = None,
+) -> PipelineResult:
+    """Apply W3-03 action handling and one feedback handoff to an existing diagnosis.
+
+    Reused by the original pipeline and the routed Function 2 entry point.
+    The default feedback handler is M2's existing stub, which makes no model call.
+    """
+    result = PipelineResult(context=context, diagnosis=diagnosis)
+    for action in diagnosis.actions:
+        handled = handle_action(action, gate=gate, executor=executor)
+        if handled.verdict is not None:
+            result.verdicts.append(handled.verdict)
+        if handled.execution is not None:
+            result.executions.append(handled.execution)
+
+    blocked = [verdict for verdict in result.verdicts if verdict.decision is GateDecision.BLOCK]
+    if blocked:
+        handler = diagnose if feedback_handler is None else feedback_handler
+        revised = handler(context, feedback=blocked)
+        if isinstance(revised, DiagnosisResult):
+            # Shared models are mutable: validate their current contents, not
+            # just their class, while retaining the existing feedback object.
+            DiagnosisResult.model_validate(revised.model_dump(mode="json"))
+            result.feedback_diagnosis = revised
+        else:
+            result.feedback_diagnosis = DiagnosisResult.model_validate(revised)
+    return result
+
+
 def run_once(
     batch: TelemetryBatch, *, gate: Gate | None = None, executor: Executor | None = None
 ) -> PipelineResult:
@@ -43,17 +83,4 @@ def run_once(
     compressed = compress(batch)
     context = build_context(compressed)
     diagnosis = diagnose(context)
-    result = PipelineResult(context=context, diagnosis=diagnosis)
-
-    for action in diagnosis.actions:
-        handled = handle_action(action, gate=gate, executor=executor)
-        if handled.verdict is not None:
-            result.verdicts.append(handled.verdict)
-        if handled.execution is not None:
-            result.executions.append(handled.execution)
-
-    blocked = [verdict for verdict in result.verdicts if verdict.decision is GateDecision.BLOCK]
-    if blocked:
-        result.feedback_diagnosis = diagnose(context, feedback=blocked)
-
-    return result
+    return process_diagnosis(context, diagnosis, gate=gate, executor=executor)
