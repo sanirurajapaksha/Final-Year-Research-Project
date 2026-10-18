@@ -64,6 +64,8 @@ Activate the environment (`source .venv/bin/activate` on Linux/macOS, `.venv\Scr
 pip install -e ".[dev]"
 ```
 
+Copy `.env.example` to `.env` and fill it in (the LLM key, for example). `.env` is git-ignored; the command-line entry points read it, tests don't.
+
 ```bash
 pytest
 ```
