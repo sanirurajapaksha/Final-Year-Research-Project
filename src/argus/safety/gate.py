@@ -29,13 +29,11 @@ from argus.safety.policy import PROTECTED_NAMESPACES
 from argus.safety.snapshot import facts_for
 
 
-def _fact_source(settings: Settings) -> extractor.Runner | None:
+def _fact_source(settings: Settings) -> extractor.Runner:
     """Where the extractor reads cluster facts: saved kubectl output (PP1), or the live dev cluster."""
     if settings.m3_kubectl_output:
         return extractor.saved_output(Path(settings.m3_kubectl_output))
-    if settings.kube_context:
-        return extractor.live_kubectl(settings.kube_context)
-    return None
+    return extractor.live_kubectl(settings.kube_context)
 
 
 def decision_for(z3_result: Z3Result | None) -> GateDecision:
@@ -53,7 +51,8 @@ def check(
     """Check one write command against the cluster facts in `snapshot`.
 
     Without a `snapshot`, the extractor reads the facts from the source in `settings`
-    (saved kubectl output or the live cluster). With neither, every command is blocked.
+    (saved kubectl output or the live cluster). With neither, every deployment or PVC command
+    is blocked; pod and namespace deletes need no facts.
     """
     settings = settings or load_settings()
     timings: dict[str, float] = {}
@@ -94,17 +93,22 @@ def check(
             f"deleting namespace {parsed.name!r} deletes everything in it; not modelled in F1 (fail-closed)"
         )
 
+    # Pods and namespaces: their only F1 rule (protected namespaces) needs no cluster facts,
+    # so they skip the extractor and keep the protected_namespace counterexample.
+    if snapshot is None and parsed.kind not in ("deployment", "pvc"):
+        snapshot = {}
+
     # No snapshot passed in: the extractor builds one for the command's namespace.
     if snapshot is None:
-        run = _fact_source(settings)
-        if run is None:
+        if not settings.m3_kubectl_output and not settings.kube_context:
             return block(
                 "no cluster snapshot and no fact source "
                 "(set ARGUS_M3_KUBECTL_OUTPUT or ARGUS_KUBE_CONTEXT) (fail-closed)"
             )
         with stage_timer(timings, "extractor"):
             try:
-                snapshot = extractor.extract(parsed.namespace, run)
+                # Opening the source is inside the try too: a missing folder or a broken index.json blocks.
+                snapshot = extractor.extract(parsed.namespace, _fact_source(settings))
             except Exception as exc:  # any extractor failure blocks; it never approves
                 snapshot, extract_error = None, f"{type(exc).__name__}: {exc}"
         if snapshot is None:
