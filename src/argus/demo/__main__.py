@@ -9,7 +9,7 @@ import argparse
 import json
 from pathlib import Path
 
-from argus.demo.run import demo_settings, run_demo
+from argus.demo.run import demo_settings, run_demo, verdict_line
 
 
 def print_record(record: dict) -> None:
@@ -31,7 +31,7 @@ def _print_action(action: dict) -> None:
     print(f"  {kind:<5}  {action['command']}")
     verdict = action["verdict"]
     if verdict is not None:
-        print(f"         M3: {verdict['decision']} (z3: {verdict['z3_result']})  {verdict['reason']}")
+        print(f"         {verdict_line(verdict)}  {verdict['reason']}")
         if verdict["counterexample"] is not None:
             print(f"         counterexample: {json.dumps(verdict['counterexample'])}")
         stages = []

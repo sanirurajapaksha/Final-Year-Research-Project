@@ -10,7 +10,7 @@ import os
 
 import streamlit as st
 
-from argus.demo.run import demo_settings, run_demo
+from argus.demo.run import demo_settings, run_demo, verdict_line
 
 
 def show_action(action: dict) -> None:
@@ -25,7 +25,7 @@ def show_action(action: dict) -> None:
     if verdict is None:
         st.caption("A read action: M4 runs it without asking M3.")
     else:
-        text = f"M3: {verdict['decision']} (z3: {verdict['z3_result']}). {verdict['reason']}"
+        text = f"{verdict_line(verdict)}. {verdict['reason']}"
         if verdict["decision"] == "APPROVE":
             st.success(text)
         else:
@@ -53,7 +53,7 @@ with st.sidebar:
         st.success("LLM key is set: M3 can read patch commands.")
     else:
         st.warning("No LLM key: M3 will block patch commands (fail-closed).")
-    st.caption("Cluster facts: saved kubectl output (data/fixtures/m3/kubectl).")
+    st.caption(f"Cluster facts: saved kubectl output ({demo_settings().m3_kubectl_output}).")
     st.caption("M2 is simulated until M2's diagnose() is ready.")
 
 if st.button("Run the incident", type="primary"):

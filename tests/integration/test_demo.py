@@ -4,7 +4,7 @@ import json
 
 from argus.config import Settings
 from argus.demo.__main__ import main
-from argus.demo.run import KUBECTL_OUTPUT, run_demo
+from argus.demo.run import KUBECTL_OUTPUT, run_demo, verdict_line
 from argus.safety import formulation
 
 
@@ -68,3 +68,8 @@ def test_main_prints_and_saves_the_run(monkeypatch, tmp_path, capsys):
     assert "Round 1" in printed
     assert "M3: BLOCK" in printed
     assert json.loads(saved.read_text(encoding="utf-8"))["telemetry_records"] == 27
+
+
+def test_verdict_line_leaves_out_z3_when_the_solver_never_ran():
+    assert verdict_line({"decision": "BLOCK", "z3_result": "sat"}) == "M3: BLOCK (z3: sat)"
+    assert verdict_line({"decision": "BLOCK", "z3_result": None}) == "M3: BLOCK"
