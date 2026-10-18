@@ -28,15 +28,16 @@ The dev cluster is deferred past PP1, so the extractor runs on saved kubectl out
 |---|---|
 | `replicas` | `spec.replicas` |
 | `max_unavailable`, `max_surge` | `spec.strategy.rollingUpdate`. The `Recreate` strategy counts as `100%` / `0`. |
-| `min_replicas` | The one PodDisruptionBudget whose selector picks the deployment's pods: its `minAvailable`, with a percentage rounded up (Kubernetes docs). No PDB, more than one, a PDB with only `maxUnavailable`, or `matchExpressions` → unknown, so M3 blocks (fail-safe). |
+| `min_replicas` | The one PodDisruptionBudget whose selector picks the deployment's pods: its `minAvailable`, with a percentage rounded up (Kubernetes docs). No PDB, more than one, or a PDB with only `maxUnavailable` → unknown, so M3 blocks (fail-safe). A PDB with `matchExpressions` that might pick the pods (its `matchLabels` don't rule them out) also makes the minimum unknown. A PDB without a selector picks no pods; an empty selector `{}` picks all of them (policy/v1). |
 | PVC `in_use` | A pod in the namespace mounts it (`spec.volumes[].persistentVolumeClaim.claimName`). |
 
-- **Gate.** With no snapshot passed in, the gate calls the extractor for the command's namespace and times it as the `extractor` stage. Any extractor error blocks.
-- **Check against F1.** On six commands, the extractor-built facts and the hand-written snapshot give the same decisions (`test_gate.py`).
+- **Namespace check.** The namespace comes from the proposed command, so it must be a valid namespace name (a DNS-1123 label: at most 63 characters, `a-z`, `0-9` and `-`) before it goes into a read command. Otherwise text like `-n 'ns --server=https://other.example'` would add flags to the read. Anything else blocks before any read.
+- **Gate.** With no snapshot passed in, the gate calls the extractor for the command's namespace and times it as the `extractor` stage. Any extractor error blocks, including a missing folder or a broken `index.json`. Pod and namespace deletes skip the extractor: their only rule (protected namespaces) needs no cluster facts.
+- **Check against F1.** On five commands, the extractor-built facts and the hand-written snapshot give the same decisions (`test_gate.py`).
 
 ## Open points
 - PodDisruptionBudget as the source of the minimum was decided 17/10. A PDB limits voluntary disruptions; reading it as M3's minimum is our interpretation, and we need to be able to defend it.
-- `-A` (all namespaces) can't be extracted one namespace at a time, so it blocks with an extractor error.
+- `-A` (all namespaces) can't be extracted one namespace at a time. A PVC delete with `-A` blocks (not a valid namespace name); a pod delete with `-A` needs no facts and is blocked by the protected-namespace rule.
 - Direct reads vs reads through M4 (RESEARCH_CONTEXT §5): proposed direct, read-only; needs team agreement and a check of SREGym's rules.
 - The snapshot can change between the check and the write: record the snapshot time (or `resourceVersion`) and list it as a limitation.
 - Model tier: develop on a cheap model; evaluate on a stronger one (NSVIF got worse with a small model).
