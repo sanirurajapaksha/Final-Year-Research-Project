@@ -1,0 +1,2 @@
+# Preserve the exact generated evidence bytes and recorded SHA-256 hashes.
+experiments/2026-10-17_m4_w3_05_offline_router/results/** -text
