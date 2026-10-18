@@ -64,3 +64,50 @@ def test_read_budget_is_respected():
 def test_empty_context_reports_why():
     result = Controller().run(DiagContext(namespace="demo", notes="M1 ingest failed"))
     assert result.report.stop_reason == "no hypotheses: M1 ingest failed"
+
+
+def test_round_budget_stops_before_drafting_another_round():
+    # max_rehyp alone would allow a second draft round; max_rounds=1 must stop it first.
+    cfg = DiagnosisConfig(max_rounds=1, max_rehyp=5)
+    reads = FakeReadExecutor({FRONTEND_YAML: "ok", CART_YAML: "ok"})
+    result = Controller(config=cfg, reads=reads).run(CTX)
+    assert result.report.stop_reason == "budget" and result.report.low_confidence
+    assert len(result.hypotheses) == 3  # only the first round was drafted
+    assert CART_YAML not in reads.calls  # cart is only drafted in round 2
+
+
+class _SlowReads(FakeReadExecutor):
+    def __init__(self, outputs, clock):
+        super().__init__(outputs)
+        self.clock = clock
+
+    def run(self, command):
+        self.clock["now"] += 2  # the read takes longer than the whole budget
+        return super().run(command)
+
+
+def test_deadline_crossed_by_a_read_skips_scoring(monkeypatch):
+    clock = {"now": 0.0}
+    monkeypatch.setattr("argus.diagnosis.loop.controller.time.monotonic", lambda: clock["now"])
+    llm = FakeLLM({"score": [{"verdicts": {"H1": "strong-support", "H2": "strong-refute"}}]})
+    reads = _SlowReads({FRONTEND_YAML: "env: CART_ADDR missing"}, clock)
+    result = Controller(config=DiagnosisConfig(wall_clock_s=1), llm=llm, reads=reads).run(CTX)
+    assert result.report.stop_reason == "budget" and result.report.low_confidence
+    assert llm.usage["calls"] == 0  # no LLM call started after the budget ran out
+
+
+def test_deadline_crossed_by_scoring_is_not_confident(monkeypatch):
+    clock = {"now": 0.0}
+    monkeypatch.setattr("argus.diagnosis.loop.controller.time.monotonic", lambda: clock["now"])
+
+    class SlowLLM(FakeLLM):
+        def structured(self, task, schema, **variables):
+            clock["now"] += 2  # the score call takes longer than the whole budget
+            return super().structured(task, schema, **variables)
+
+    llm = SlowLLM(
+        {"score": [{"verdicts": {"H1": "strong-support", "H2": "strong-refute", "H3": "strong-refute"}}]}
+    )
+    reads = FakeReadExecutor({FRONTEND_YAML: "env: CART_ADDR missing"})
+    result = Controller(config=DiagnosisConfig(wall_clock_s=1), llm=llm, reads=reads).run(CTX)
+    assert result.report.stop_reason == "budget" and result.report.low_confidence

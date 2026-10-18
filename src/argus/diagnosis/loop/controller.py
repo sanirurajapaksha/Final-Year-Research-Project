@@ -51,6 +51,7 @@ class Controller:
         evidence: list[Evidence] = []
         tested: set[str] = set()
         rehyps = 0
+        rounds = 1  # the first draft is round 1
         deadline = time.monotonic() + cfg.wall_clock_s
 
         def finish(reason: str, low: bool = False) -> LoopResult:
@@ -72,7 +73,11 @@ class Controller:
                 hyp = hyps[untested[0]]
                 tested.add(hyp.id)
                 evidence.append(self._execute(hyp, f"E{len(evidence) + 1}"))  # EXECUTE
+                if time.monotonic() > deadline:  # the read itself ate the budget: skip the LLM call
+                    return finish("budget", low=True)
                 bs.update(self._score(evidence[-1], bs, hyps), evidence[-1].id)  # SCORE + UPDATE
+                if time.monotonic() > deadline:  # a late answer must not report "confident"
+                    return finish("budget", low=True)
                 decision = bs.decide()  # DECIDE
                 if decision == "stop":
                     return finish("confident")
@@ -83,11 +88,14 @@ class Controller:
             # REHYPOTHESIZE: H0 leads, or nothing left to test
             if not cfg.backtracking or rehyps >= cfg.max_rehyp:
                 return finish("out of hypotheses", low=True)
+            if rounds >= cfg.max_rounds:
+                return finish("budget", low=True)
             new = self._draft(ctx, hyps)
             if not new:
                 return finish("out of hypotheses", low=True)
             bs.add_hypotheses([h.id for h in new])
             rehyps += 1
+            rounds += 1
 
     def _draft(self, ctx: DiagContext, hyps: dict[str, HypothesisSpec]) -> list[HypothesisSpec]:
         """New hypotheses that repeat nothing already tried; ids carry on from the last round."""
