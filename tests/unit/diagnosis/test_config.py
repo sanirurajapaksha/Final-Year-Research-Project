@@ -1,6 +1,6 @@
 import pytest
 
-from argus.diagnosis.config import DiagnosisConfig, preset
+from argus.diagnosis.core.config import DiagnosisConfig, preset
 
 
 def test_defaults_are_full_method():

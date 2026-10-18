@@ -1,6 +1,6 @@
 import pytest
 
-from argus.diagnosis.eig import PRED, eig, entropy, rank_tests
+from argus.diagnosis.core.eig import PRED, eig, entropy, rank_tests
 
 BELIEF = {"H1": 0.35, "H2": 0.30, "H3": 0.20, "H0": 0.15}
 

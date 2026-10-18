@@ -1,6 +1,6 @@
 import pytest
 
-from argus.diagnosis.belief import H0, BeliefState
+from argus.diagnosis.core.belief import H0, BeliefState
 
 
 def approx(x):

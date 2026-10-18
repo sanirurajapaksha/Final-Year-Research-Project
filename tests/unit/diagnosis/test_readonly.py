@@ -1,6 +1,6 @@
 import pytest
 
-from argus.diagnosis.readonly import is_read_only
+from argus.diagnosis.core.readonly import is_read_only
 
 ALLOWED = [
     "kubectl get pods -n hotel -o wide",

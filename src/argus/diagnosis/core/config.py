@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field, replace
 
-from argus.diagnosis.belief import Params
+from argus.diagnosis.core.belief import Params
 
 
 @dataclass(frozen=True)

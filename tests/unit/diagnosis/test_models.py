@@ -3,8 +3,8 @@ import typing
 import pytest
 from pydantic import ValidationError
 
-from argus.diagnosis.belief import LAMBDA
-from argus.diagnosis.models import HypothesisSpec, Verdict
+from argus.diagnosis.core.belief import LAMBDA
+from argus.diagnosis.core.models import HypothesisSpec, Verdict
 
 
 def test_verdict_words_match_belief_weights():
