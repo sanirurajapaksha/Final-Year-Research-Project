@@ -31,7 +31,10 @@ from argus.config import Settings, load_settings
 from argus.contracts import GateDecision, ProposedAction
 from argus.safety.gate import check
 
-STAGES = ["prefilter", "parse", "facts", "sandbox_total", "solver"]
+STAGES = ["prefilter", "parse", "formulation", "facts", "sandbox_total", "solver"]
+
+# Verdict reasons that stop the run (see run_corpus).
+MACHINE_FAILURES = ("solver:", "formulation: LLM:", "formulation: can't keep the raw LLM answer")
 
 
 def clopper_pearson(k: int, n: int) -> tuple[float, float]:
@@ -105,10 +108,11 @@ def run_corpus(corpus_dir: Path, runs: int, settings: Settings) -> tuple[list[di
         reasons = []
         for run_number in range(1, runs + 1):
             verdict = check(ProposedAction(command=item["command"], is_write=True), snapshot, settings)
-            # A sandbox or solver failure (crash, timeout, memory) or an LLM outage (no key, network,
-            # timeout) says something about the machine, not about M3's rules, so stop instead of
-            # counting it as a block. An LLM answer that disagrees with the command still counts.
-            if verdict.reason.startswith("solver:") or verdict.reason.startswith("formulation: LLM:"):
+            # A sandbox or solver failure (crash, timeout, memory), an LLM outage (no key, network,
+            # timeout) or a raw LLM answer that can't be logged says something about the machine,
+            # not about M3's rules, so stop instead of counting it as a block. An LLM answer that
+            # disagrees with the command still counts.
+            if verdict.reason.startswith(MACHINE_FAILURES):
                 raise RuntimeError(f"{item['id']}: {verdict.reason}; no results written")
             record = verdict.model_dump(mode="json")
             record["id"] = item["id"]
