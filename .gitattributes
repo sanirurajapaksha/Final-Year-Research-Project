@@ -1,2 +1,5 @@
+.gitattributes text eol=lf
+docs/functions/m4-w3-05-routing-policy.md text eol=lf
+
 # Preserve the exact generated evidence bytes and recorded SHA-256 hashes.
 experiments/2026-10-17_m4_w3_05_offline_router/results/** -text

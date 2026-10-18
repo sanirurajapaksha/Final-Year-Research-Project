@@ -2,7 +2,8 @@
 
 Status: offline prototype implemented for review, 2026-10-17. Implementation
 choices below are not claimed as team-approved policy. W3-03 is merged; W3-05
-remains in progress pending provider, accounting and fallback integration.
+remains in progress pending real providers, usage settlement and production
+deadline/fallback integration. The follow-on fake runtime is described below.
 
 ## First implementation slice
 
@@ -125,6 +126,12 @@ hybrid router's layer policy. Report its quality, cost and budget violations
 separately rather than calling it a feasible hybrid plan.
 
 ## Calls, fallback and incident accounting
+
+The next prototype slice now implements the local adapter protocol, scripted
+fake calls, explicit retry/fallback policy and a sequential estimated-cost
+ledger. See [the fallback runtime](m4-w3-05-fallback-runtime.md). This does not
+establish a real provider policy or actual spend accounting; the original
+offline routing measurements remain unchanged.
 
 The first slice returns decisions only. Model invocation, output validation,
 timeouts and fallback require a separate adapter and explicit policy. Do not
