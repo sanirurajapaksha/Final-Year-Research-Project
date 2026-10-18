@@ -53,7 +53,7 @@ def test_verdict_keeps_the_command_byte_exact(snapshot):
     assert check(write(command), snapshot, SETTINGS).command == command
 
 
-def test_without_a_snapshot_everything_is_blocked():
+def test_without_a_snapshot_or_fact_source_a_deployment_write_is_blocked():
     verdict = check(write("kubectl scale deployment geo --replicas=2 -n hotel-reservation"), None, SETTINGS)
     assert verdict.decision is GateDecision.BLOCK
     assert verdict.z3_result is None
@@ -215,7 +215,6 @@ WITH_EXTRACTOR = Settings(solver_timeout_s=30.0, solver_memory_mb=512, m3_kubect
         "kubectl scale deployment search --replicas=2 -n hotel-reservation",
         "kubectl rollout restart deployment/frontend -n hotel-reservation",
         "kubectl delete pvc geo-pvc -n hotel-reservation",
-        "kubectl delete pod coredns-7db6d8ff4d-k2l3m -n kube-system",
     ],
 )
 def test_extractor_and_hand_written_snapshot_agree(snapshot, command):
@@ -226,10 +225,50 @@ def test_extractor_and_hand_written_snapshot_agree(snapshot, command):
     assert "extractor" in from_extractor.timings_ms
 
 
+@pytest.mark.parametrize("settings", [WITH_EXTRACTOR, SETTINGS])
+@pytest.mark.parametrize(
+    "command",
+    [
+        "kubectl delete pod coredns-7db6d8ff4d-k2l3m -n kube-system",
+        "kubectl delete pod x -n kube-public",  # no saved output for kube-public: not needed
+        "kubectl delete pod geo-1 -A",
+        "kubectl delete ns kube-system",
+    ],
+)
+def test_pod_and_namespace_deletes_skip_the_extractor(command, settings):
+    # Their only rule (protected namespaces) needs no cluster facts, so M2 still gets the counterexample.
+    verdict = check(write(command), None, settings)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.violated_invariants == ["protected_namespace"]
+    assert "extractor" not in verdict.timings_ms
+
+
 def test_extractor_failure_is_blocked():
     verdict = check(write("kubectl scale deployment geo --replicas=2 -n nowhere"), None, WITH_EXTRACTOR)
     assert verdict.decision is GateDecision.BLOCK
     assert verdict.reason.startswith("extractor: LookupError")
+
+
+def test_a_missing_or_broken_fact_source_is_blocked(tmp_path):
+    command = write("kubectl scale deployment geo --replicas=2 -n hotel-reservation")
+    missing = Settings(solver_timeout_s=30.0, m3_kubectl_output=str(tmp_path / "missing"))
+    verdict = check(command, None, missing)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.reason.startswith("extractor: FileNotFoundError")
+    assert "extractor" in verdict.timings_ms
+
+    (tmp_path / "index.json").write_text("{not json", encoding="utf-8")
+    broken = Settings(solver_timeout_s=30.0, m3_kubectl_output=str(tmp_path))
+    verdict = check(command, None, broken)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.reason.startswith("extractor: JSONDecodeError")
+
+
+def test_namespace_text_that_adds_flags_is_blocked_before_any_read():
+    command = "kubectl scale deployment web --replicas=1 -n 'ns --server=https://other.example'"
+    verdict = check(write(command), None, WITH_EXTRACTOR)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.reason.startswith("extractor: ValueError: not a valid namespace name")
 
 
 # Commands the parser can't read (patch) go to the Formulation Agent; the LLM is a fake here.
@@ -299,3 +338,13 @@ def test_patch_blocks_when_the_llm_is_unreachable(snapshot, tmp_path):
     verdict = check(write(command), snapshot, settings)
     assert verdict.decision is GateDecision.BLOCK
     assert verdict.reason.startswith("formulation: LLM:")
+
+
+def test_patch_blocks_when_the_llm_log_cant_be_written(snapshot, monkeypatch, tmp_path):
+    # Review on PR #23: the gate itself must block, not raise.
+    fake_llm(monkeypatch, patch_ir("geo", "set_replicas", 4))
+    settings = Settings(solver_timeout_s=30.0, solver_memory_mb=512, m3_llm_log=str(tmp_path))
+    command = 'kubectl patch deployment geo -n hotel-reservation -p \'{"spec":{"replicas":4}}\''
+    verdict = check(write(command), snapshot, settings)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.reason.startswith("formulation: can't keep the raw LLM answer")
