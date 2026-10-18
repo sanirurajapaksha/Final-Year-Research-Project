@@ -12,8 +12,12 @@ def test_verdict_words_match_belief_weights():
 
 
 def test_hypothesis_label():
-    h = HypothesisSpec(component="user-service", layer="k8s-network", fault="targetPort mismatch",
-                       test="kubectl get svc user-service -o yaml")
+    h = HypothesisSpec(
+        component="user-service",
+        layer="k8s-network",
+        fault="targetPort mismatch",
+        test="kubectl get svc user-service -o yaml",
+    )
     assert h.label() == "user-service [k8s-network] targetPort mismatch"
     assert h.id == ""  # ids come from M2, not the LLM
 
