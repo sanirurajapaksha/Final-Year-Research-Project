@@ -27,7 +27,9 @@ class Diagnoser:
         self.last: LoopResult | None = None
         self.report: DiagnosisReport | None = None  # stop_reason, low_confidence, usage: for experiments
 
-    def diagnose(self, context: SemanticContext, feedback: list[SafetyVerdict] | None = None) -> DiagnosisResult:
+    def diagnose(
+        self, context: SemanticContext, feedback: list[SafetyVerdict] | None = None
+    ) -> DiagnosisResult:
         if feedback and self.last is not None:
             # No write proposer yet (step 7), so a BLOCK can't be revised: keep the diagnosis,
             # propose nothing, and say why. The reads are not run again.
@@ -45,11 +47,15 @@ def to_result(run: LoopResult) -> DiagnosisResult:
     No actions: the reads already ran inside the loop, and writes come with the proposer."""
     if not run.belief.belief:
         reason = run.report.stop_reason
-        return DiagnosisResult(hypotheses=[Hypothesis(root_cause=f"{H0}: no diagnosis ({reason})", probability=1.0)])
+        return DiagnosisResult(
+            hypotheses=[Hypothesis(root_cause=f"{H0}: no diagnosis ({reason})", probability=1.0)]
+        )
     cites = _citations(run)
     return DiagnosisResult(
         hypotheses=[
-            Hypothesis(root_cause=_root_cause(h, run), probability=min(max(p, 0.0), 1.0), evidence=cites.get(h, []))
+            Hypothesis(
+                root_cause=_root_cause(h, run), probability=min(max(p, 0.0), 1.0), evidence=cites.get(h, [])
+            )
             for h, p in run.belief.ranked()
         ]
     )

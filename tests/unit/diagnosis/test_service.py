@@ -1,6 +1,7 @@
+from argus.diagnosis.ports.fakes import FakeLLM, FakeReadExecutor
+
 from argus.contracts import DiagnosisResult, GateDecision, SafetyVerdict, SemanticContext
 from argus.diagnosis.core.config import DiagnosisConfig
-from argus.diagnosis.ports.fakes import FakeLLM, FakeReadExecutor
 from argus.diagnosis.service import Diagnoser, diagnose
 
 CTX = SemanticContext(services=["frontend", "cart"], failing_services=["frontend"])
@@ -41,7 +42,9 @@ def test_example_a_top_hypothesis_cites_its_evidence():
 def test_feedback_reuses_the_session_without_rerunning_reads():
     diagnoser, reads = _example_a()
     first = diagnoser.diagnose(CTX)
-    verdict = SafetyVerdict(command="kubectl delete ns demo", decision=GateDecision.BLOCK, reason="namespace delete")
+    verdict = SafetyVerdict(
+        command="kubectl delete ns demo", decision=GateDecision.BLOCK, reason="namespace delete"
+    )
     again = diagnoser.diagnose(CTX, feedback=[verdict])
     assert again == first and reads.calls == [FRONTEND_YAML]
     assert "mitigation needs a human" in diagnoser.report.report_text
