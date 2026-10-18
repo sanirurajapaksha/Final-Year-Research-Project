@@ -82,8 +82,10 @@ Copy `.env.example` to `.env` for local settings. `.env` is git-ignored.
 
 ## Working together
 
-For a browser view of live M4 compression measurements and readable telemetry tables,
-see [the optional local dashboard](src/argus/orchestration/dashboard/README.md). It also provides a short terminal summary command.
+For live M4 compression measurements, readable telemetry tables, interactive offline
+model routing, and scripted fallback/safety scenarios, see
+[the optional local dashboard](src/argus/orchestration/dashboard/README.md).
+It also provides a short terminal compression summary command.
 See [CONTRIBUTING.md](CONTRIBUTING.md): feature branches and PRs, tests for every function, module ownership, no secrets, and cluster safety.
 
 ## Not decided yet
