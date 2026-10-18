@@ -1,9 +1,10 @@
-"""Demo web page: run one incident through the agent and show what each module did.
+"""The team dashboard's first page: run one incident through the agent and show every step.
 
     python -m streamlit run src/argus/demo/app.py      (from the repo root; needs the 'demo' extra)
 
 Every value on the page comes from run_demo() in run.py, the same run `python -m argus.demo`
 prints. M2 is simulated (and says so); nothing is executed on any cluster.
+The other pages, one per module, are in pages/ and show the same run in more detail.
 """
 
 import os
@@ -11,7 +12,8 @@ import os
 import streamlit as st
 from dotenv import load_dotenv
 
-from argus.demo.run import demo_settings, run_demo, verdict_line
+from argus.demo.run import demo_settings, run_demo
+from argus.demo.views import show_verdict
 
 # Settings and the LLM key from .env in the folder the page is started from (the repo root).
 # Variables already set in the shell win over .env.
@@ -30,18 +32,7 @@ def show_action(action: dict) -> None:
     if verdict is None:
         st.caption("A read action: M4 runs it without asking M3.")
     else:
-        text = f"{verdict_line(verdict)}. {verdict['reason']}"
-        if verdict["decision"] == "APPROVE":
-            st.success(text)
-        else:
-            st.error(text)
-        if verdict["counterexample"] is not None:
-            st.markdown("Counterexample (an end state that breaks the rule):")
-            st.json(verdict["counterexample"])
-        stages = []
-        for stage, ms in verdict["timings_ms"].items():
-            stages.append(f"{stage} {ms:.1f} ms")
-        st.caption("M3 timings: " + ", ".join(stages))
+        show_verdict(verdict)
 
     execution = action["execution"]
     if execution is not None:
@@ -60,6 +51,7 @@ with st.sidebar:
         st.warning("No LLM key: M3 will block patch commands (fail-closed).")
     st.caption(f"Cluster facts: saved kubectl output ({demo_settings().m3_kubectl_output}).")
     st.caption("M2 is simulated until M2's diagnose() is ready.")
+    st.caption("The pages below show each module's part of the same run.")
 
 if st.button("Run the incident", type="primary"):
     with st.spinner("Running the agent..."):
