@@ -2,10 +2,11 @@
 
     python -m argus.safety.evaluate data/corpora/m3_v0 experiments/2026-10-13_m3_corpus-v0 --runs 5
 
-Writes three files into OUT/results/ (raw evidence: never edit them by hand):
+Writes these files into OUT/results/ (raw evidence: never edit them by hand):
     verdicts.json      every check exactly as M3 returned it, one entry per command per run
-    per_command.json   each command's label next to M3's decision
+    per_command.json   each command's label next to M3's decision and reason
     metrics.json       rates with exact 95% confidence intervals, and latency per stage
+    llm_outputs.jsonl  every raw answer of M3's LLM Formulation Agent (patch commands)
 
     detection   = unsafe commands blocked / unsafe commands
     false-block = safe commands blocked / safe commands
@@ -20,11 +21,12 @@ import math
 import platform
 import statistics
 import subprocess
+from dataclasses import replace
 from pathlib import Path
 
 from scipy.stats import beta
 
-from argus.config import load_settings
+from argus.config import Settings, load_settings
 from argus.contracts import GateDecision, ProposedAction
 from argus.safety.gate import check
 
@@ -91,26 +93,28 @@ def latency(verdicts: list[dict]) -> dict:
     return summary
 
 
-def run_corpus(corpus_dir: Path, runs: int) -> tuple[list[dict], list[dict]]:
+def run_corpus(corpus_dir: Path, runs: int, settings: Settings) -> tuple[list[dict], list[dict]]:
     """Check every command `runs` times. Returns (one row per command, every verdict)."""
     commands = json.loads((corpus_dir / "commands.json").read_text(encoding="utf-8"))
-    settings = load_settings()
     rows = []
     verdicts = []
     for item in commands:
         snapshot = json.loads((corpus_dir / item["snapshot"]).read_text(encoding="utf-8"))
         decisions = []
+        reasons = []
         for run_number in range(1, runs + 1):
             verdict = check(ProposedAction(command=item["command"], is_write=True), snapshot, settings)
-            # A sandbox or solver failure (crash, timeout, memory) says something about the machine,
-            # not about M3's rules, so stop instead of counting it as a block.
-            if verdict.reason.startswith("solver:"):
+            # A sandbox or solver failure (crash, timeout, memory) or an LLM outage (no key, network,
+            # timeout) says something about the machine, not about M3's rules, so stop instead of
+            # counting it as a block. An LLM answer that disagrees with the command still counts.
+            if verdict.reason.startswith("solver:") or verdict.reason.startswith("formulation: LLM:"):
                 raise RuntimeError(f"{item['id']}: {verdict.reason}; no results written")
             record = verdict.model_dump(mode="json")
             record["id"] = item["id"]
             record["run"] = run_number
             verdicts.append(record)
             decisions.append(verdict.decision)
+            reasons.append(verdict.reason)
         # M3 is deterministic, so every run must give the same decision.
         for decision in decisions:
             if decision is not decisions[0]:
@@ -125,6 +129,7 @@ def run_corpus(corpus_dir: Path, runs: int) -> tuple[list[dict], list[dict]]:
                 "review": item["review"],
                 "decision": decisions[0].value,
                 "blocked": decisions[0] is GateDecision.BLOCK,
+                "reason": reasons[0],
             }
         )
     return rows, verdicts
@@ -150,6 +155,15 @@ def metrics(rows: list[dict], verdicts: list[dict]) -> dict:
     for row in rows:
         no_gate.append({"label": row["label"], "blocked": False})
 
+    # Patch commands go through the LLM Formulation Agent: did they reach M3's rules?
+    patches = 0
+    checked_by_rules = 0
+    for row in rows:
+        if row["verb"] == "patch":
+            patches += 1
+            if not row["reason"].startswith("formulation:"):
+                checked_by_rules += 1
+
     return {
         "gate_c_m3": {
             "overall": rates_for(rows),
@@ -158,6 +172,11 @@ def metrics(rows: list[dict], verdicts: list[dict]) -> dict:
             "by_category": by_category,
         },
         "gate_a_no_gate": {"overall": rates_for(no_gate)},
+        "formulation": {
+            "patch_commands": patches,
+            "checked_by_rules": checked_by_rules,
+            "blocked_by_formulation": patches - checked_by_rules,
+        },
         "latency_ms": latency(verdicts),
     }
 
@@ -175,7 +194,9 @@ def main(argv: list[str] | None = None) -> int:
     cli.add_argument("--runs", type=int, default=5, help="checks per command (for latency); default 5")
     args = cli.parse_args(argv)
 
-    rows, verdicts = run_corpus(args.corpus, args.runs)
+    # Every raw LLM answer is kept with the results, as evidence.
+    settings = replace(load_settings(), m3_llm_log=str(args.out / "results" / "llm_outputs.jsonl"))
+    rows, verdicts = run_corpus(args.corpus, args.runs, settings)
 
     # Results count only once every label has been reviewed (LABELLING.md).
     labels = "reviewed"
@@ -183,7 +204,6 @@ def main(argv: list[str] | None = None) -> int:
         if row["review"] != "reviewed":
             labels = "PRELIMINARY: draft labels, not for reporting"
 
-    settings = load_settings()
     summary = {
         "corpus": str(args.corpus),
         "commands": len(rows),
@@ -195,6 +215,7 @@ def main(argv: list[str] | None = None) -> int:
         "platform": platform.platform(),
         "solver_timeout_s": settings.solver_timeout_s,
         "solver_memory_mb": settings.solver_memory_mb,
+        "llm_model": settings.llm_model,
     }
     summary.update(metrics(rows, verdicts))
 
