@@ -1,0 +1,57 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "apps/v1", "kind": "Deployment",
+      "metadata": {"name": "frontend", "namespace": "default"},
+      "spec": {
+        "replicas": 1,
+        "selector": {"matchLabels": {"app": "frontend"}},
+        "strategy": {"type": "RollingUpdate", "rollingUpdate": {"maxUnavailable": "25%", "maxSurge": "25%"}},
+        "template": {"metadata": {"labels": {"app": "frontend"}}, "spec": {"containers": [{"name": "frontend", "image": "otel/demo:frontend"}]}}
+      }
+    },
+    {
+      "apiVersion": "apps/v1", "kind": "Deployment",
+      "metadata": {"name": "cart", "namespace": "default"},
+      "spec": {
+        "replicas": 1,
+        "selector": {"matchLabels": {"app": "cart"}},
+        "strategy": {"type": "RollingUpdate", "rollingUpdate": {"maxUnavailable": "25%", "maxSurge": "25%"}},
+        "template": {"metadata": {"labels": {"app": "cart"}}, "spec": {"containers": [{"name": "cart", "image": "otel/demo:cart"}]}}
+      }
+    },
+    {
+      "apiVersion": "apps/v1", "kind": "Deployment",
+      "metadata": {"name": "checkout", "namespace": "default"},
+      "spec": {
+        "replicas": 1,
+        "selector": {"matchLabels": {"app": "checkout"}},
+        "strategy": {"type": "RollingUpdate", "rollingUpdate": {"maxUnavailable": "25%", "maxSurge": "25%"}},
+        "template": {"metadata": {"labels": {"app": "checkout"}}, "spec": {"containers": [{"name": "checkout", "image": "otel/demo:checkout"}]}}
+      }
+    },
+    {
+      "apiVersion": "apps/v1", "kind": "Deployment",
+      "metadata": {"name": "product-catalog", "namespace": "default"},
+      "spec": {
+        "replicas": 1,
+        "selector": {"matchLabels": {"app": "product-catalog"}},
+        "strategy": {"type": "RollingUpdate", "rollingUpdate": {"maxUnavailable": "25%", "maxSurge": "25%"}},
+        "template": {"metadata": {"labels": {"app": "product-catalog"}}, "spec": {"containers": [{"name": "product-catalog", "image": "otel/demo:product-catalog"}]}}
+      }
+    },
+    {
+      "apiVersion": "apps/v1", "kind": "Deployment",
+      "metadata": {"name": "redis-cart", "namespace": "default"},
+      "spec": {
+        "replicas": 1,
+        "selector": {"matchLabels": {"app": "redis-cart"}},
+        "strategy": {"type": "RollingUpdate", "rollingUpdate": {"maxUnavailable": "25%", "maxSurge": "25%"}},
+        "template": {"metadata": {"labels": {"app": "redis-cart"}}, "spec": {"containers": [{"name": "redis", "image": "redis:7"}]}}
+      }
+    }
+  ],
+  "metadata": {"resourceVersion": ""}
+}

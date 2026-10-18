@@ -22,6 +22,7 @@ dev = [
 eval = [
     "scipy==1.18.1",  # M3 evaluation: exact (Clopper-Pearson) confidence intervals
 ]
+demo = ["streamlit==1.65.0"]  # the demo web page (same pin as M4's dashboard branch)
 
 [project.scripts]
 argus = "argus.__main__:main"
