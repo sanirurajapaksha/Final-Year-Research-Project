@@ -226,6 +226,11 @@ def main(argv: list[str] | None = None) -> int:
     cli.add_argument("--runs", type=int, default=5, help="checks per command (for latency); default 5")
     args = cli.parse_args(argv)
 
+    # Read the code version before the run: the run itself writes the LLM log into OUT/results/,
+    # which would otherwise show up as an uncommitted change.
+    commit = _git("rev-parse", "HEAD")
+    uncommitted_changes = _git("status", "--porcelain") != ""
+
     # Every raw LLM answer is kept with the results, as evidence.
     settings = replace(load_settings(), m3_llm_log=str(args.out / "results" / "llm_outputs.jsonl"))
     rows, verdicts = run_corpus(args.corpus, args.runs, settings)
@@ -241,8 +246,8 @@ def main(argv: list[str] | None = None) -> int:
         "commands": len(rows),
         "runs_per_command": args.runs,
         "labels": labels,
-        "commit": _git("rev-parse", "HEAD"),
-        "uncommitted_changes": _git("status", "--porcelain") != "",
+        "commit": commit,
+        "uncommitted_changes": uncommitted_changes,
         "python": platform.python_version(),
         "platform": platform.platform(),
         "solver_timeout_s": settings.solver_timeout_s,
