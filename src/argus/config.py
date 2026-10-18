@@ -21,6 +21,8 @@ class Settings:
     # Folder of saved `kubectl get -o json` output that M3's extractor reads instead of a cluster
     # (PP1 has no cluster). Empty: M3 reads the live cluster in kube_context, if one is set.
     m3_kubectl_output: str = ""
+    # JSONL file where M3's Formulation Agent appends every raw LLM answer (scratch/ is git-ignored).
+    m3_llm_log: str = "scratch/m3_llm_outputs.jsonl"
 
 
 def load_settings() -> Settings:
@@ -31,4 +33,5 @@ def load_settings() -> Settings:
         solver_timeout_s=float(os.environ.get("ARGUS_SOLVER_TIMEOUT_S", Settings.solver_timeout_s)),
         solver_memory_mb=int(os.environ.get("ARGUS_SOLVER_MEMORY_MB", Settings.solver_memory_mb)),
         m3_kubectl_output=os.environ.get("ARGUS_M3_KUBECTL_OUTPUT", Settings.m3_kubectl_output),
+        m3_llm_log=os.environ.get("ARGUS_M3_LLM_LOG", Settings.m3_llm_log),
     )

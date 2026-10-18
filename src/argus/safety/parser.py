@@ -75,10 +75,10 @@ def parse(command: str) -> Action:
 
 
 def _parse_scale(tokens: list[str]) -> Action:
-    positional, flags = _split_args(tokens)
+    positional, flags = split_args(tokens)
     _reject_unknown_flags(flags, {"replicas", "namespace"})
 
-    kind, name = _resource(positional)
+    kind, name = resource(positional)
     if kind not in DEPLOYMENT_ALIASES:
         raise ParseError(f"only deployments are supported in the F1 slice, got {kind!r}")
 
@@ -92,17 +92,17 @@ def _parse_scale(tokens: list[str]) -> Action:
         verb="scale",
         kind="deployment",
         name=name,
-        namespace=_namespace(flags),
+        namespace=required_namespace(flags),
         params={"replicas": int(replicas_text)},
     )
 
 
 def _parse_delete(tokens: list[str]) -> Action:
-    positional, flags = _split_args(tokens)
+    positional, flags = split_args(tokens)
     # Selectors (-l) and --all are rejected here as unknown flags: they can't be checked one object at a time.
     _reject_unknown_flags(flags, {"namespace", "all_namespaces"})
 
-    typed_kind, name = _resource(positional)
+    typed_kind, name = resource(positional)
     if typed_kind not in DELETE_KINDS:
         raise ParseError(f"only pods, PVCs and namespaces can be deleted in the F1 slice, got {typed_kind!r}")
     kind = DELETE_KINDS[typed_kind]
@@ -113,7 +113,7 @@ def _parse_delete(tokens: list[str]) -> Action:
     elif "all_namespaces" in flags:
         namespace = ALL_NAMESPACES
     else:
-        namespace = _namespace(flags)
+        namespace = required_namespace(flags)
 
     params = {}
     if "all_namespaces" in flags:
@@ -123,21 +123,21 @@ def _parse_delete(tokens: list[str]) -> Action:
 
 
 def _parse_rollout(tokens: list[str]) -> Action:
-    positional, flags = _split_args(tokens)
+    positional, flags = split_args(tokens)
     _reject_unknown_flags(flags, {"namespace"})
 
     # The first word after 'rollout' is the rollout action (restart, undo, pause, ...).
     if not positional or positional[0] != "restart":
         raise ParseError("only 'kubectl rollout restart' is supported in the F1 slice")
 
-    kind, name = _resource(positional[1:])
+    kind, name = resource(positional[1:])
     if kind not in DEPLOYMENT_ALIASES:
         raise ParseError(f"only deployments are supported in the F1 slice, got {kind!r}")
 
-    return Action(verb="rollout-restart", kind="deployment", name=name, namespace=_namespace(flags))
+    return Action(verb="rollout-restart", kind="deployment", name=name, namespace=required_namespace(flags))
 
 
-def _split_args(tokens: list[str]) -> tuple[list[str], dict[str, str]]:
+def split_args(tokens: list[str]) -> tuple[list[str], dict[str, str]]:
     """Split the tokens after 'kubectl' into positional words (after the subcommand) and flags."""
     positional: list[str] = []
     flags: dict[str, str] = {}
@@ -166,7 +166,7 @@ def _reject_unknown_flags(flags: dict[str, str], allowed: set[str]) -> None:
         raise ParseError(f"unsupported flag(s) for the F1 slice: {', '.join(sorted(unknown))}")
 
 
-def _namespace(flags: dict[str, str]) -> str:
+def required_namespace(flags: dict[str, str]) -> str:
     if "namespace" not in flags:
         raise ParseError("missing -n: kubectl would use its current context's namespace, which M3 can't see")
     namespace = flags["namespace"]
@@ -183,7 +183,7 @@ def _read_flag(tokens: list[str], i: int) -> tuple[str, str, int]:
         return _canonical(raw), value, i + 1
     raw = token
     name = _canonical(raw)
-    if name in ("replicas", "namespace"):
+    if name in ("replicas", "namespace", "patch", "type"):
         if i + 1 >= len(tokens):
             raise ParseError(f"flag {raw} needs a value")
         return name, tokens[i + 1], i + 2
@@ -197,10 +197,12 @@ def _canonical(raw_flag: str) -> str:
         return "replicas"
     if raw_flag in ("-A", "--all-namespaces"):
         return "all_namespaces"
+    if raw_flag in ("-p", "--patch"):
+        return "patch"
     return raw_flag.lstrip("-")
 
 
-def _resource(positional: list[str]) -> tuple[str, str]:
+def resource(positional: list[str]) -> tuple[str, str]:
     """Return (kind as typed, in lower case, name) from 'KIND NAME' or 'KIND/NAME'."""
     if len(positional) == 1 and "/" in positional[0]:
         kind, name = positional[0].split("/", 1)
