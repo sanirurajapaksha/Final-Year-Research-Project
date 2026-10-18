@@ -1,0 +1,32 @@
+[
+  {
+    "budget_units": 5,
+    "task_count": 2,
+    "candidate_count": 6,
+    "status": "infeasible",
+    "measured_repetitions": 20,
+    "median_ms": 12.252400000000002,
+    "min_ms": 7.8255,
+    "max_ms": 24.9747
+  },
+  {
+    "budget_units": 9,
+    "task_count": 2,
+    "candidate_count": 6,
+    "status": "optimal",
+    "measured_repetitions": 20,
+    "median_ms": 16.89745,
+    "min_ms": 14.5305,
+    "max_ms": 30.2919
+  },
+  {
+    "budget_units": 11,
+    "task_count": 2,
+    "candidate_count": 6,
+    "status": "optimal",
+    "measured_repetitions": 20,
+    "median_ms": 16.157899999999998,
+    "min_ms": 12.8738,
+    "max_ms": 28.4901
+  }
+]
