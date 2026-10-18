@@ -16,5 +16,25 @@ SIGNATURES = [
     ("resources", "container OOMKilled or crash-looping",
      "kubectl describe pods -n {ns} -l app={svc}", "Last State: Terminated (OOMKilled) or CrashLoopBackOff"),
 ]
-
-
+        
+def validate(
+    specs: list[HypothesisSpec],
+    ctx: DiagContext,
+    refuted: set[tuple[str, str]],
+    k: int,
+    next_id: int = 1,
+) -> list[HypothesisSpec]:
+    """Keep at most k specs that name a known candidate, use a read-only test and aren't refuted.
+    Ids are assigned here, never taken from the source."""
+    known = {c.service for c in ctx.candidates}
+    seen = set(refuted)
+    kept: list[HypothesisSpec] = []
+    for spec in specs:
+        key = (spec.component, spec.fault)
+        if spec.component not in known or not is_read_only(spec.test) or key in seen:
+            continue
+        seen.add(key)
+        kept.append(spec.model_copy(update={"id": f"H{next_id + len(kept)}"}))
+        if len(kept) == k:
+            break
+    return kept
