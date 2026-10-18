@@ -1,0 +1,12 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {"apiVersion": "policy/v1", "kind": "PodDisruptionBudget", "metadata": {"name": "geo-pdb", "namespace": "hotel-reservation"}, "spec": {"minAvailable": 2, "selector": {"matchLabels": {"app": "geo"}}}},
+    {"apiVersion": "policy/v1", "kind": "PodDisruptionBudget", "metadata": {"name": "frontend-pdb", "namespace": "hotel-reservation"}, "spec": {"minAvailable": 1, "selector": {"matchLabels": {"app": "frontend"}}}},
+    {"apiVersion": "policy/v1", "kind": "PodDisruptionBudget", "metadata": {"name": "rate-pdb", "namespace": "hotel-reservation"}, "spec": {"minAvailable": 2, "selector": {"matchLabels": {"app": "rate"}}}},
+    {"apiVersion": "policy/v1", "kind": "PodDisruptionBudget", "metadata": {"name": "profile-pdb", "namespace": "hotel-reservation"}, "spec": {"minAvailable": "50%", "selector": {"matchLabels": {"app": "profile"}}}},
+    {"apiVersion": "policy/v1", "kind": "PodDisruptionBudget", "metadata": {"name": "mongodb-geo-pdb", "namespace": "hotel-reservation"}, "spec": {"minAvailable": 1, "selector": {"matchLabels": {"app": "mongodb-geo"}}}}
+  ],
+  "metadata": {"resourceVersion": ""}
+}
