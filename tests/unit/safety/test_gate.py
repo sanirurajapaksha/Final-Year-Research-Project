@@ -338,3 +338,13 @@ def test_patch_blocks_when_the_llm_is_unreachable(snapshot, tmp_path):
     verdict = check(write(command), snapshot, settings)
     assert verdict.decision is GateDecision.BLOCK
     assert verdict.reason.startswith("formulation: LLM:")
+
+
+def test_patch_blocks_when_the_llm_log_cant_be_written(snapshot, monkeypatch, tmp_path):
+    # Review on PR #23: the gate itself must block, not raise.
+    fake_llm(monkeypatch, patch_ir("geo", "set_replicas", 4))
+    settings = Settings(solver_timeout_s=30.0, solver_memory_mb=512, m3_llm_log=str(tmp_path))
+    command = 'kubectl patch deployment geo -n hotel-reservation -p \'{"spec":{"replicas":4}}\''
+    verdict = check(write(command), snapshot, settings)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.reason.startswith("formulation: can't keep the raw LLM answer")

@@ -8,16 +8,18 @@ command changes as a small typed object (the IR). M3 then:
     3. maps it to an action the existing rules already check:
            set_replicas         -> scale            (I1, I2)
            pod_template_change  -> rollout-restart  (I3, I2): a template change starts a rolling update
-           metadata_only        -> patch-metadata   (I2 only)
+           metadata_only        -> patch-metadata   (I2 only): labels and annotations only
            unknown              -> BLOCK
 
 LLM output is data: it is validated, never executed. Every raw output is appended to a JSONL log.
+Privacy: the whole command, including any values in the patch (env values, for example), is sent
+to OpenRouter and written to that log. Don't put secrets in patches; redaction isn't built.
 """
 
 import json
 import time
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ValidationError
 
@@ -106,7 +108,11 @@ def formulate(command: str, model: str, log_path: str) -> parser.Action:
         raw, usage = complete_json(PROMPT + command, SCHEMA, model, LLM_TIMEOUT_S)
     except LLMError as exc:
         raise FormulationError(f"LLM: {exc}") from exc
-    _log(log_path, command, model, raw, usage)
+    # Every raw answer is evidence: if it can't be kept, the command is blocked.
+    try:
+        _log(log_path, command, model, raw, usage)
+    except OSError as exc:
+        raise FormulationError(f"can't keep the raw LLM answer: {type(exc).__name__}: {exc}") from exc
 
     try:
         ir = PatchIR.model_validate_json(raw)
@@ -133,13 +139,15 @@ def formulate(command: str, model: str, log_path: str) -> parser.Action:
 def _effect_of(patch_text: str) -> tuple[str, int | None]:
     """Which one part of a deployment a patch touches, read from the JSON itself."""
     try:
-        patch = json.loads(patch_text)
-    except json.JSONDecodeError:
+        patch = json.loads(patch_text, object_pairs_hook=_reject_duplicate_keys)
+    except ValueError:  # not JSON, or a key given twice
         return "unknown", None
     if not isinstance(patch, dict):
         return "unknown", None
     if set(patch) == {"metadata"}:
-        return "metadata_only", None
+        if _labels_or_annotations_only(patch["metadata"]):
+            return "metadata_only", None
+        return "unknown", None
     spec = patch.get("spec")
     if set(patch) == {"spec"} and isinstance(spec, dict):
         if set(spec) == {"replicas"} and type(spec["replicas"]) is int:
@@ -147,6 +155,37 @@ def _effect_of(patch_text: str) -> tuple[str, int | None]:
         if set(spec) == {"template"}:
             return "pod_template_change", None
     return "unknown", None
+
+
+def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """Build one JSON object, refusing a key given twice.
+
+    Python keeps the last value of a repeated key; kubectl or the API server might not, so M3
+    could check a different value from the one that runs.
+    """
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate key {key!r}")
+        result[key] = value
+    return result
+
+
+def _labels_or_annotations_only(metadata: Any) -> bool:
+    """True if a metadata patch sets only labels and/or annotations, each a map of strings.
+
+    Other metadata changes what Kubernetes does with the object (ownerReferences can make it
+    garbage-collected, finalizers can block its deletion), which M3 doesn't model.
+    """
+    if not isinstance(metadata, dict) or not metadata:
+        return False
+    for key, value in metadata.items():
+        if key not in ("labels", "annotations") or not isinstance(value, dict):
+            return False
+        for text in value.values():
+            if not isinstance(text, str):
+                return False
+    return True
 
 
 def _log(log_path: str, command: str, model: str, raw: str, usage: dict) -> None:
