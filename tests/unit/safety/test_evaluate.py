@@ -177,7 +177,12 @@ def test_patch_commands_are_counted_and_raw_answers_kept(tmp_path, monkeypatch):
 
     results = tmp_path / "out" / "results"
     summary = json.loads((results / "metrics.json").read_text(encoding="utf-8"))
-    assert summary["formulation"] == {"patch_commands": 1, "checked_by_rules": 1, "blocked_by_formulation": 0}
+    assert summary["formulation"] == {
+        "patch_commands": 1,
+        "checked_by_rules": 1,
+        "blocked_by_formulation": 0,
+        "decision_changed_between_runs": [],
+    }
     assert summary["latency_ms"]["formulation"]["n"] == 1
     rows = json.loads((results / "per_command.json").read_text(encoding="utf-8"))
     assert rows[0]["reason"].startswith("counterexample found")
