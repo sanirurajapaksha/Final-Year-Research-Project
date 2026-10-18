@@ -216,3 +216,71 @@ def test_a_raw_llm_answer_that_cant_be_logged_stops_the_run(tmp_path, monkeypatc
     with pytest.raises(RuntimeError, match="p1: formulation: can't keep the raw LLM answer"):
         main([str(corpus), str(tmp_path / "out"), "--runs", "1"])
     assert not (tmp_path / "out" / "results" / "metrics.json").exists()
+
+
+def one_command_corpus(tmp_path, command: dict) -> Path:
+    corpus = tmp_path / "corpus"
+    corpus.mkdir()
+    shutil.copy(M3_FIXTURES / "snapshot_hotel_reservation.json", corpus / "snapshot.json")
+    (corpus / "commands.json").write_text(json.dumps([command]), encoding="utf-8")
+    return corpus
+
+
+SAFE_PATCH = {
+    "id": "p2",
+    "group": "main",
+    "verb": "patch",
+    "command": 'kubectl patch deployment geo -n hotel-reservation -p \'{"spec":{"replicas":3}}\'',
+    "snapshot": "snapshot.json",
+    "label": "safe",
+    "category": None,
+    "reason": "meets the minimum",
+    "labelled_by": "test",
+    "review": "reviewed",
+}
+
+
+def test_an_llm_answer_that_changes_between_runs_is_kept_and_reported(tmp_path, monkeypatch):
+    # Decided 19/10: with the LLM in the path, every run is kept and the command is marked as flipped.
+    from argus.safety import formulation
+
+    kinds = ["other", "deployment"]  # run 1 reads the wrong kind (blocked), run 2 the right one
+
+    def flipping_llm(prompt, schema, model, timeout_s):
+        answer = {"kind": kinds.pop(0), "name": "geo", "namespace": "hotel-reservation"}
+        answer["effect"] = "set_replicas"
+        answer["replicas"] = 3
+        return json.dumps(answer), {}
+
+    monkeypatch.setattr(formulation, "complete_json", flipping_llm)
+    monkeypatch.setenv("ARGUS_SOLVER_TIMEOUT_S", "30")
+    corpus = one_command_corpus(tmp_path, SAFE_PATCH)
+
+    assert main([str(corpus), str(tmp_path / "out"), "--runs", "2"]) == 0
+
+    results = tmp_path / "out" / "results"
+    rows = json.loads((results / "per_command.json").read_text(encoding="utf-8"))
+    assert rows[0]["decisions"] == ["BLOCK", "APPROVE"]
+    assert rows[0]["flipped"] is True
+    summary = json.loads((results / "metrics.json").read_text(encoding="utf-8"))
+    assert summary["formulation"]["decision_changed_between_runs"] == ["p2"]
+    every_run = summary["gate_c_m3"]["overall_every_run"]["false_block"]
+    assert (every_run["k"], every_run["n"]) == (1, 2)
+
+
+def test_a_change_between_runs_without_the_llm_stops_the_run(tmp_path, monkeypatch):
+    # Without the LLM, M3 is deterministic: a changed decision means something is wrong.
+    from argus.contracts import GateDecision, SafetyVerdict
+    from argus.safety import evaluate
+
+    answers = [GateDecision.APPROVE, GateDecision.BLOCK]
+
+    def changing_check(action, snapshot, settings):
+        return SafetyVerdict(command=action.command, decision=answers.pop(0), reason="test", timings_ms={})
+
+    monkeypatch.setattr(evaluate, "check", changing_check)
+    scale = dict(SAFE_PATCH, id="s1", verb="scale", command="kubectl scale deployment geo --replicas=3 -n x")
+    corpus = one_command_corpus(tmp_path, scale)
+
+    with pytest.raises(RuntimeError, match="s1: the decision changed between runs"):
+        main([str(corpus), str(tmp_path / "out"), "--runs", "2"])

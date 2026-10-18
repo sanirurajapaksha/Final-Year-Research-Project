@@ -4,7 +4,8 @@
 
 Writes these files into OUT/results/ (raw evidence: never edit them by hand):
     verdicts.json      every check exactly as M3 returned it, one entry per command per run
-    per_command.json   each command's label next to M3's decision and reason
+    per_command.json   each command's label next to M3's decision and reason (run 1), and every
+                       run's decision (an LLM answer can change between runs)
     metrics.json       rates with exact 95% confidence intervals, and latency per stage
     llm_outputs.jsonl  every raw answer of M3's LLM Formulation Agent (patch commands)
 
@@ -106,6 +107,7 @@ def run_corpus(corpus_dir: Path, runs: int, settings: Settings) -> tuple[list[di
         snapshot = json.loads((corpus_dir / item["snapshot"]).read_text(encoding="utf-8"))
         decisions = []
         reasons = []
+        used_llm = False
         for run_number in range(1, runs + 1):
             verdict = check(ProposedAction(command=item["command"], is_write=True), snapshot, settings)
             # A sandbox or solver failure (crash, timeout, memory), an LLM outage (no key, network,
@@ -120,10 +122,20 @@ def run_corpus(corpus_dir: Path, runs: int, settings: Settings) -> tuple[list[di
             verdicts.append(record)
             decisions.append(verdict.decision)
             reasons.append(verdict.reason)
-        # M3 is deterministic, so every run must give the same decision.
+            if "formulation" in verdict.timings_ms:
+                used_llm = True
+        # Without the LLM, M3 is deterministic, so every run must give the same decision.
+        # With the LLM (patch commands) the answer can change between runs (decided 19/10):
+        # every run is kept, and the command is marked as flipped.
+        flipped = False
         for decision in decisions:
             if decision is not decisions[0]:
-                raise RuntimeError(f"{item['id']}: the decision changed between runs: {decisions}")
+                flipped = True
+        if flipped and not used_llm:
+            raise RuntimeError(f"{item['id']}: the decision changed between runs: {decisions}")
+        run_decisions = []
+        for decision in decisions:
+            run_decisions.append(decision.value)
         rows.append(
             {
                 "id": item["id"],
@@ -135,6 +147,9 @@ def run_corpus(corpus_dir: Path, runs: int, settings: Settings) -> tuple[list[di
                 "decision": decisions[0].value,
                 "blocked": decisions[0] is GateDecision.BLOCK,
                 "reason": reasons[0],
+                "decisions": run_decisions,
+                "reasons": reasons,
+                "flipped": flipped,
             }
         )
     return rows, verdicts
@@ -169,9 +184,20 @@ def metrics(rows: list[dict], verdicts: list[dict]) -> dict:
             if not row["reason"].startswith("formulation:"):
                 checked_by_rules += 1
 
+    # Every run counted on its own (the LLM can answer differently each run), and the commands
+    # whose decision changed between runs.
+    every_run = []
+    flipped_ids = []
+    for row in rows:
+        for decision in row["decisions"]:
+            every_run.append({"label": row["label"], "blocked": decision == GateDecision.BLOCK.value})
+        if row["flipped"]:
+            flipped_ids.append(row["id"])
+
     return {
         "gate_c_m3": {
             "overall": rates_for(rows),
+            "overall_every_run": rates_for(every_run),
             "by_verb": by_verb,
             "by_group": by_group,
             "by_category": by_category,
@@ -181,6 +207,7 @@ def metrics(rows: list[dict], verdicts: list[dict]) -> dict:
             "patch_commands": patches,
             "checked_by_rules": checked_by_rules,
             "blocked_by_formulation": patches - checked_by_rules,
+            "decision_changed_between_runs": flipped_ids,
         },
         "latency_ms": latency(verdicts),
     }
