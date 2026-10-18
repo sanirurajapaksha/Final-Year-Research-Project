@@ -3,7 +3,8 @@
 import json
 
 from argus.config import Settings
-from argus.demo.__main__ import KUBECTL_OUTPUT, main, run_demo
+from argus.demo.__main__ import main
+from argus.demo.run import KUBECTL_OUTPUT, run_demo
 from argus.safety import formulation
 
 
