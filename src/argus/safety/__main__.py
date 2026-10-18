@@ -18,7 +18,9 @@ def main(argv: list[str] | None = None) -> int:
     cli = argparse.ArgumentParser(prog="python -m argus.safety", description="Check one write command.")
     cli.add_argument("command", help="the exact kubectl command, quoted")
     cli.add_argument(
-        "--snapshot", type=Path, help="cluster snapshot JSON (without one, every command is blocked)"
+        "--snapshot",
+        type=Path,
+        help="cluster snapshot JSON (default: facts from ARGUS_M3_KUBECTL_OUTPUT or ARGUS_KUBE_CONTEXT)",
     )
     args = cli.parse_args(argv)
 
