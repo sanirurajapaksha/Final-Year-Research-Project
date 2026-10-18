@@ -97,11 +97,58 @@ def pdb(spec: dict) -> dict:
             ],
             None,  # two PDBs select the same pods: ambiguous
         ),
+        ([pdb({"minAvailable": 1})], None),  # no selector picks no pods (policy/v1), so no PDB applies
+        ([pdb({"minAvailable": 1, "selector": None})], None),  # a null selector, the same
+        (
+            [
+                pdb({"minAvailable": 1, "selector": {"matchLabels": {"app": "web"}}}),
+                pdb(
+                    {
+                        "minAvailable": 3,
+                        "selector": {
+                            "matchExpressions": [{"key": "app", "operator": "In", "values": ["web"]}]
+                        },
+                    }
+                ),
+            ],
+            None,  # the second PDB can't be read but may select web: unknown, not 1 (review on PR #22)
+        ),
+        (
+            [
+                pdb({"minAvailable": 1, "selector": {"matchLabels": {"app": "web"}}}),
+                pdb(
+                    {
+                        "minAvailable": 3,
+                        "selector": {
+                            "matchLabels": {"app": "db"},
+                            "matchExpressions": [{"key": "app", "operator": "Exists"}],
+                        },
+                    }
+                ),
+            ],
+            1,  # the second PDB's matchLabels already rule web out
+        ),
     ],
 )
 def test_minimum_from_pdb(pdbs, minimum):
     snapshot = extract("ns", fake_cluster([web(3)], pdbs))
     assert snapshot["deployments"][0]["min_replicas"] == minimum
+
+
+@pytest.mark.parametrize(
+    "namespace", ["ns --server=https://other.example", "*", "Hotel", "-ns", "a" * 64, ""]
+)
+def test_namespace_text_cannot_add_flags_to_a_read(monkeypatch, namespace):
+    calls = []
+
+    def fake_run(argv, **kwargs):
+        calls.append(argv)
+        return subprocess.CompletedProcess(argv, 0, stdout='{"items": []}', stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    with pytest.raises(ValueError, match="not a valid namespace name"):
+        extract(namespace, live_kubectl("kind-argus-dev"))
+    assert calls == []  # nothing was sent to kubectl
 
 
 def test_read_only_check():

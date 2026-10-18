@@ -14,11 +14,13 @@ Each command goes through a `run(command) -> output` function, so the same code 
     SREGym's Kubernetes MCP server (later)     it wraps the kubectl CLI, so it takes the same commands
 
 Read-only: the extractor only ever builds `kubectl get` commands, and every runner refuses
-anything else.
+anything else. The namespace comes from the proposed command, so it must be a valid namespace
+name before it goes into a read command (otherwise text like `ns --server=...` adds flags).
 """
 
 import json
 import math
+import re
 import shlex
 import subprocess
 import time
@@ -28,9 +30,16 @@ from typing import Any
 
 Runner = Callable[[str], str]
 
+# A namespace name is a DNS-1123 label: at most 63 characters, lowercase letters, digits and '-',
+# starting and ending with a letter or digit (Kubernetes docs, "Object Names and IDs").
+NAMESPACE_NAME = re.compile(r"[a-z0-9]([-a-z0-9]*[a-z0-9])?")
+
 
 def extract(namespace: str, run: Runner) -> dict[str, Any]:
     """Return M3's snapshot of one namespace."""
+    if len(namespace) > 63 or NAMESPACE_NAME.fullmatch(namespace) is None:
+        raise ValueError(f"not a valid namespace name: {namespace!r}")
+
     deployments = _get(run, "deployments", namespace)
     pdbs = _get(run, "pdb", namespace)
     pods = _get(run, "pods", namespace)
@@ -86,13 +95,17 @@ def _deployment_facts(item: dict[str, Any], pdbs: list[dict[str, Any]]) -> dict[
 def _min_available(deployment: dict[str, Any], pdbs: list[dict[str, Any]]) -> int | None:
     """Minimum replicas, from the one PodDisruptionBudget that selects this deployment's pods.
 
-    None (unknown, so M3 fails safe) when no PDB or more than one selects them, or when the PDB
-    sets maxUnavailable instead of minAvailable (F1 reads only minAvailable).
+    None (unknown, so M3 fails safe) when no PDB or more than one selects them, when a PDB's
+    selector can't be read (it might select them), or when the PDB sets maxUnavailable instead
+    of minAvailable (F1 reads only minAvailable).
     """
     labels = deployment["spec"]["template"]["metadata"].get("labels", {})
     matching = []
     for pdb in pdbs:
-        if _selects(pdb["spec"].get("selector", {}), labels):
+        selects = _selects(pdb["spec"].get("selector"), labels)
+        if selects is None:
+            return None
+        if selects:
             matching.append(pdb)
     if len(matching) != 1:
         return None
@@ -107,13 +120,20 @@ def _min_available(deployment: dict[str, Any], pdbs: list[dict[str, Any]]) -> in
     return value
 
 
-def _selects(selector: dict[str, Any], labels: dict[str, str]) -> bool:
-    """True if a PDB selector picks pods with these labels. An empty selector picks every pod."""
-    if selector.get("matchExpressions"):
-        return False  # not read in F1: the PDB is ignored, so the minimum may stay unknown (fail-safe)
+def _selects(selector: dict[str, Any] | None, labels: dict[str, str]) -> bool | None:
+    """True if a PDB selector picks pods with these labels, False if not, None if M3 can't tell.
+
+    policy/v1: a missing (null) selector picks no pods; an empty one ({}) picks every pod
+    (Kubernetes API reference, PodDisruptionBudgetSpec).
+    """
+    if selector is None:
+        return False
+    # matchLabels and matchExpressions must both hold, so one wrong label is enough for False.
     for key, value in selector.get("matchLabels", {}).items():
         if labels.get(key) != value:
             return False
+    if selector.get("matchExpressions"):
+        return None  # not read in F1: the PDB might select these pods, so the minimum is unknown
     return True
 
 

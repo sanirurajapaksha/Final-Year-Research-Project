@@ -2,6 +2,7 @@
 
 import io
 import json
+import time
 import urllib.request
 
 import pytest
@@ -46,6 +47,22 @@ def test_sends_the_model_and_schema_and_returns_the_text(monkeypatch):
     assert sent["auth"] == "Bearer test-key"
     assert sent["body"]["model"] == "some/model"
     assert sent["body"]["response_format"]["json_schema"]["schema"] == SCHEMA
+    assert sent["body"]["max_tokens"] == 300
+
+
+def test_the_timeout_limits_the_whole_call(monkeypatch):
+    # A server that answers slowly, step by step, never trips urlopen's per-step timeout.
+    monkeypatch.setenv("ARGUS_LLM_API_KEY", "test-key")
+
+    def slow(request, timeout):
+        time.sleep(2)
+        return FakeResponse(b'{"choices": [{"message": {"content": "{}"}}]}')
+
+    monkeypatch.setattr(urllib.request, "urlopen", slow)
+    started = time.monotonic()
+    with pytest.raises(LLMError, match="no answer within 0.2 s"):
+        complete_json("p", SCHEMA, "some/model", timeout_s=0.2)
+    assert time.monotonic() - started < 1.5
 
 
 def test_missing_key_or_model_is_an_error(monkeypatch):

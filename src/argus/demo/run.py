@@ -38,6 +38,14 @@ def demo_settings() -> Settings:
     return settings
 
 
+def verdict_line(verdict: dict) -> str:
+    """'M3: BLOCK (z3: sat)'; without the z3 part when M3 decided before the solver ran."""
+    text = f"M3: {verdict['decision']}"
+    if verdict["z3_result"] is not None:
+        text += f" (z3: {verdict['z3_result']})"
+    return text
+
+
 def run_demo(settings: Settings) -> dict:
     """Run the incident and return everything that happened, as plain JSON-ready data."""
     batch = TelemetryBatch.model_validate_json(TELEMETRY.read_text(encoding="utf-8"))

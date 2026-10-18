@@ -7,6 +7,8 @@ One place to call language models, so cost, tokens and latency are measured the 
 - Key: `ARGUS_LLM_API_KEY`, from the environment. The command-line entry points and the demo page first load the git-ignored `.env` in the repo root (python-dotenv), so the key can live there; see `.env.example`.
 - Model: `ARGUS_LLM_MODEL`. Development and demo use `google/gemini-2.5-flash-lite`. Stronger models are for the final evaluation only.
 - No new dependency: it uses Python's `urllib`.
+- Limits: `timeout_s` (default 20 s) covers the whole call; `max_tokens` (default 300) caps the answer. Reasoning models may need a higher cap.
+- Privacy: the prompt is sent to OpenRouter as it is. Don't put secrets in prompts; nothing is redacted.
 
 Still open for the team:
 - Which models to use for the final evaluation.
