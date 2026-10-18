@@ -25,4 +25,6 @@ Round 2's fix is a `kubectl patch`, which M3 reads with its LLM Formulation Agen
 | `run.py` | `run_demo()`: runs the incident and returns everything as plain data |
 | `scenario.py` | The simulated M2 (labelled). It will be replaced by M2's `diagnose()` |
 | `__main__.py` | Prints the run |
-| `app.py` | The Streamlit page |
+| `app.py` | The team dashboard's first page: the whole run |
+| `pages/` | One page per module, each owned by its member: `1_M1_context.py` (Minidu), `2_M2_diagnosis.py` (Kaveen), `3_M3_safety.py` (Saniru), `4_M4_orchestration.py` (Nethmi). M1, M2 and M4 are placeholders for now; they show their module's part of the same run |
+| `views.py` | Display helpers the pages share (no module logic) |
