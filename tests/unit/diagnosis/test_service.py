@@ -1,7 +1,6 @@
-from argus.diagnosis.ports.fakes import FakeLLM, FakeReadExecutor
-
 from argus.contracts import DiagnosisResult, GateDecision, SafetyVerdict, SemanticContext
 from argus.diagnosis.core.config import DiagnosisConfig
+from argus.diagnosis.ports.fakes import FakeLLM, FakeReadExecutor
 from argus.diagnosis.service import Diagnoser, diagnose
 
 CTX = SemanticContext(services=["frontend", "cart"], failing_services=["frontend"])
