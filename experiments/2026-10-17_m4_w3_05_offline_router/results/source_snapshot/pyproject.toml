@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "argus"
+version = "0.1.0"
+description = "Argus: an enhanced autonomous AI SRE agent (J26-SE-305, SLIIT IT4010 research project)"
+readme = "README.md"
+requires-python = ">=3.12"
+# Direct dependencies are pinned to exact versions. Add a dependency only after the team agrees.
+dependencies = [
+    "pydantic==2.14.0",   # typed contracts between modules
+    "z3-solver==5.1.0.0", # M3 SMT solver (decided 01/09/2026)
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+    "ruff==0.17.0",
+]
+eval = [
+    "scipy==1.18.1",  # M3 evaluation: exact (Clopper-Pearson) confidence intervals
+]
+
+[project.scripts]
+argus = "argus.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]

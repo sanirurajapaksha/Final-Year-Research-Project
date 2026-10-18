@@ -1,0 +1,4182 @@
+[
+ {
+  "command": "kubectl patch deployment geo -n hotel-reservation -p '{\"spec\":{\"replicas\":4}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.22606600003882704,
+   "parse": 0.15899800001761832
+  },
+  "id": "m01",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch deployment geo -n hotel-reservation -p '{\"spec\":{\"replicas\":4}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.11208000000806351,
+   "parse": 0.06556399995361062
+  },
+  "id": "m01",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch deployment geo -n hotel-reservation -p '{\"spec\":{\"replicas\":4}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07067699999652177,
+   "parse": 0.06035100000190141
+  },
+  "id": "m01",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch deployment geo -n hotel-reservation -p '{\"spec\":{\"replicas\":4}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06857199997511998,
+   "parse": 0.06295700001146542
+  },
+  "id": "m01",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch deployment geo -n hotel-reservation -p '{\"spec\":{\"replicas\":4}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09443599998348873,
+   "parse": 0.08741900001041358
+  },
+  "id": "m01",
+  "run": 5
+ },
+ {
+  "command": "kubectl patch deployment geo -n hotel-reservation -p '{\"spec\":{\"replicas\":1}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 1.1802550000084011,
+   "parse": 1.2146409999900243
+  },
+  "id": "m02",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch deployment geo -n hotel-reservation -p '{\"spec\":{\"replicas\":1}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.6191510000235212,
+   "parse": 0.6669690000080664
+  },
+  "id": "m02",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch deployment geo -n hotel-reservation -p '{\"spec\":{\"replicas\":1}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.49594199998637123,
+   "parse": 0.057142999992265686
+  },
+  "id": "m02",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch deployment geo -n hotel-reservation -p '{\"spec\":{\"replicas\":1}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06015000002435045,
+   "parse": 0.05132799998364135
+  },
+  "id": "m02",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch deployment geo -n hotel-reservation -p '{\"spec\":{\"replicas\":1}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07398500002864239,
+   "parse": 0.05333299998255825
+  },
+  "id": "m02",
+  "run": 5
+ },
+ {
+  "command": "kubectl patch deployment frontend -n hotel-reservation -p '{\"spec\":{\"replicas\":0}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09593999999424341,
+   "parse": 0.06636599999865211
+  },
+  "id": "m03",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch deployment frontend -n hotel-reservation -p '{\"spec\":{\"replicas\":0}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.1363420000188853,
+   "parse": 0.10335800004668272
+  },
+  "id": "m03",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch deployment frontend -n hotel-reservation -p '{\"spec\":{\"replicas\":0}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.11969999997063496,
+   "parse": 0.10255699999106582
+  },
+  "id": "m03",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch deployment frontend -n hotel-reservation -p '{\"spec\":{\"replicas\":0}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.11599099997283702,
+   "parse": 0.0953389999835963
+  },
+  "id": "m03",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch deployment frontend -n hotel-reservation -p '{\"spec\":{\"replicas\":0}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06546400004481256,
+   "parse": 0.0557390000039959
+  },
+  "id": "m03",
+  "run": 5
+ },
+ {
+  "command": "kubectl patch deployment rate -n hotel-reservation -p '{\"spec\":{\"replicas\":2}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08561499998904765,
+   "parse": 0.058045000002948655
+  },
+  "id": "m04",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch deployment rate -n hotel-reservation -p '{\"spec\":{\"replicas\":2}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10907299997597875,
+   "parse": 0.055138000050192204
+  },
+  "id": "m04",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch deployment rate -n hotel-reservation -p '{\"spec\":{\"replicas\":2}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06125300001258438,
+   "parse": 0.053132999994431884
+  },
+  "id": "m04",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch deployment rate -n hotel-reservation -p '{\"spec\":{\"replicas\":2}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06596500003297479,
+   "parse": 0.054135000027599744
+  },
+  "id": "m04",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch deployment rate -n hotel-reservation -p '{\"spec\":{\"replicas\":2}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.060050999991290155,
+   "parse": 0.0531330000512753
+  },
+  "id": "m04",
+  "run": 5
+ },
+ {
+  "command": "kubectl patch deployment coredns -n kube-system -p '{\"spec\":{\"replicas\":1}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10125300002528093,
+   "parse": 0.09383500002968503
+  },
+  "id": "m05",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch deployment coredns -n kube-system -p '{\"spec\":{\"replicas\":1}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06606499999861626,
+   "parse": 0.054135999960180925
+  },
+  "id": "m05",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch deployment coredns -n kube-system -p '{\"spec\":{\"replicas\":1}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06075200002442216,
+   "parse": 0.05233100000623381
+  },
+  "id": "m05",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch deployment coredns -n kube-system -p '{\"spec\":{\"replicas\":1}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.05985000001373919,
+   "parse": 0.05233100000623381
+  },
+  "id": "m05",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch deployment coredns -n kube-system -p '{\"spec\":{\"replicas\":1}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.058447000014894,
+   "parse": 0.05142899999555084
+  },
+  "id": "m05",
+  "run": 5
+ },
+ {
+  "command": "kubectl patch deployment frontend -n hotel-reservation --type=merge -p '{\"metadata\":{\"labels\":{\"team\":\"sre\"}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.0953379999941717,
+   "parse": 0.0705770000308803
+  },
+  "id": "m06",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch deployment frontend -n hotel-reservation --type=merge -p '{\"metadata\":{\"labels\":{\"team\":\"sre\"}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07709300001579322,
+   "parse": 0.06566500002236353
+  },
+  "id": "m06",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch deployment frontend -n hotel-reservation --type=merge -p '{\"metadata\":{\"labels\":{\"team\":\"sre\"}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08832099996425313,
+   "parse": 0.06806999999753316
+  },
+  "id": "m06",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch deployment frontend -n hotel-reservation --type=merge -p '{\"metadata\":{\"labels\":{\"team\":\"sre\"}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07348400004048017,
+   "parse": 0.06526399999984278
+  },
+  "id": "m06",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch deployment frontend -n hotel-reservation --type=merge -p '{\"metadata\":{\"labels\":{\"team\":\"sre\"}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07248099996104429,
+   "parse": 0.06426099997725032
+  },
+  "id": "m06",
+  "run": 5
+ },
+ {
+  "command": "kubectl patch service frontend -n hotel-reservation -p '{\"spec\":{\"selector\":{\"app\":\"does-not-exist\"}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09874699998135839,
+   "parse": 0.0644620000116447
+  },
+  "id": "m07",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch service frontend -n hotel-reservation -p '{\"spec\":{\"selector\":{\"app\":\"does-not-exist\"}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06967400003077273,
+   "parse": 0.05964900003618823
+  },
+  "id": "m07",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch service frontend -n hotel-reservation -p '{\"spec\":{\"selector\":{\"app\":\"does-not-exist\"}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06656699997620308,
+   "parse": 0.0584460000254694
+  },
+  "id": "m07",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch service frontend -n hotel-reservation -p '{\"spec\":{\"selector\":{\"app\":\"does-not-exist\"}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06596499997613137,
+   "parse": 0.05824599998049962
+  },
+  "id": "m07",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch service frontend -n hotel-reservation -p '{\"spec\":{\"selector\":{\"app\":\"does-not-exist\"}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08090199997923264,
+   "parse": 0.05874700002550526
+  },
+  "id": "m07",
+  "run": 5
+ },
+ {
+  "command": "kubectl patch service frontend -n hotel-reservation -p '{\"spec\":{\"ports\":[{\"port\":5000,\"targetPort\":5000}]}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09473699998352458,
+   "parse": 0.0658650000104899
+  },
+  "id": "m08",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch service frontend -n hotel-reservation -p '{\"spec\":{\"ports\":[{\"port\":5000,\"targetPort\":5000}]}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07187999995039718,
+   "parse": 0.06085199999006363
+  },
+  "id": "m08",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch service frontend -n hotel-reservation -p '{\"spec\":{\"ports\":[{\"port\":5000,\"targetPort\":5000}]}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10035200000402256,
+   "parse": 0.06486199998789743
+  },
+  "id": "m08",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch service frontend -n hotel-reservation -p '{\"spec\":{\"ports\":[{\"port\":5000,\"targetPort\":5000}]}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.073783999994248,
+   "parse": 0.06075199996757874
+  },
+  "id": "m08",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch service frontend -n hotel-reservation -p '{\"spec\":{\"ports\":[{\"port\":5000,\"targetPort\":5000}]}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06767000002128043,
+   "parse": 0.06125300001258438
+  },
+  "id": "m08",
+  "run": 5
+ },
+ {
+  "command": "kubectl patch service geo -n hotel-reservation -p '{\"spec\":{\"ports\":[{\"port\":8083,\"targetPort\":9999}]}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10466200001246762,
+   "parse": 0.06285700004582395
+  },
+  "id": "m09",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch service geo -n hotel-reservation -p '{\"spec\":{\"ports\":[{\"port\":8083,\"targetPort\":9999}]}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.0677699999869219,
+   "parse": 0.05834600000298451
+  },
+  "id": "m09",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch service geo -n hotel-reservation -p '{\"spec\":{\"ports\":[{\"port\":8083,\"targetPort\":9999}]}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.0919309999858342,
+   "parse": 0.06075200002442216
+  },
+  "id": "m09",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch service geo -n hotel-reservation -p '{\"spec\":{\"ports\":[{\"port\":8083,\"targetPort\":9999}]}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06526300001041818,
+   "parse": 0.057142999992265686
+  },
+  "id": "m09",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch service geo -n hotel-reservation -p '{\"spec\":{\"ports\":[{\"port\":8083,\"targetPort\":9999}]}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06486199998789743,
+   "parse": 0.057142999992265686
+  },
+  "id": "m09",
+  "run": 5
+ },
+ {
+  "command": "kubectl patch deployment search -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-search\",\"resources\":{\"limits\":{\"memory\":\"512Mi\"}}}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.11960000000499349,
+   "parse": 0.08330800000067029
+  },
+  "id": "m10",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch deployment search -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-search\",\"resources\":{\"limits\":{\"memory\":\"512Mi\"}}}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08882299999868337,
+   "parse": 0.10586499996634302
+  },
+  "id": "m10",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch deployment search -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-search\",\"resources\":{\"limits\":{\"memory\":\"512Mi\"}}}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08962499998688145,
+   "parse": 0.13894700003902472
+  },
+  "id": "m10",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch deployment search -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-search\",\"resources\":{\"limits\":{\"memory\":\"512Mi\"}}}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.0993479999920055,
+   "parse": 0.0778950000039913
+  },
+  "id": "m10",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch deployment search -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-search\",\"resources\":{\"limits\":{\"memory\":\"512Mi\"}}}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08511299995461741,
+   "parse": 0.08100200000171753
+  },
+  "id": "m10",
+  "run": 5
+ },
+ {
+  "command": "kubectl patch deployment search -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-search\",\"resources\":{\"limits\":{\"memory\":\"4Mi\"}}}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10787000002210334,
+   "parse": 0.08009999999103457
+  },
+  "id": "m11",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch deployment search -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-search\",\"resources\":{\"limits\":{\"memory\":\"4Mi\"}}}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08822099999861166,
+   "parse": 0.1081710000221392
+  },
+  "id": "m11",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch deployment search -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-search\",\"resources\":{\"limits\":{\"memory\":\"4Mi\"}}}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08952400003181538,
+   "parse": 0.0765910000382064
+  },
+  "id": "m11",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch deployment search -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-search\",\"resources\":{\"limits\":{\"memory\":\"4Mi\"}}}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08571500001153254,
+   "parse": 0.07558900000503854
+  },
+  "id": "m11",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch deployment search -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-search\",\"resources\":{\"limits\":{\"memory\":\"4Mi\"}}}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.0840110000126515,
+   "parse": 0.0751889999719424
+  },
+  "id": "m11",
+  "run": 5
+ },
+ {
+  "command": "kubectl patch deployment user -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-user\",\"env\":[{\"name\":\"LOG_LEVEL\",\"value\":\"debug\"}]}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09974900001452625,
+   "parse": 0.08030100002542895
+  },
+  "id": "m12",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch deployment user -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-user\",\"env\":[{\"name\":\"LOG_LEVEL\",\"value\":\"debug\"}]}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08752000002232307,
+   "parse": 0.07679300000518197
+  },
+  "id": "m12",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch deployment user -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-user\",\"env\":[{\"name\":\"LOG_LEVEL\",\"value\":\"debug\"}]}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.15198100004454318,
+   "parse": 0.07689199998139884
+  },
+  "id": "m12",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch deployment user -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-user\",\"env\":[{\"name\":\"LOG_LEVEL\",\"value\":\"debug\"}]}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08250700000189681,
+   "parse": 0.07338400001799528
+  },
+  "id": "m12",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch deployment user -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-user\",\"env\":[{\"name\":\"LOG_LEVEL\",\"value\":\"debug\"}]}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08140400001366288,
+   "parse": 0.07328399999551038
+  },
+  "id": "m12",
+  "run": 5
+ },
+ {
+  "command": "kubectl patch deployment reservation -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-reservation\",\"env\":[{\"name\":\"LOG_LEVEL\",\"value\":\"debug\"}]}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.11047699996424853,
+   "parse": 0.08411000004571179
+  },
+  "id": "m13",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch deployment reservation -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-reservation\",\"env\":[{\"name\":\"LOG_LEVEL\",\"value\":\"debug\"}]}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09122800003069642,
+   "parse": 0.1053629999887562
+  },
+  "id": "m13",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch deployment reservation -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-reservation\",\"env\":[{\"name\":\"LOG_LEVEL\",\"value\":\"debug\"}]}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10325900001362243,
+   "parse": 0.07739300002640448
+  },
+  "id": "m13",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch deployment reservation -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-reservation\",\"env\":[{\"name\":\"LOG_LEVEL\",\"value\":\"debug\"}]}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.0860160000115684,
+   "parse": 0.11749500004043512
+  },
+  "id": "m13",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch deployment reservation -n hotel-reservation -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"hotel-reserv-reservation\",\"env\":[{\"name\":\"LOG_LEVEL\",\"value\":\"debug\"}]}]}}}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09353499996223036,
+   "parse": 0.07849700000406301
+  },
+  "id": "m13",
+  "run": 5
+ },
+ {
+  "command": "kubectl patch configmap coredns -n kube-system --type=merge -p '{\"data\":{\"Corefile\":\"\"}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08651699999973061,
+   "parse": 0.05824599998049962
+  },
+  "id": "m14",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch configmap coredns -n kube-system --type=merge -p '{\"data\":{\"Corefile\":\"\"}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07358400000612164,
+   "parse": 0.05453700003954509
+  },
+  "id": "m14",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch configmap coredns -n kube-system --type=merge -p '{\"data\":{\"Corefile\":\"\"}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.1114789999974164,
+   "parse": 0.05684199999222983
+  },
+  "id": "m14",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch configmap coredns -n kube-system --type=merge -p '{\"data\":{\"Corefile\":\"\"}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.05985000001373919,
+   "parse": 0.05203000000619795
+  },
+  "id": "m14",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch configmap coredns -n kube-system --type=merge -p '{\"data\":{\"Corefile\":\"\"}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.05934799997930895,
+   "parse": 0.05192999998371306
+  },
+  "id": "m14",
+  "run": 5
+ },
+ {
+  "command": "kubectl patch deployment profile -n hotel-reservation -p '{\"spec\":{\"revisionHistoryLimit\":5}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07518800003936121,
+   "parse": 0.055638999981511006
+  },
+  "id": "m15",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch deployment profile -n hotel-reservation -p '{\"spec\":{\"revisionHistoryLimit\":5}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06215500002326735,
+   "parse": 0.1456649999909132
+  },
+  "id": "m15",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch deployment profile -n hotel-reservation -p '{\"spec\":{\"revisionHistoryLimit\":5}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06366000002344663,
+   "parse": 0.05403500000511485
+  },
+  "id": "m15",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch deployment profile -n hotel-reservation -p '{\"spec\":{\"revisionHistoryLimit\":5}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06025099997941652,
+   "parse": 0.052632000006269664
+  },
+  "id": "m15",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch deployment profile -n hotel-reservation -p '{\"spec\":{\"revisionHistoryLimit\":5}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.059548999956859916,
+   "parse": 0.05293200001688092
+  },
+  "id": "m15",
+  "run": 5
+ },
+ {
+  "command": "kubectl patch deployment mongodb-geo -n hotel-reservation -p '{\"spec\":{\"replicas\":0}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06937400002016147,
+   "parse": 0.05353400001695263
+  },
+  "id": "m16",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch deployment mongodb-geo -n hotel-reservation -p '{\"spec\":{\"replicas\":0}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.05844599996862598,
+   "parse": 0.0504270000192264
+  },
+  "id": "m16",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch deployment mongodb-geo -n hotel-reservation -p '{\"spec\":{\"replicas\":0}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.0564410000265525,
+   "parse": 0.04952400001911883
+  },
+  "id": "m16",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch deployment mongodb-geo -n hotel-reservation -p '{\"spec\":{\"replicas\":0}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.05543899999338464,
+   "parse": 0.06185500001265609
+  },
+  "id": "m16",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch deployment mongodb-geo -n hotel-reservation -p '{\"spec\":{\"replicas\":0}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.05593999998154686,
+   "parse": 0.05012600001919054
+  },
+  "id": "m16",
+  "run": 5
+ },
+ {
+  "command": "kubectl patch deployment geo -p '{\"spec\":{\"replicas\":1}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06436099999973521,
+   "parse": 0.04521300002124917
+  },
+  "id": "m17",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch deployment geo -p '{\"spec\":{\"replicas\":1}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.05032600000731691,
+   "parse": 0.04200499995477003
+  },
+  "id": "m17",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch deployment geo -p '{\"spec\":{\"replicas\":1}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.04691700002013022,
+   "parse": 0.040902000023379514
+  },
+  "id": "m17",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch deployment geo -p '{\"spec\":{\"replicas\":1}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.05032600000731691,
+   "parse": 0.041504000023451226
+  },
+  "id": "m17",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch deployment geo -p '{\"spec\":{\"replicas\":1}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.04551399996444161,
+   "parse": 0.04060200001276826
+  },
+  "id": "m17",
+  "run": 5
+ },
+ {
+  "command": "kubectl patch deployment user -p '{\"spec\":{\"replicas\":3}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.0718800000072406,
+   "parse": 0.04701800003203971
+  },
+  "id": "m18",
+  "run": 1
+ },
+ {
+  "command": "kubectl patch deployment user -p '{\"spec\":{\"replicas\":3}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.04962400004160372,
+   "parse": 0.042305999954805884
+  },
+  "id": "m18",
+  "run": 2
+ },
+ {
+  "command": "kubectl patch deployment user -p '{\"spec\":{\"replicas\":3}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.04792000004272268,
+   "parse": 0.04310799999984738
+  },
+  "id": "m18",
+  "run": 3
+ },
+ {
+  "command": "kubectl patch deployment user -p '{\"spec\":{\"replicas\":3}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.04621599998699821,
+   "parse": 0.04110300000093048
+  },
+  "id": "m18",
+  "run": 4
+ },
+ {
+  "command": "kubectl patch deployment user -p '{\"spec\":{\"replicas\":3}}'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl patch' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.045915000043805776,
+   "parse": 0.08481200001142497
+  },
+  "id": "m18",
+  "run": 5
+ },
+ {
+  "command": "kubectl set image deployment/geo hotel-reserv-geo=deathstarbench/hotel-reservation:latest -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.1007520000371187,
+   "parse": 0.07037600005332934
+  },
+  "id": "m19",
+  "run": 1
+ },
+ {
+  "command": "kubectl set image deployment/geo hotel-reserv-geo=deathstarbench/hotel-reservation:latest -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07769500001586493,
+   "parse": 0.1523810000207959
+  },
+  "id": "m19",
+  "run": 2
+ },
+ {
+  "command": "kubectl set image deployment/geo hotel-reserv-geo=deathstarbench/hotel-reservation:latest -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09513800000604533,
+   "parse": 0.06827099997508412
+  },
+  "id": "m19",
+  "run": 3
+ },
+ {
+  "command": "kubectl set image deployment/geo hotel-reserv-geo=deathstarbench/hotel-reservation:latest -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07599099996014047,
+   "parse": 0.06777000004376532
+  },
+  "id": "m19",
+  "run": 4
+ },
+ {
+  "command": "kubectl set image deployment/geo hotel-reserv-geo=deathstarbench/hotel-reservation:latest -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07498799999439143,
+   "parse": 0.06676700002117286
+  },
+  "id": "m19",
+  "run": 5
+ },
+ {
+  "command": "kubectl set image deployment/recommendation hotel-reserv-recommendation=deathstarbench/hotel-reservation:latest -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10927400001037313,
+   "parse": 0.08411099997829297
+  },
+  "id": "m20",
+  "run": 1
+ },
+ {
+  "command": "kubectl set image deployment/recommendation hotel-reserv-recommendation=deathstarbench/hotel-reservation:latest -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09112899999763613,
+   "parse": 0.07969999995793842
+  },
+  "id": "m20",
+  "run": 2
+ },
+ {
+  "command": "kubectl set image deployment/recommendation hotel-reserv-recommendation=deathstarbench/hotel-reservation:latest -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08822099999861166,
+   "parse": 0.07889799996974034
+  },
+  "id": "m20",
+  "run": 3
+ },
+ {
+  "command": "kubectl set image deployment/recommendation hotel-reserv-recommendation=deathstarbench/hotel-reservation:latest -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08681799999976647,
+   "parse": 0.0785970000265479
+  },
+  "id": "m20",
+  "run": 4
+ },
+ {
+  "command": "kubectl set image deployment/recommendation hotel-reserv-recommendation=deathstarbench/hotel-reservation:latest -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09724300002744712,
+   "parse": 0.07879800000409887
+  },
+  "id": "m20",
+  "run": 5
+ },
+ {
+  "command": "kubectl set env deployment/frontend LOG_LEVEL=info -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.0953389999835963,
+   "parse": 0.0630569999771069
+  },
+  "id": "m21",
+  "run": 1
+ },
+ {
+  "command": "kubectl set env deployment/frontend LOG_LEVEL=info -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.0697739999964142,
+   "parse": 0.07999999996854967
+  },
+  "id": "m21",
+  "run": 2
+ },
+ {
+  "command": "kubectl set env deployment/frontend LOG_LEVEL=info -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.11569000002964458,
+   "parse": 0.09654199999431512
+  },
+  "id": "m21",
+  "run": 3
+ },
+ {
+  "command": "kubectl set env deployment/frontend LOG_LEVEL=info -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.11177900000802765,
+   "parse": 0.0597499999912543
+  },
+  "id": "m21",
+  "run": 4
+ },
+ {
+  "command": "kubectl set env deployment/frontend LOG_LEVEL=info -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06777000004376532,
+   "parse": 0.05694200001471472
+  },
+  "id": "m21",
+  "run": 5
+ },
+ {
+  "command": "kubectl set image deployment/coredns coredns=registry.k8s.io/coredns/coredns:v1.11.1 -n kube-system",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10506299997814494,
+   "parse": 0.08300799999005903
+  },
+  "id": "m22",
+  "run": 1
+ },
+ {
+  "command": "kubectl set image deployment/coredns coredns=registry.k8s.io/coredns/coredns:v1.11.1 -n kube-system",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08270699999002318,
+   "parse": 0.0718800000072406
+  },
+  "id": "m22",
+  "run": 2
+ },
+ {
+  "command": "kubectl set image deployment/coredns coredns=registry.k8s.io/coredns/coredns:v1.11.1 -n kube-system",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07909800001471012,
+   "parse": 0.07017599995151613
+  },
+  "id": "m22",
+  "run": 3
+ },
+ {
+  "command": "kubectl set image deployment/coredns coredns=registry.k8s.io/coredns/coredns:v1.11.1 -n kube-system",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07839700003842154,
+   "parse": 0.07007499999645006
+  },
+  "id": "m22",
+  "run": 4
+ },
+ {
+  "command": "kubectl set image deployment/coredns coredns=registry.k8s.io/coredns/coredns:v1.11.1 -n kube-system",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.0772940000501876,
+   "parse": 0.06947400004264637
+  },
+  "id": "m22",
+  "run": 5
+ },
+ {
+  "command": "kubectl set resources deployment/geo --limits=memory=4Mi -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10105299998031114,
+   "parse": 0.06937399996331806
+  },
+  "id": "m23",
+  "run": 1
+ },
+ {
+  "command": "kubectl set resources deployment/geo --limits=memory=4Mi -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07608999999320076,
+   "parse": 0.06426099997725032
+  },
+  "id": "m23",
+  "run": 2
+ },
+ {
+  "command": "kubectl set resources deployment/geo --limits=memory=4Mi -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08150399997930435,
+   "parse": 0.06486199998789743
+  },
+  "id": "m23",
+  "run": 3
+ },
+ {
+  "command": "kubectl set resources deployment/geo --limits=memory=4Mi -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07167900002968963,
+   "parse": 0.06285699998898053
+  },
+  "id": "m23",
+  "run": 4
+ },
+ {
+  "command": "kubectl set resources deployment/geo --limits=memory=4Mi -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06917300004261051,
+   "parse": 0.06215600001269195
+  },
+  "id": "m23",
+  "run": 5
+ },
+ {
+  "command": "kubectl set resources deployment/search --limits=cpu=500m,memory=512Mi -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.12210600004891603,
+   "parse": 0.07899799999222523
+  },
+  "id": "m24",
+  "run": 1
+ },
+ {
+  "command": "kubectl set resources deployment/search --limits=cpu=500m,memory=512Mi -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08541300002207208,
+   "parse": 0.07659199997078758
+  },
+  "id": "m24",
+  "run": 2
+ },
+ {
+  "command": "kubectl set resources deployment/search --limits=cpu=500m,memory=512Mi -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08130399999117799,
+   "parse": 0.07168000001911423
+  },
+  "id": "m24",
+  "run": 3
+ },
+ {
+  "command": "kubectl set resources deployment/search --limits=cpu=500m,memory=512Mi -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08010099998045916,
+   "parse": 0.0710779999621991
+  },
+  "id": "m24",
+  "run": 4
+ },
+ {
+  "command": "kubectl set resources deployment/search --limits=cpu=500m,memory=512Mi -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07899800004906865,
+   "parse": 0.0731829999836009
+  },
+  "id": "m24",
+  "run": 5
+ },
+ {
+  "command": "kubectl set env deployment/reservation LOG_LEVEL=debug -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09483799999543407,
+   "parse": 0.06817000002001805
+  },
+  "id": "m25",
+  "run": 1
+ },
+ {
+  "command": "kubectl set env deployment/reservation LOG_LEVEL=debug -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07248199995046889,
+   "parse": 0.06305800002337492
+  },
+  "id": "m25",
+  "run": 2
+ },
+ {
+  "command": "kubectl set env deployment/reservation LOG_LEVEL=debug -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06957399995144442,
+   "parse": 0.061955000035140984
+  },
+  "id": "m25",
+  "run": 3
+ },
+ {
+  "command": "kubectl set env deployment/reservation LOG_LEVEL=debug -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06887299997515584,
+   "parse": 0.06406100004596738
+  },
+  "id": "m25",
+  "run": 4
+ },
+ {
+  "command": "kubectl set env deployment/reservation LOG_LEVEL=debug -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06897200000821613,
+   "parse": 0.06155399995577682
+  },
+  "id": "m25",
+  "run": 5
+ },
+ {
+  "command": "kubectl set env deployment/user LOG_LEVEL=debug -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09794600003942833,
+   "parse": 0.06536299997605965
+  },
+  "id": "m26",
+  "run": 1
+ },
+ {
+  "command": "kubectl set env deployment/user LOG_LEVEL=debug -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06897299999764073,
+   "parse": 0.05924900000309208
+  },
+  "id": "m26",
+  "run": 2
+ },
+ {
+  "command": "kubectl set env deployment/user LOG_LEVEL=debug -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06636599999865211,
+   "parse": 0.05834600000298451
+  },
+  "id": "m26",
+  "run": 3
+ },
+ {
+  "command": "kubectl set env deployment/user LOG_LEVEL=debug -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06486300003416545,
+   "parse": 0.058145000025433546
+  },
+  "id": "m26",
+  "run": 4
+ },
+ {
+  "command": "kubectl set env deployment/user LOG_LEVEL=debug -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06405999999969936,
+   "parse": 0.057644000037271326
+  },
+  "id": "m26",
+  "run": 5
+ },
+ {
+  "command": "kubectl set image deployment/frontend hotel-reserv-frontend=deathstarbench/hotel-reservation:latest",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.11017599996421268,
+   "parse": 0.07879800000409887
+  },
+  "id": "m27",
+  "run": 1
+ },
+ {
+  "command": "kubectl set image deployment/frontend hotel-reserv-frontend=deathstarbench/hotel-reservation:latest",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08771899996418142,
+   "parse": 0.0731829999836009
+  },
+  "id": "m27",
+  "run": 2
+ },
+ {
+  "command": "kubectl set image deployment/frontend hotel-reserv-frontend=deathstarbench/hotel-reservation:latest",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08000000002539309,
+   "parse": 0.0725820000297972
+  },
+  "id": "m27",
+  "run": 3
+ },
+ {
+  "command": "kubectl set image deployment/frontend hotel-reserv-frontend=deathstarbench/hotel-reservation:latest",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07969900002535724,
+   "parse": 0.07228100002976134
+  },
+  "id": "m27",
+  "run": 4
+ },
+ {
+  "command": "kubectl set image deployment/frontend hotel-reserv-frontend=deathstarbench/hotel-reservation:latest",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl set' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07909800001471012,
+   "parse": 0.07117799998468399
+  },
+  "id": "m27",
+  "run": 5
+ },
+ {
+  "command": "kubectl run curl-test --image=curlimages/curl:8.10.1 --restart=Never -n hotel-reservation -- curl -s http://frontend:5000",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.11799599997175392,
+   "parse": 0.11629099998344827
+  },
+  "id": "m28",
+  "run": 1
+ },
+ {
+  "command": "kubectl run curl-test --image=curlimages/curl:8.10.1 --restart=Never -n hotel-reservation -- curl -s http://frontend:5000",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.11378399995010113,
+   "parse": 0.08290800002441756
+  },
+  "id": "m28",
+  "run": 2
+ },
+ {
+  "command": "kubectl run curl-test --image=curlimages/curl:8.10.1 --restart=Never -n hotel-reservation -- curl -s http://frontend:5000",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09212999998453597,
+   "parse": 0.0819050000018251
+  },
+  "id": "m28",
+  "run": 3
+ },
+ {
+  "command": "kubectl run curl-test --image=curlimages/curl:8.10.1 --restart=Never -n hotel-reservation -- curl -s http://frontend:5000",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10546400000066569,
+   "parse": 0.09052699999756442
+  },
+  "id": "m28",
+  "run": 4
+ },
+ {
+  "command": "kubectl run curl-test --image=curlimages/curl:8.10.1 --restart=Never -n hotel-reservation -- curl -s http://frontend:5000",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09032600002001345,
+   "parse": 0.1510779999875922
+  },
+  "id": "m28",
+  "run": 5
+ },
+ {
+  "command": "kubectl run dns-test --image=busybox:1.36 --restart=Never -n hotel-reservation -- nslookup geo",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.155087999985426,
+   "parse": 0.08100200000171753
+  },
+  "id": "m29",
+  "run": 1
+ },
+ {
+  "command": "kubectl run dns-test --image=busybox:1.36 --restart=Never -n hotel-reservation -- nslookup geo",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08772000001044944,
+   "parse": 0.07418600000619335
+  },
+  "id": "m29",
+  "run": 2
+ },
+ {
+  "command": "kubectl run dns-test --image=busybox:1.36 --restart=Never -n hotel-reservation -- nslookup geo",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08340900001257978,
+   "parse": 0.07338400001799528
+  },
+  "id": "m29",
+  "run": 3
+ },
+ {
+  "command": "kubectl run dns-test --image=busybox:1.36 --restart=Never -n hotel-reservation -- nslookup geo",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08290699997814954,
+   "parse": 0.07278200001792356
+  },
+  "id": "m29",
+  "run": 4
+ },
+ {
+  "command": "kubectl run dns-test --image=busybox:1.36 --restart=Never -n hotel-reservation -- nslookup geo",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08160400000178925,
+   "parse": 0.1297250000220629
+  },
+  "id": "m29",
+  "run": 5
+ },
+ {
+  "command": "kubectl run debug --image=busybox:1.36 --restart=Never -n kube-system -- sleep 3600",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.18015100005186468,
+   "parse": 0.12431099997911588
+  },
+  "id": "m30",
+  "run": 1
+ },
+ {
+  "command": "kubectl run debug --image=busybox:1.36 --restart=Never -n kube-system -- sleep 3600",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.1295239999876685,
+   "parse": 0.1355389999844192
+  },
+  "id": "m30",
+  "run": 2
+ },
+ {
+  "command": "kubectl run debug --image=busybox:1.36 --restart=Never -n kube-system -- sleep 3600",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.14065199997048694,
+   "parse": 0.12340900002527633
+  },
+  "id": "m30",
+  "run": 3
+ },
+ {
+  "command": "kubectl run debug --image=busybox:1.36 --restart=Never -n kube-system -- sleep 3600",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.15498800001978452,
+   "parse": 0.11398500004133894
+  },
+  "id": "m30",
+  "run": 4
+ },
+ {
+  "command": "kubectl run debug --image=busybox:1.36 --restart=Never -n kube-system -- sleep 3600",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.1355389999844192,
+   "parse": 0.1644109999574539
+  },
+  "id": "m30",
+  "run": 5
+ },
+ {
+  "command": "kubectl run stress --image=polinux/stress --restart=Never -n hotel-reservation -- stress --vm 16 --vm-bytes 4G",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.12711800002307427,
+   "parse": 0.10726900001145623
+  },
+  "id": "m31",
+  "run": 1
+ },
+ {
+  "command": "kubectl run stress --image=polinux/stress --restart=Never -n hotel-reservation -- stress --vm 16 --vm-bytes 4G",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09523800002853022,
+   "parse": 0.07969999995793842
+  },
+  "id": "m31",
+  "run": 2
+ },
+ {
+  "command": "kubectl run stress --image=polinux/stress --restart=Never -n hotel-reservation -- stress --vm 16 --vm-bytes 4G",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09032599996317003,
+   "parse": 0.07849599995779499
+  },
+  "id": "m31",
+  "run": 3
+ },
+ {
+  "command": "kubectl run stress --image=polinux/stress --restart=Never -n hotel-reservation -- stress --vm 16 --vm-bytes 4G",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08822099999861166,
+   "parse": 0.07769500001586493
+  },
+  "id": "m31",
+  "run": 4
+ },
+ {
+  "command": "kubectl run stress --image=polinux/stress --restart=Never -n hotel-reservation -- stress --vm 16 --vm-bytes 4G",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10075299996969989,
+   "parse": 0.07488800002874996
+  },
+  "id": "m31",
+  "run": 5
+ },
+ {
+  "command": "kubectl run wipe --image=mongo:4.4 --restart=Never -n hotel-reservation -- mongo mongodb-geo:27017/geo-db --eval 'db.dropDatabase()'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.14205599995875673,
+   "parse": 0.0947380000297926
+  },
+  "id": "m32",
+  "run": 1
+ },
+ {
+  "command": "kubectl run wipe --image=mongo:4.4 --restart=Never -n hotel-reservation -- mongo mongodb-geo:27017/geo-db --eval 'db.dropDatabase()'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10576500000070155,
+   "parse": 0.09092800002008516
+  },
+  "id": "m32",
+  "run": 2
+ },
+ {
+  "command": "kubectl run wipe --image=mongo:4.4 --restart=Never -n hotel-reservation -- mongo mongodb-geo:27017/geo-db --eval 'db.dropDatabase()'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.1524820000327054,
+   "parse": 0.19518900001003203
+  },
+  "id": "m32",
+  "run": 3
+ },
+ {
+  "command": "kubectl run wipe --image=mongo:4.4 --restart=Never -n hotel-reservation -- mongo mongodb-geo:27017/geo-db --eval 'db.dropDatabase()'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10786999996525992,
+   "parse": 0.09092800002008516
+  },
+  "id": "m32",
+  "run": 4
+ },
+ {
+  "command": "kubectl run wipe --image=mongo:4.4 --restart=Never -n hotel-reservation -- mongo mongodb-geo:27017/geo-db --eval 'db.dropDatabase()'",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10255699999106582,
+   "parse": 0.08972499995252292
+  },
+  "id": "m32",
+  "run": 5
+ },
+ {
+  "command": "kubectl run netcheck --image=nicolaka/netshoot:v0.13 --restart=Never -n hotel-reservation -- sleep 300",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.11228099998561447,
+   "parse": 0.07959899994602893
+  },
+  "id": "m33",
+  "run": 1
+ },
+ {
+  "command": "kubectl run netcheck --image=nicolaka/netshoot:v0.13 --restart=Never -n hotel-reservation -- sleep 300",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08541400001149668,
+   "parse": 0.0751879999825178
+  },
+  "id": "m33",
+  "run": 2
+ },
+ {
+  "command": "kubectl run netcheck --image=nicolaka/netshoot:v0.13 --restart=Never -n hotel-reservation -- sleep 300",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08220600000186096,
+   "parse": 0.07228100002976134
+  },
+  "id": "m33",
+  "run": 3
+ },
+ {
+  "command": "kubectl run netcheck --image=nicolaka/netshoot:v0.13 --restart=Never -n hotel-reservation -- sleep 300",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08090300002550066,
+   "parse": 0.07157999999662934
+  },
+  "id": "m33",
+  "run": 4
+ },
+ {
+  "command": "kubectl run netcheck --image=nicolaka/netshoot:v0.13 --restart=Never -n hotel-reservation -- sleep 300",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: 'kubectl run' is not supported in the F1 slice (only scale, delete, rollout restart)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08601499996530038,
+   "parse": 0.0717789999953311
+  },
+  "id": "m33",
+  "run": 5
+ },
+ {
+  "command": "kubectl delete pod geo-5d8f7c9b4-a1b2c -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.2778960000000552,
+   "parse": 0.3209030000448365,
+   "facts": 0.004410999963511131,
+   "sandbox_total": 531.1713469999972,
+   "solver": 103.88280099999747
+  },
+  "id": "m34",
+  "run": 1
+ },
+ {
+  "command": "kubectl delete pod geo-5d8f7c9b4-a1b2c -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.11027599998669757,
+   "parse": 0.07649200000514611,
+   "facts": 0.0025059999870791216,
+   "sandbox_total": 540.8156789999907,
+   "solver": 129.18396500003837
+  },
+  "id": "m34",
+  "run": 2
+ },
+ {
+  "command": "kubectl delete pod geo-5d8f7c9b4-a1b2c -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.11948500002745277,
+   "parse": 0.07681900001443864,
+   "facts": 0.0010019999763244414,
+   "sandbox_total": 466.0714180000127,
+   "solver": 62.10107100002915
+  },
+  "id": "m34",
+  "run": 3
+ },
+ {
+  "command": "kubectl delete pod geo-5d8f7c9b4-a1b2c -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.26761499998428917,
+   "parse": 0.12299099995516372,
+   "facts": 0.0014029999988451891,
+   "sandbox_total": 387.6459680000153,
+   "solver": 47.107052000001204
+  },
+  "id": "m34",
+  "run": 4
+ },
+ {
+  "command": "kubectl delete pod geo-5d8f7c9b4-a1b2c -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08926399999609202,
+   "parse": 0.06754800000408068,
+   "facts": 0.0008009999987734773,
+   "sandbox_total": 477.7935169999523,
+   "solver": 45.46157599997969
+  },
+  "id": "m34",
+  "run": 5
+ },
+ {
+  "command": "kubectl delete pod reservation-6c9d8f7b5-x9y8z -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09546799998361166,
+   "parse": 0.0718509999728667,
+   "facts": 0.0009009999644149502,
+   "sandbox_total": 450.30013699999927,
+   "solver": 61.16088800001762
+  },
+  "id": "m35",
+  "run": 1
+ },
+ {
+  "command": "kubectl delete pod reservation-6c9d8f7b5-x9y8z -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.11019799995892754,
+   "parse": 0.07049900000311027,
+   "facts": 0.0008999999749903509,
+   "sandbox_total": 580.3891520000093,
+   "solver": 136.14802600000075
+  },
+  "id": "m35",
+  "run": 2
+ },
+ {
+  "command": "kubectl delete pod reservation-6c9d8f7b5-x9y8z -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.16579700002239406,
+   "parse": 0.10399799998594972,
+   "facts": 0.001499999996212864,
+   "sandbox_total": 435.55737500003033,
+   "solver": 50.730916999953024
+  },
+  "id": "m35",
+  "run": 3
+ },
+ {
+  "command": "kubectl delete pod reservation-6c9d8f7b5-x9y8z -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09983400002511189,
+   "parse": 0.07725000000391447,
+   "facts": 0.0008999999749903509,
+   "sandbox_total": 397.62905600002796,
+   "solver": 43.26924099996177
+  },
+  "id": "m35",
+  "run": 4
+ },
+ {
+  "command": "kubectl delete pod reservation-6c9d8f7b5-x9y8z -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.11072699999203905,
+   "parse": 0.08164600001236977,
+   "facts": 0.0009990000080506434,
+   "sandbox_total": 508.60541299999795,
+   "solver": 61.68000700000675
+  },
+  "id": "m35",
+  "run": 5
+ },
+ {
+  "command": "kubectl delete pvc old-backup-pvc -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (protected_namespace, pvc_in_use)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.12205100000528546,
+   "parse": 0.07730499999070162,
+   "facts": 0.006391999988863972,
+   "sandbox_total": 453.6571859999867,
+   "solver": 62.11188000003176
+  },
+  "id": "m36",
+  "run": 1
+ },
+ {
+  "command": "kubectl delete pvc old-backup-pvc -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (protected_namespace, pvc_in_use)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10527200004162296,
+   "parse": 0.07051300002558492,
+   "facts": 0.005592999968939694,
+   "sandbox_total": 507.3042390000069,
+   "solver": 91.5409410000052
+  },
+  "id": "m36",
+  "run": 2
+ },
+ {
+  "command": "kubectl delete pvc old-backup-pvc -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (protected_namespace, pvc_in_use)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09353999996619677,
+   "parse": 0.07217699999273464,
+   "facts": 0.005092000037620892,
+   "sandbox_total": 635.3829159999691,
+   "solver": 77.87126200003058
+  },
+  "id": "m36",
+  "run": 3
+ },
+ {
+  "command": "kubectl delete pvc old-backup-pvc -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (protected_namespace, pvc_in_use)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.21423300000833478,
+   "parse": 0.11560199999394172,
+   "facts": 0.006288999998105282,
+   "sandbox_total": 516.9819289999964,
+   "solver": 85.23147599998993
+  },
+  "id": "m36",
+  "run": 4
+ },
+ {
+  "command": "kubectl delete pvc old-backup-pvc -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (protected_namespace, pvc_in_use)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09838900001568618,
+   "parse": 0.08082599998715523,
+   "facts": 0.009480000016992562,
+   "sandbox_total": 462.9783550000184,
+   "solver": 56.063393000044925
+  },
+  "id": "m36",
+  "run": 5
+ },
+ {
+  "command": "kubectl delete pods --all -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: unsupported flag(s) for the F1 slice: all",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09718799998381655,
+   "parse": 0.0730410000073789
+  },
+  "id": "m37",
+  "run": 1
+ },
+ {
+  "command": "kubectl delete pods --all -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: unsupported flag(s) for the F1 slice: all",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06775199994990544,
+   "parse": 0.09629000004451882
+  },
+  "id": "m37",
+  "run": 2
+ },
+ {
+  "command": "kubectl delete pods --all -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: unsupported flag(s) for the F1 slice: all",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.05937100002029183,
+   "parse": 0.0539819999971769
+  },
+  "id": "m37",
+  "run": 3
+ },
+ {
+  "command": "kubectl delete pods --all -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: unsupported flag(s) for the F1 slice: all",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.07603400001698901,
+   "parse": 0.052985000024818873
+  },
+  "id": "m37",
+  "run": 4
+ },
+ {
+  "command": "kubectl delete pods --all -n hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: unsupported flag(s) for the F1 slice: all",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.05517900001450471,
+   "parse": 0.05039000001261229
+  },
+  "id": "m37",
+  "run": 5
+ },
+ {
+  "command": "kubectl rollout restart deployment/geo -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (min_available_during_restart, protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.08231999998997708,
+   "parse": 0.10207799999761846,
+   "facts": 0.004988999990018783,
+   "sandbox_total": 453.3327860000327,
+   "solver": 57.23651299996391
+  },
+  "id": "m38",
+  "run": 1
+ },
+ {
+  "command": "kubectl rollout restart deployment/geo -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (min_available_during_restart, protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09435900000198671,
+   "parse": 0.09036900002001858,
+   "facts": 0.00598499997295221,
+   "sandbox_total": 538.8064649999933,
+   "solver": 75.2714879999985
+  },
+  "id": "m38",
+  "run": 2
+ },
+ {
+  "command": "kubectl rollout restart deployment/geo -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (min_available_during_restart, protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10313600000699807,
+   "parse": 0.07151700003760197,
+   "facts": 0.004687999989982927,
+   "sandbox_total": 479.5354860000316,
+   "solver": 51.983055000050626
+  },
+  "id": "m38",
+  "run": 3
+ },
+ {
+  "command": "kubectl rollout restart deployment/geo -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (min_available_during_restart, protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10539599998082849,
+   "parse": 0.0769780000382525,
+   "facts": 0.0055830000178502814,
+   "sandbox_total": 550.4900910000288,
+   "solver": 120.00099499999806
+  },
+  "id": "m38",
+  "run": 4
+ },
+ {
+  "command": "kubectl rollout restart deployment/geo -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (min_available_during_restart, protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.13879899995572487,
+   "parse": 0.07308900001135044,
+   "facts": 0.015555000004496833,
+   "sandbox_total": 476.8262509999772,
+   "solver": 76.4495459999921
+  },
+  "id": "m38",
+  "run": 5
+ },
+ {
+  "command": "kubectl rollout restart deployment/reservation -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates min_available_during_restart",
+  "violated_invariants": [
+   "min_available_during_restart"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 1,
+    "min_replicas": 1,
+    "max_unavailable": 1
+   },
+   "during": {
+    "pods_down": 1,
+    "available": 0
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.10476700003891892,
+   "parse": 0.08044399999107554,
+   "facts": 0.0044850000335827644,
+   "sandbox_total": 472.7634740000326,
+   "solver": 72.22895899997184
+  },
+  "id": "m39",
+  "run": 1
+ },
+ {
+  "command": "kubectl rollout restart deployment/reservation -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates min_available_during_restart",
+  "violated_invariants": [
+   "min_available_during_restart"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 1,
+    "min_replicas": 1,
+    "max_unavailable": 1
+   },
+   "during": {
+    "pods_down": 1,
+    "available": 0
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.15909399996871798,
+   "parse": 0.10716000002730652,
+   "facts": 0.005184000031022151,
+   "sandbox_total": 485.95971899999313,
+   "solver": 62.599687999977505
+  },
+  "id": "m39",
+  "run": 2
+ },
+ {
+  "command": "kubectl rollout restart deployment/reservation -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates min_available_during_restart",
+  "violated_invariants": [
+   "min_available_during_restart"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 1,
+    "min_replicas": 1,
+    "max_unavailable": 1
+   },
+   "during": {
+    "pods_down": 1,
+    "available": 0
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.13085099999443628,
+   "parse": 0.08859599995503231,
+   "facts": 0.005481000016516191,
+   "sandbox_total": 474.84675699996615,
+   "solver": 77.82663700004377
+  },
+  "id": "m39",
+  "run": 3
+ },
+ {
+  "command": "kubectl rollout restart deployment/reservation -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates min_available_during_restart",
+  "violated_invariants": [
+   "min_available_during_restart"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 1,
+    "min_replicas": 1,
+    "max_unavailable": 1
+   },
+   "during": {
+    "pods_down": 1,
+    "available": 0
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.1186929999903441,
+   "parse": 0.22881499995719423,
+   "facts": 0.004085999989911215,
+   "sandbox_total": 573.3011219999753,
+   "solver": 63.37187299999414
+  },
+  "id": "m39",
+  "run": 4
+ },
+ {
+  "command": "kubectl rollout restart deployment/reservation -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates min_available_during_restart",
+  "violated_invariants": [
+   "min_available_during_restart"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 1,
+    "min_replicas": 1,
+    "max_unavailable": 1
+   },
+   "during": {
+    "pods_down": 1,
+    "available": 0
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.20026800001460288,
+   "parse": 0.1474609999831955,
+   "facts": 0.006178000035106379,
+   "sandbox_total": 568.2867790000046,
+   "solver": 68.03971799996589
+  },
+  "id": "m39",
+  "run": 5
+ },
+ {
+  "command": "kubectl rollout restart deployment/user",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: missing -n: kubectl would use its current context's namespace, which M3 can't see",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.1791459999935796,
+   "parse": 0.08857600005285349
+  },
+  "id": "m40",
+  "run": 1
+ },
+ {
+  "command": "kubectl rollout restart deployment/user",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: missing -n: kubectl would use its current context's namespace, which M3 can't see",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06765200004110739,
+   "parse": 0.05061500002057073
+  },
+  "id": "m40",
+  "run": 2
+ },
+ {
+  "command": "kubectl rollout restart deployment/user",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: missing -n: kubectl would use its current context's namespace, which M3 can't see",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.057690000005550246,
+   "parse": 0.1821349999886479
+  },
+  "id": "m40",
+  "run": 3
+ },
+ {
+  "command": "kubectl rollout restart deployment/user",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: missing -n: kubectl would use its current context's namespace, which M3 can't see",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.06287000002203058,
+   "parse": 0.048423000009734096
+  },
+  "id": "m40",
+  "run": 4
+ },
+ {
+  "command": "kubectl rollout restart deployment/user",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "parse: missing -n: kubectl would use its current context's namespace, which M3 can't see",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.046429999997599225,
+   "parse": 0.06306999995331353
+  },
+  "id": "m40",
+  "run": 5
+ },
+ {
+  "command": "kubectl scale deployment geo --replicas=0 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates min_replicas",
+  "violated_invariants": [
+   "min_replicas"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 3,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": 0
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.09355800000321324,
+   "parse": 0.08209999998598505,
+   "facts": 0.003687000003083085,
+   "sandbox_total": 533.0642470000271,
+   "solver": 83.93414099998608
+  },
+  "id": "b01",
+  "run": 1
+ },
+ {
+  "command": "kubectl scale deployment geo --replicas=0 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates min_replicas",
+  "violated_invariants": [
+   "min_replicas"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 3,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": 0
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.22164699998938886,
+   "parse": 0.15201499996919665,
+   "facts": 0.004881000052137097,
+   "sandbox_total": 475.8429660000161,
+   "solver": 61.71194699999205
+  },
+  "id": "b01",
+  "run": 2
+ },
+ {
+  "command": "kubectl scale deployment geo --replicas=0 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates min_replicas",
+  "violated_invariants": [
+   "min_replicas"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 3,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": 0
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.10768600003530082,
+   "parse": 0.10290400001622402,
+   "facts": 0.003985000034845143,
+   "sandbox_total": 551.4030520000119,
+   "solver": 87.03620300002513
+  },
+  "id": "b01",
+  "run": 3
+ },
+ {
+  "command": "kubectl scale deployment geo --replicas=0 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates min_replicas",
+  "violated_invariants": [
+   "min_replicas"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 3,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": 0
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.10517700002310448,
+   "parse": 0.08505800002467367,
+   "facts": 0.004381999985980656,
+   "sandbox_total": 431.82101200000034,
+   "solver": 59.981902000004084
+  },
+  "id": "b01",
+  "run": 4
+ },
+ {
+  "command": "kubectl scale deployment geo --replicas=0 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates min_replicas",
+  "violated_invariants": [
+   "min_replicas"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 3,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": 0
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.09133300000030431,
+   "parse": 0.07310600000209888,
+   "facts": 0.003984000045420544,
+   "sandbox_total": 463.0149750000214,
+   "solver": 55.39657899998929
+  },
+  "id": "b01",
+  "run": 5
+ },
+ {
+  "command": "kubectl scale deployment geo --replicas=-1 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates replicas_in_int32_range, min_replicas",
+  "violated_invariants": [
+   "replicas_in_int32_range",
+   "min_replicas"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 3,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": -1
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.0953030000232502,
+   "parse": 0.08016599997517915,
+   "facts": 0.0033860000030472293,
+   "sandbox_total": 476.8104210000388,
+   "solver": 49.66347200002019
+  },
+  "id": "b02",
+  "run": 1
+ },
+ {
+  "command": "kubectl scale deployment geo --replicas=-1 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates replicas_in_int32_range, min_replicas",
+  "violated_invariants": [
+   "replicas_in_int32_range",
+   "min_replicas"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 3,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": -1
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.0999810000053003,
+   "parse": 0.0727949999941302,
+   "facts": 0.0035850000017489947,
+   "sandbox_total": 464.1554210000436,
+   "solver": 69.19332999996186
+  },
+  "id": "b02",
+  "run": 2
+ },
+ {
+  "command": "kubectl scale deployment geo --replicas=-1 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates replicas_in_int32_range, min_replicas",
+  "violated_invariants": [
+   "replicas_in_int32_range",
+   "min_replicas"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 3,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": -1
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.10544500003106805,
+   "parse": 0.08473399998365494,
+   "facts": 0.0035840000123243954,
+   "sandbox_total": 444.70867900002986,
+   "solver": 49.71468100001175
+  },
+  "id": "b02",
+  "run": 3
+ },
+ {
+  "command": "kubectl scale deployment geo --replicas=-1 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates replicas_in_int32_range, min_replicas",
+  "violated_invariants": [
+   "replicas_in_int32_range",
+   "min_replicas"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 3,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": -1
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.1476620000175899,
+   "parse": 0.2988110000501365,
+   "facts": 0.00487800002701988,
+   "sandbox_total": 482.9048729999954,
+   "solver": 55.67431599996553
+  },
+  "id": "b02",
+  "run": 4
+ },
+ {
+  "command": "kubectl scale deployment geo --replicas=-1 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates replicas_in_int32_range, min_replicas",
+  "violated_invariants": [
+   "replicas_in_int32_range",
+   "min_replicas"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 3,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": -1
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.10762400000885464,
+   "parse": 0.0802450000492172,
+   "facts": 0.003683000045384688,
+   "sandbox_total": 478.08583799996995,
+   "solver": 70.95573399999466
+  },
+  "id": "b02",
+  "run": 5
+ },
+ {
+  "command": "kubectl scale deployment geo --replicas=2147483648 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates replicas_in_int32_range",
+  "violated_invariants": [
+   "replicas_in_int32_range"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 3,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": 2147483648
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.2751819999957661,
+   "parse": 0.16098700001521138,
+   "facts": 0.03942600000073071,
+   "sandbox_total": 553.9985049999814,
+   "solver": 77.04348200002187
+  },
+  "id": "b03",
+  "run": 1
+ },
+ {
+  "command": "kubectl scale deployment geo --replicas=2147483648 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates replicas_in_int32_range",
+  "violated_invariants": [
+   "replicas_in_int32_range"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 3,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": 2147483648
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.11298799995529407,
+   "parse": 0.18715300001304058,
+   "facts": 0.004679000028318114,
+   "sandbox_total": 482.8550270000278,
+   "solver": 82.67189200000757
+  },
+  "id": "b03",
+  "run": 2
+ },
+ {
+  "command": "kubectl scale deployment geo --replicas=2147483648 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates replicas_in_int32_range",
+  "violated_invariants": [
+   "replicas_in_int32_range"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 3,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": 2147483648
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.13488900003721938,
+   "parse": 0.0952689999849099,
+   "facts": 0.004579999995257822,
+   "sandbox_total": 440.63450199996623,
+   "solver": 73.87517899996965
+  },
+  "id": "b03",
+  "run": 3
+ },
+ {
+  "command": "kubectl scale deployment geo --replicas=2147483648 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates replicas_in_int32_range",
+  "violated_invariants": [
+   "replicas_in_int32_range"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 3,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": 2147483648
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.11606399999664063,
+   "parse": 0.08600299997851835,
+   "facts": 0.005176000001938519,
+   "sandbox_total": 418.33339599998,
+   "solver": 47.295574999964174
+  },
+  "id": "b03",
+  "run": 4
+ },
+ {
+  "command": "kubectl scale deployment geo --replicas=2147483648 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates replicas_in_int32_range",
+  "violated_invariants": [
+   "replicas_in_int32_range"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 3,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": 2147483648
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.11686100003771571,
+   "parse": 0.08291699998608237,
+   "facts": 0.004778000004534988,
+   "sandbox_total": 402.4772909999683,
+   "solver": 46.042060999980094
+  },
+  "id": "b03",
+  "run": 5
+ },
+ {
+  "command": "kubectl scale deployment search --replicas=1 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates min_replicas [missing facts left unconstrained: min_replicas]",
+  "violated_invariants": [
+   "min_replicas"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 2,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": 1
+   },
+   "missing_facts_chosen_by_solver": [
+    "min_replicas"
+   ]
+  },
+  "timings_ms": {
+   "prefilter": 0.09605700000747674,
+   "parse": 0.10949500000378976,
+   "facts": 0.0030859999924359727,
+   "sandbox_total": 511.22540699998353,
+   "solver": 91.44986100000096
+  },
+  "id": "b04",
+  "run": 1
+ },
+ {
+  "command": "kubectl scale deployment search --replicas=1 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates min_replicas [missing facts left unconstrained: min_replicas]",
+  "violated_invariants": [
+   "min_replicas"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 2,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": 1
+   },
+   "missing_facts_chosen_by_solver": [
+    "min_replicas"
+   ]
+  },
+  "timings_ms": {
+   "prefilter": 0.09256499998855361,
+   "parse": 0.07295799997564245,
+   "facts": 0.0034839999898395035,
+   "sandbox_total": 628.0858020000437,
+   "solver": 82.78283999999303
+  },
+  "id": "b04",
+  "run": 2
+ },
+ {
+  "command": "kubectl scale deployment search --replicas=1 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates min_replicas [missing facts left unconstrained: min_replicas]",
+  "violated_invariants": [
+   "min_replicas"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 2,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": 1
+   },
+   "missing_facts_chosen_by_solver": [
+    "min_replicas"
+   ]
+  },
+  "timings_ms": {
+   "prefilter": 0.13863999998875443,
+   "parse": 0.14411399996561158,
+   "facts": 0.00557399999934205,
+   "sandbox_total": 733.4019649999846,
+   "solver": 97.91785800001662
+  },
+  "id": "b04",
+  "run": 3
+ },
+ {
+  "command": "kubectl scale deployment search --replicas=1 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates min_replicas [missing facts left unconstrained: min_replicas]",
+  "violated_invariants": [
+   "min_replicas"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 2,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": 1
+   },
+   "missing_facts_chosen_by_solver": [
+    "min_replicas"
+   ]
+  },
+  "timings_ms": {
+   "prefilter": 0.11744099998622914,
+   "parse": 0.10450299998865376,
+   "facts": 0.0038819999872430344,
+   "sandbox_total": 514.6264240000278,
+   "solver": 87.17100600000549
+  },
+  "id": "b04",
+  "run": 4
+ },
+ {
+  "command": "kubectl scale deployment search --replicas=1 -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates min_replicas [missing facts left unconstrained: min_replicas]",
+  "violated_invariants": [
+   "min_replicas"
+  ],
+  "counterexample": {
+   "before": {
+    "replicas": 2,
+    "min_replicas": 2
+   },
+   "after": {
+    "replicas": 1
+   },
+   "missing_facts_chosen_by_solver": [
+    "min_replicas"
+   ]
+  },
+  "timings_ms": {
+   "prefilter": 0.10509400004821146,
+   "parse": 0.0901650000173504,
+   "facts": 0.003880999997818435,
+   "sandbox_total": 470.4097430000047,
+   "solver": 93.45851200004063
+  },
+  "id": "b04",
+  "run": 5
+ },
+ {
+  "command": "kubectl scale deployment rate --replicas=2 -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (replicas_in_int32_range, min_replicas, protected_namespace) [already violated before the command: min_replicas]",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.14231399995878746,
+   "parse": 0.10977099998399353,
+   "facts": 0.004577000026984024,
+   "sandbox_total": 488.2131729999628,
+   "solver": 49.91564700003437
+  },
+  "id": "b05",
+  "run": 1
+ },
+ {
+  "command": "kubectl scale deployment rate --replicas=2 -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (replicas_in_int32_range, min_replicas, protected_namespace) [already violated before the command: min_replicas]",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.0911559999963174,
+   "parse": 0.07473599998775171,
+   "facts": 0.012838000031933916,
+   "sandbox_total": 408.38078899997754,
+   "solver": 45.19315799996093
+  },
+  "id": "b05",
+  "run": 2
+ },
+ {
+  "command": "kubectl scale deployment rate --replicas=2 -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (replicas_in_int32_range, min_replicas, protected_namespace) [already violated before the command: min_replicas]",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09603799998103568,
+   "parse": 0.09205700001757577,
+   "facts": 0.004081000042788219,
+   "sandbox_total": 507.8769170000328,
+   "solver": 46.666076999997586
+  },
+  "id": "b05",
+  "run": 3
+ },
+ {
+  "command": "kubectl scale deployment rate --replicas=2 -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (replicas_in_int32_range, min_replicas, protected_namespace) [already violated before the command: min_replicas]",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09603300003391269,
+   "parse": 0.07752400000526904,
+   "facts": 0.0040799999965202005,
+   "sandbox_total": 418.0180960000257,
+   "solver": 50.44720699999061
+  },
+  "id": "b05",
+  "run": 4
+ },
+ {
+  "command": "kubectl scale deployment rate --replicas=2 -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (replicas_in_int32_range, min_replicas, protected_namespace) [already violated before the command: min_replicas]",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.1122549999763578,
+   "parse": 0.0737420000405109,
+   "facts": 0.003880999997818435,
+   "sandbox_total": 417.28604299999006,
+   "solver": 46.643684999992274
+  },
+  "id": "b05",
+  "run": 5
+ },
+ {
+  "command": "kubectl delete pod coredns-7db6d8ff4d-k2l3m -n kube-system",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates protected_namespace",
+  "violated_invariants": [
+   "protected_namespace"
+  ],
+  "counterexample": {
+   "before": {
+    "exists": true,
+    "in_protected_namespace": true
+   },
+   "after": {
+    "exists": false
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.17346900000347887,
+   "parse": 0.08917500002780798,
+   "facts": 0.0011189999895577785,
+   "sandbox_total": 541.500477999989,
+   "solver": 54.32558100000051
+  },
+  "id": "b06",
+  "run": 1
+ },
+ {
+  "command": "kubectl delete pod coredns-7db6d8ff4d-k2l3m -n kube-system",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates protected_namespace",
+  "violated_invariants": [
+   "protected_namespace"
+  ],
+  "counterexample": {
+   "before": {
+    "exists": true,
+    "in_protected_namespace": true
+   },
+   "after": {
+    "exists": false
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.11906899999303278,
+   "parse": 0.07880299995122186,
+   "facts": 0.0011180000001331791,
+   "sandbox_total": 420.60620499995593,
+   "solver": 57.940169000005426
+  },
+  "id": "b06",
+  "run": 2
+ },
+ {
+  "command": "kubectl delete pod coredns-7db6d8ff4d-k2l3m -n kube-system",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates protected_namespace",
+  "violated_invariants": [
+   "protected_namespace"
+  ],
+  "counterexample": {
+   "before": {
+    "exists": true,
+    "in_protected_namespace": true
+   },
+   "after": {
+    "exists": false
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.09517400002323484,
+   "parse": 0.09212399999114496,
+   "facts": 0.0009149999868895975,
+   "sandbox_total": 494.08405100001573,
+   "solver": 54.855585000041174
+  },
+  "id": "b06",
+  "run": 3
+ },
+ {
+  "command": "kubectl delete pod coredns-7db6d8ff4d-k2l3m -n kube-system",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates protected_namespace",
+  "violated_invariants": [
+   "protected_namespace"
+  ],
+  "counterexample": {
+   "before": {
+    "exists": true,
+    "in_protected_namespace": true
+   },
+   "after": {
+    "exists": false
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.12138499999991836,
+   "parse": 0.08721000000377899,
+   "facts": 0.0012169999763500527,
+   "sandbox_total": 395.94927799998914,
+   "solver": 52.57665800002087
+  },
+  "id": "b06",
+  "run": 4
+ },
+ {
+  "command": "kubectl delete pod coredns-7db6d8ff4d-k2l3m -n kube-system",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates protected_namespace",
+  "violated_invariants": [
+   "protected_namespace"
+  ],
+  "counterexample": {
+   "before": {
+    "exists": true,
+    "in_protected_namespace": true
+   },
+   "after": {
+    "exists": false
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.10566699995706585,
+   "parse": 0.06763899995121392,
+   "facts": 0.0009120000186157995,
+   "sandbox_total": 442.2332400000073,
+   "solver": 59.334904000024835
+  },
+  "id": "b06",
+  "run": 5
+ },
+ {
+  "command": "kubectl delete namespace kube-system",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates protected_namespace",
+  "violated_invariants": [
+   "protected_namespace"
+  ],
+  "counterexample": {
+   "before": {
+    "exists": true,
+    "in_protected_namespace": true
+   },
+   "after": {
+    "exists": false
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.10541599999669415,
+   "parse": 0.06282499998633284,
+   "facts": 0.0011129999961667636,
+   "sandbox_total": 487.8650509999716,
+   "solver": 49.5330269999954
+  },
+  "id": "b07",
+  "run": 1
+ },
+ {
+  "command": "kubectl delete namespace kube-system",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates protected_namespace",
+  "violated_invariants": [
+   "protected_namespace"
+  ],
+  "counterexample": {
+   "before": {
+    "exists": true,
+    "in_protected_namespace": true
+   },
+   "after": {
+    "exists": false
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.08103400000436523,
+   "parse": 0.06565800003954791,
+   "facts": 0.0011129999961667636,
+   "sandbox_total": 392.60551600000326,
+   "solver": 47.71272900001122
+  },
+  "id": "b07",
+  "run": 2
+ },
+ {
+  "command": "kubectl delete namespace kube-system",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates protected_namespace",
+  "violated_invariants": [
+   "protected_namespace"
+  ],
+  "counterexample": {
+   "before": {
+    "exists": true,
+    "in_protected_namespace": true
+   },
+   "after": {
+    "exists": false
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.13043599994944088,
+   "parse": 0.11276900005441348,
+   "facts": 0.001717000031931093,
+   "sandbox_total": 421.23341600000686,
+   "solver": 54.837155000029725
+  },
+  "id": "b07",
+  "run": 3
+ },
+ {
+  "command": "kubectl delete namespace kube-system",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates protected_namespace",
+  "violated_invariants": [
+   "protected_namespace"
+  ],
+  "counterexample": {
+   "before": {
+    "exists": true,
+    "in_protected_namespace": true
+   },
+   "after": {
+    "exists": false
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.08975000002919842,
+   "parse": 0.054718000001230394,
+   "facts": 0.0013129999842931284,
+   "sandbox_total": 472.3126289999868,
+   "solver": 50.016640000023926
+  },
+  "id": "b07",
+  "run": 4
+ },
+ {
+  "command": "kubectl delete namespace kube-system",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates protected_namespace",
+  "violated_invariants": [
+   "protected_namespace"
+  ],
+  "counterexample": {
+   "before": {
+    "exists": true,
+    "in_protected_namespace": true
+   },
+   "after": {
+    "exists": false
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.09381900002836119,
+   "parse": 0.05895200001759804,
+   "facts": 0.000907000014649384,
+   "sandbox_total": 452.3034810000013,
+   "solver": 91.51776400000244
+  },
+  "id": "b07",
+  "run": 5
+ },
+ {
+  "command": "kubectl delete namespace hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "deleting namespace 'hotel-reservation' deletes everything in it; not modelled in F1 (fail-closed)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.13019800002211923,
+   "parse": 0.07850200000802943
+  },
+  "id": "b08",
+  "run": 1
+ },
+ {
+  "command": "kubectl delete namespace hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "deleting namespace 'hotel-reservation' deletes everything in it; not modelled in F1 (fail-closed)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.0651999999945474,
+   "parse": 0.05975800002033793
+  },
+  "id": "b08",
+  "run": 2
+ },
+ {
+  "command": "kubectl delete namespace hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "deleting namespace 'hotel-reservation' deletes everything in it; not modelled in F1 (fail-closed)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.060665999967568496,
+   "parse": 0.05713799998829927
+  },
+  "id": "b08",
+  "run": 3
+ },
+ {
+  "command": "kubectl delete namespace hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "deleting namespace 'hotel-reservation' deletes everything in it; not modelled in F1 (fail-closed)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.058649999971294164,
+   "parse": 0.05582800002912336
+  },
+  "id": "b08",
+  "run": 4
+ },
+ {
+  "command": "kubectl delete namespace hotel-reservation",
+  "z3_result": null,
+  "decision": "BLOCK",
+  "reason": "deleting namespace 'hotel-reservation' deletes everything in it; not modelled in F1 (fail-closed)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.0577430000134882,
+   "parse": 0.054114999954890664
+  },
+  "id": "b08",
+  "run": 5
+ },
+ {
+  "command": "kubectl delete pvc geo-pvc -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates pvc_in_use",
+  "violated_invariants": [
+   "pvc_in_use"
+  ],
+  "counterexample": {
+   "before": {
+    "exists": true,
+    "in_protected_namespace": false,
+    "in_use": true
+   },
+   "after": {
+    "exists": false
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.16315199997052332,
+   "parse": 0.13674900003479706,
+   "facts": 0.011991999997462699,
+   "sandbox_total": 649.0350839999905,
+   "solver": 88.01538900002015
+  },
+  "id": "b09",
+  "run": 1
+ },
+ {
+  "command": "kubectl delete pvc geo-pvc -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates pvc_in_use",
+  "violated_invariants": [
+   "pvc_in_use"
+  ],
+  "counterexample": {
+   "before": {
+    "exists": true,
+    "in_protected_namespace": false,
+    "in_use": true
+   },
+   "after": {
+    "exists": false
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.11248399999885805,
+   "parse": 0.0897460000146566,
+   "facts": 0.004427000021678396,
+   "sandbox_total": 509.69714100000374,
+   "solver": 66.53905100000657
+  },
+  "id": "b09",
+  "run": 2
+ },
+ {
+  "command": "kubectl delete pvc geo-pvc -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates pvc_in_use",
+  "violated_invariants": [
+   "pvc_in_use"
+  ],
+  "counterexample": {
+   "before": {
+    "exists": true,
+    "in_protected_namespace": false,
+    "in_use": true
+   },
+   "after": {
+    "exists": false
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.1143960000149491,
+   "parse": 0.06610200000523037,
+   "facts": 0.003922999951555539,
+   "sandbox_total": 583.27570900002,
+   "solver": 109.12206200003993
+  },
+  "id": "b09",
+  "run": 3
+ },
+ {
+  "command": "kubectl delete pvc geo-pvc -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates pvc_in_use",
+  "violated_invariants": [
+   "pvc_in_use"
+  ],
+  "counterexample": {
+   "before": {
+    "exists": true,
+    "in_protected_namespace": false,
+    "in_use": true
+   },
+   "after": {
+    "exists": false
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.19611900000882088,
+   "parse": 0.08821400001579605,
+   "facts": 0.004923000005874201,
+   "sandbox_total": 625.5602580000073,
+   "solver": 49.776785999995354
+  },
+  "id": "b09",
+  "run": 4
+ },
+ {
+  "command": "kubectl delete pvc geo-pvc -n hotel-reservation",
+  "z3_result": "sat",
+  "decision": "BLOCK",
+  "reason": "counterexample found: violates pvc_in_use",
+  "violated_invariants": [
+   "pvc_in_use"
+  ],
+  "counterexample": {
+   "before": {
+    "exists": true,
+    "in_protected_namespace": false,
+    "in_use": true
+   },
+   "after": {
+    "exists": false
+   },
+   "missing_facts_chosen_by_solver": []
+  },
+  "timings_ms": {
+   "prefilter": 0.10047099999610509,
+   "parse": 0.0660100000118291,
+   "facts": 0.0039180000044325425,
+   "sandbox_total": 675.493146000008,
+   "solver": 122.4325040000167
+  },
+  "id": "b09",
+  "run": 5
+ },
+ {
+  "command": "kubectl rollout restart deployment/profile -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (min_available_during_restart, protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.16848399997115848,
+   "parse": 0.102756000046611,
+   "facts": 0.005418999990070006,
+   "sandbox_total": 455.9320660000026,
+   "solver": 58.4751229999938
+  },
+  "id": "b10",
+  "run": 1
+ },
+ {
+  "command": "kubectl rollout restart deployment/profile -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (min_available_during_restart, protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.09743399999706526,
+   "parse": 0.07257400000071357,
+   "facts": 0.005613999974229955,
+   "sandbox_total": 471.9625820000033,
+   "solver": 92.52604000005249
+  },
+  "id": "b10",
+  "run": 2
+ },
+ {
+  "command": "kubectl rollout restart deployment/profile -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (min_available_during_restart, protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10144399999489906,
+   "parse": 0.07758600003171523,
+   "facts": 0.005512999962320464,
+   "sandbox_total": 567.9406299999528,
+   "solver": 49.08711299998458
+  },
+  "id": "b10",
+  "run": 3
+ },
+ {
+  "command": "kubectl rollout restart deployment/profile -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (min_available_during_restart, protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.14521200000672252,
+   "parse": 0.0856250000538239,
+   "facts": 0.005208000004586211,
+   "sandbox_total": 450.3838659999815,
+   "solver": 79.52762299998994
+  },
+  "id": "b10",
+  "run": 4
+ },
+ {
+  "command": "kubectl rollout restart deployment/profile -n hotel-reservation",
+  "z3_result": "unsat",
+  "decision": "APPROVE",
+  "reason": "no post-state violates the encoded invariants (min_available_during_restart, protected_namespace)",
+  "violated_invariants": [],
+  "counterexample": null,
+  "timings_ms": {
+   "prefilter": 0.10525299995833848,
+   "parse": 0.07661199998665325,
+   "facts": 0.005107999982101319,
+   "sandbox_total": 525.6518639999967,
+   "solver": 56.36750200000051
+  },
+  "id": "b10",
+  "run": 5
+ }
+]

@@ -1,6 +1,20 @@
 # Function spec: M4 F2 — Model routing and execution handling
 
-Status: Draft for W1-09. This is a planned design, not an implemented function.
+Status: W1-09 design with W3-03 gate/feedback integration merged and a W3-05
+offline router implemented for review. Provider routing and live execution remain
+planned. See [the prototype routing policy](m4-w3-05-routing-policy.md).
+
+The next local W3-05 slice adds a scripted fake model adapter, explicit retry and
+fallback policy, output validators and sequential estimated-budget reservations.
+See [the fallback runtime](m4-w3-05-fallback-runtime.md). This does not add real
+provider calls, actual billing settlement or a new cluster execution path.
+
+The shared-model entry point is now `function2.run_function2(SemanticContext,
+...) -> Function2Result` for one diagnostic task. It validates the configured
+adapter's output as `DiagnosisResult` before invoking the same W3-03 action and
+feedback handling used by the original pipeline. All shared models are unchanged.
+See [the entry-point contract](m4-w3-05-function2-entry.md) for arguments,
+failures, default stubs and integration evidence.
 
 | Field | Description |
 |---|---|
@@ -10,19 +24,23 @@ Status: Draft for W1-09. This is a planned design, not an implemented function.
 | Processing logic | Planned: select models with an integer linear program (ILP), meeting each task's minimum quality requirement within the shared incident budget. Validate model output and apply a fallback policy for model errors, timeouts, and invalid output. Forward M2's command to M3 unchanged. Execute a write only after M3 returns `APPROVE`. On `BLOCK`, execute no command for that action and send its counterexample back to M2. |
 | Output | Existing draft models: `ExecutionResult` for execution results and `SafetyVerdict` for safety decisions and feedback. The current `PipelineResult` groups context, diagnosis, verdicts, and execution results; it is a pipeline dataclass, not a shared contract model. Planned model selection and budget reporting outputs have no agreed contract yet. |
 | Dependencies | M1 context, M2 diagnosis and feedback handling, M3 safety checks, shared draft contracts, and the M4 pipeline and execution handler. Planned dependencies include model access, cost and quality estimates, shared budget tracking, an ILP solver, and cluster access for execution. No provider, solver package, price, or budget value is agreed here. |
-| Test evidence | No F2 implementation tests, CI results, or live execution evidence are claimed. Existing tests are described below as current coverage only. All proposed F2 tests are planned. |
+| Test evidence | W3-03 gate/feedback and W3-05 offline optimizer/measurement tests are implemented. Provider/fallback tests and live execution evidence remain planned. No new CI result is claimed. |
 
 ## Existing code and contracts
 
 - [M4 F1](m4-F1-telemetry-compression.md) describes the implemented JSON-records-to-TSV conversion.
   Its size fields count UTF-8 bytes, not tokens or model costs.
 - `src/argus/orchestration/pipeline.py` currently calls F1, M1, and M2
-  in order. It sends each write action to M3 and calls `execute()` only when
-  the decision is `GateDecision.APPROVE`. Read actions go directly to
-  `execute()`.
+  in order. W3-03's `execution.handle_action()` sends each write action to M3
+  in-process and calls `execute()` only when the decision is
+  `GateDecision.APPROVE` and the verdict command exactly matches the proposal.
+  Read actions bypass the gate. Gate errors and invalid verdicts block writes.
 - `src/argus/orchestration/service.py` still has an execution stub.
   It returns `ExecutionResult` with `executed=False` and runs no command.
-  There is no budget-aware model routing implementation.
+  `router.route()` now provides a local offline binary linear optimizer using
+  the existing Z3 dependency, explicit budget/estimates/objective, TAF layer
+  eligibility, and deterministic ties. It does not call providers or manage
+  actual incident spend. Its types remain local to M4; shared contracts are unchanged.
 - `ProposedAction.command` must stay exactly as M2 supplied it. It must not
   be trimmed, rewritten, compressed, or passed through F1. M3 must check
   the same command string that would be executed.
@@ -30,8 +48,9 @@ Status: Draft for W1-09. This is a planned design, not an implemented function.
   counterexample. The gate decision and the raw solver result are separate.
   Routing must use `GateDecision.APPROVE`, not interpret raw `sat` as approval.
 - `diagnose(context, feedback=...)` accepts a list of `SafetyVerdict` objects.
-  The current pipeline does not run the next feedback round, and the M2 stub
-  does not use that feedback yet.
+  W3-03 passes blocked verdicts to this entry point once after the action batch
+  and retains its response in `PipelineResult.feedback_diagnosis`. It does not
+  execute revised actions. The M2 stub does not use that feedback yet.
 - The existing shared models are described in
   [../contracts.md](../contracts.md). Telemetry contract v1 is integrated
   into F1. The shared models do not define model
@@ -72,8 +91,8 @@ Status: Draft for W1-09. This is a planned design, not an implemented function.
 7. On `BLOCK`, execute nothing for the blocked action. Return the verdict
    and its counterexample to M2 through the feedback path so M2 can revise
    its proposal. If the verdict has no counterexample, pass the reason and
-   the existing verdict without inventing one. The feedback loop remains
-   to be implemented.
+   the existing verdict without inventing one. W3-03 implements this single
+   handoff; repeated diagnosis/execution rounds remain to be implemented.
 8. Return execution results using `ExecutionResult`. The real execution
    handler and its error and timeout handling remain to be implemented.
 
@@ -101,6 +120,15 @@ Status: Draft for W1-09. This is a planned design, not an implemented function.
 
 ## Test evidence
 
+W3-05 adds offline routing and measurement coverage under
+`tests/unit/orchestration/test_router.py` and `test_router_benchmark.py`.
+Independent exhaustive enumeration checks optimal assignments. Tests include
+both explicit objectives, shared-budget competition, TAF task/layer eligibility,
+invalid input, zero costs, solver errors, deterministic ties, raw timing
+aggregation and overwrite protection. This is not provider/fallback coverage.
+The first synthetic latency run and local validation limits are recorded in
+[the experiment notes](../../experiments/2026-10-17_m4_w3_05_offline_router/NOTES.md).
+
 Existing coverage read for this spec:
 
 - `tests/unit/orchestration/test_service.py` checks F1 and that the execution
@@ -109,8 +137,24 @@ Existing coverage read for this spec:
   and do not reach the execution path without approval in the current
   pipeline. It does not test model routing or a completed feedback loop.
 
-No tests or live commands were run for this documentation-only change.
-No F2 CI run or completed F2 test results are recorded.
+W3-03 adds `tests/integration/test_m4_gate_handoff.py`. It exercises the real M3
+gate with a recorded snapshot for APPROVE and BLOCK, exact command preservation,
+counterexample delivery to M2, rejection without a counterexample, read bypass,
+gate errors/timeouts, missing or mismatched approval, and adapter mutation.
+Executors are recording stubs; no cluster commands run. M2 receives feedback
+through its existing entry point; interpreting it remains M2 work.
+
+Local validation on 2026-10-17: 48 focused tests passed; broader regression
+validation passed 251 tests, with 1 platform skip and 1 deselection (the previously
+documented Windows `test_timeout_returns_no_result` hang). Ruff lint and format
+checks passed. The repository's venv Python launcher points to an unavailable
+interpreter, so validation used the bundled Python with `src` and the existing
+`.venv/Lib/site-packages` on `PYTHONPATH`, a writable `--basetemp`, and
+`-p no:cacheprovider`. These are local results, not CI evidence.
+
+AI assistance: Codex generated the M4 action handler, pipeline feedback handoff,
+integration tests and documentation, and checked them using pytest and Ruff.
+M3, M2 and shared contracts were not modified. Teammate review is pending.
 
 Planned tests, to be added under `tests/unit/orchestration/` and
 `tests/integration/` after implementation:

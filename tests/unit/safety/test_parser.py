@@ -58,9 +58,27 @@ def test_delete_forms(command, expected):
 
 
 @pytest.mark.parametrize(
+    "command",
+    [
+        "kubectl rollout restart deployment/geo -n hr",
+        "kubectl rollout restart deploy geo --namespace=hr",
+        "kubectl -n hr rollout restart deployments/geo",
+    ],
+)
+def test_rollout_restart_forms(command):
+    assert parse(command) == Action("rollout-restart", "deployment", "geo", "hr")
+
+
+@pytest.mark.parametrize(
     ("command", "reason_part"),
     [
-        ("kubectl rollout restart deploy/geo -n hr", "not supported"),
+        ("kubectl label pod geo-1 team=sre -n hr", "not supported"),
+        ("kubectl rollout undo deploy/geo -n hr", "only 'kubectl rollout restart'"),
+        ("kubectl rollout restart -n hr", "exactly one resource"),
+        ("kubectl rollout restart deployment -n hr", "exactly one resource"),
+        ("kubectl rollout restart statefulset/db -n hr", "only deployments"),
+        ("kubectl rollout restart deploy/geo -l app=geo -n hr", "unsupported flag"),
+        ("kubectl rollout restart deploy/geo", "missing -n"),
         ("kubectl delete deploy geo -n hr", "only pods, PVCs and namespaces"),
         ("kubectl delete pods -l app=geo -n hr", "unsupported flag"),
         ("kubectl delete pods --all -n hr", "unsupported flag"),

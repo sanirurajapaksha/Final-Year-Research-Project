@@ -1,0 +1,57 @@
+{
+  "measurement": "offline routing latency; no model calls, token counts or billed costs",
+  "command": [
+    "C:\\Users\\nethm\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+    "-m",
+    "argus.orchestration.router_benchmark",
+    "data/fixtures/m4/routing_synthetic.json",
+    "--budgets",
+    "5",
+    "9",
+    "11",
+    "--repetitions",
+    "20",
+    "--output-dir",
+    "experiments/2026-10-17_m4_w3_05_offline_router/results"
+  ],
+  "source_commit": "9db46b3d7dbd6a0ba872d1cf3303ca58a3203446",
+  "source_dirty": true,
+  "dirty_paths": [
+    " M docs/functions/m4-F2-model-routing-execution.md",
+    " M src/argus/orchestration/README.md",
+    "?? data/fixtures/m4/README.md",
+    "?? data/fixtures/m4/routing_synthetic.json",
+    "?? docs/functions/m4-w3-05-routing-policy.md",
+    "?? src/argus/orchestration/router.py",
+    "?? src/argus/orchestration/router_benchmark.py",
+    "?? tests/unit/orchestration/test_router.py",
+    "?? tests/unit/orchestration/test_router_benchmark.py"
+  ],
+  "source_snapshot_sha256": {
+    "src\\argus\\orchestration\\router.py": "af54e4787f9e32f62ebb5f88d270d41feacf5c07f4a2d3ccdef7866dc56e522f",
+    "src\\argus\\orchestration\\router_benchmark.py": "39d6e955145f98d441e6870e70302e70e0a1dd974fc52495d5b0f4f1d8f7b93b",
+    "pyproject.toml": "bc0bf37369e8da4681921cfee746451420419435ddf2cba8b8085a03fc168636"
+  },
+  "input_path": "D:\\SRE\\Final-Year-Research-Project\\data\\fixtures\\m4\\routing_synthetic.json",
+  "input_sha256": "3a2853be12cb41e13a868b1c62c032b22b76d848130bc7881a81df2a3df2a3a9",
+  "recorded_at_utc": "2026-10-17T16:36:16.745839+00:00",
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "packages": {
+    "pydantic": "2.14.0",
+    "z3-solver": "5.1.0.0"
+  },
+  "z3_version": "5.1.0",
+  "budgets": [
+    5,
+    9,
+    11
+  ],
+  "repetitions_per_case": 20,
+  "warmups_per_case": 1,
+  "solver_timeout_ms": 5000,
+  "timing_scope": "route() call including validation, context creation, encoding and solve; excludes imports",
+  "cost_unit": "synthetic credits, not currency or token counts",
+  "quality_source": "hand-set synthetic scores on a 0-100 scale; not measured model accuracy",
+  "objective": "max_quality"
+}

@@ -1,0 +1,21 @@
+{
+  "_note": "Hand-written, frozen cluster state for corpus v0. Not recorded from a cluster. Never edit: the labels in commands.json refer to it (see LABELLING.md).",
+  "captured_at": "2026-10-13T00:00:00Z",
+  "deployments": [
+    {"namespace": "hotel-reservation", "name": "frontend", "replicas": 2, "min_replicas": 1, "max_unavailable": 1},
+    {"namespace": "hotel-reservation", "name": "search", "replicas": 2, "max_unavailable": 1},
+    {"namespace": "hotel-reservation", "name": "geo", "replicas": 3, "min_replicas": 2, "max_unavailable": 1},
+    {"namespace": "hotel-reservation", "name": "rate", "replicas": 0, "min_replicas": 2, "max_unavailable": 1},
+    {"namespace": "hotel-reservation", "name": "profile", "replicas": 2, "min_replicas": 1, "max_unavailable": "25%"},
+    {"namespace": "hotel-reservation", "name": "reservation", "replicas": 1, "min_replicas": 1, "max_unavailable": 1},
+    {"namespace": "hotel-reservation", "name": "recommendation", "replicas": 2, "min_replicas": 2, "max_unavailable": "50%"},
+    {"namespace": "hotel-reservation", "name": "user", "replicas": 2, "min_replicas": 1, "max_unavailable": 1},
+    {"namespace": "hotel-reservation", "name": "mongodb-geo", "replicas": 1, "min_replicas": 1, "max_unavailable": 1},
+    {"namespace": "kube-system", "name": "coredns", "replicas": 2, "min_replicas": 1, "max_unavailable": 1}
+  ],
+  "pvcs": [
+    {"namespace": "hotel-reservation", "name": "geo-pvc", "in_use": true},
+    {"namespace": "hotel-reservation", "name": "old-backup-pvc", "in_use": false},
+    {"namespace": "hotel-reservation", "name": "mystery-pvc"}
+  ]
+}

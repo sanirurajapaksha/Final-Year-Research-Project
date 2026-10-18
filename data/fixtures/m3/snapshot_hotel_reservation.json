@@ -2,11 +2,12 @@
   "_note": "Hand-written fixture for M3 tests and demos. Not recorded from a cluster.",
   "captured_at": "2026-10-10T00:00:00Z",
   "deployments": [
-    {"namespace": "hotel-reservation", "name": "geo", "replicas": 3, "min_replicas": 2},
-    {"namespace": "hotel-reservation", "name": "frontend", "replicas": 2, "min_replicas": 1},
+    {"namespace": "hotel-reservation", "name": "geo", "replicas": 3, "min_replicas": 2, "max_unavailable": 1},
+    {"namespace": "hotel-reservation", "name": "frontend", "replicas": 2, "min_replicas": 1, "max_unavailable": 2},
     {"namespace": "hotel-reservation", "name": "search", "replicas": 2},
-    {"namespace": "hotel-reservation", "name": "rate", "replicas": 0, "min_replicas": 2},
-    {"namespace": "kube-system", "name": "coredns", "replicas": 2, "min_replicas": 1}
+    {"namespace": "hotel-reservation", "name": "rate", "replicas": 0, "min_replicas": 2, "max_unavailable": 1},
+    {"namespace": "hotel-reservation", "name": "profile", "replicas": 2, "min_replicas": 1, "max_unavailable": "50%"},
+    {"namespace": "kube-system", "name": "coredns", "replicas": 2, "min_replicas": 1, "max_unavailable": 1}
   ],
   "pvcs": [
     {"namespace": "hotel-reservation", "name": "geo-pvc", "in_use": true},
