@@ -43,6 +43,14 @@ st.warning(
     "Scoring is rule-based (no LLM)."
 )
 
+st.subheader("Input from M1")
+st.markdown(f"Namespace: `{report['namespace']}`. Candidate services and their prior weight:")
+st.dataframe(report["candidates"], hide_index=True)
+st.caption(
+    "Weight 1.5 = deepest failing service, 1.0 = on the failing path, 0.5 = any other known service. "
+    "M2 makes hypotheses about these services, the heaviest first."
+)
+
 st.subheader("Summary")
 hypotheses = report["hypotheses"]
 left, middle, right, last = st.columns(4)
