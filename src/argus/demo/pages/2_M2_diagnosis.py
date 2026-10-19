@@ -73,4 +73,4 @@ for hypothesis in hypotheses:
         }
     )
 st.dataframe(rows, hide_index=True)
-st.caption("Pruned: the evidence made this hypothesis unlikely, so M2 stopped testing it.")
+st.caption("✗ pruned: its belief fell below the pruning threshold (eps), so M2 stopped testing it.")
