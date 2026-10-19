@@ -77,8 +77,8 @@ def test_no_write_when_no_read_confirmed_the_top_hypothesis():
     assert report["stop_reason"] in reason
 
 
-def test_no_write_when_none_of_these_wins():
-    # Every read refutes its hypothesis, so H0 ("none of these") ends on top: no fix is proposed.
+def test_no_write_when_every_read_refutes():
+    # Every read refutes its hypothesis: M2 drafts new ones, runs out and ends unsure, so no fix.
     context = CONTEXT.model_copy(update={"anomalies": [CART_LOG]})
     refuted = {"H1": "strong-refute", "H2": "strong-refute", "H3": "strong-refute"}
     llm = FakeLLM({"score": [{"verdicts": refuted}] * 10})
