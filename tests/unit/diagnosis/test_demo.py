@@ -6,11 +6,14 @@ from argus.diagnosis.core.readonly import is_read_only
 from argus.diagnosis.demo import (
     FAKE_READS_LABEL,
     SCENARIO_READS,
+    SIMULATED_BLOCK_REASON,
     demo_diagnose,
     demo_report,
     prior_beliefs,
     read_verdicts,
+    run_blocks,
     scenario_reads,
+    simulated_block,
 )
 from argus.orchestration.service import compress
 
@@ -74,3 +77,40 @@ def test_each_scenario_read_has_its_verdict():
 
 def test_no_reads_means_no_verdicts():
     assert read_verdicts({"belief_rounds": [{"evidence": "", "verdicts": {}, "belief": {}}]}) == {}
+
+
+def an_action(command, decision):
+    verdict = None
+    if decision is not None:
+        verdict = {"command": command, "decision": decision, "reason": "test reason"}
+    return {"command": command, "is_write": True, "verdict": verdict, "execution": None}
+
+
+def test_run_blocks_keeps_only_the_first_rounds_blocks():
+    rounds = [
+        {
+            "actions": [
+                an_action("kubectl a", "BLOCK"),
+                an_action("kubectl b", "APPROVE"),
+                an_action("kubectl c", None),
+            ]
+        },
+        {"actions": [an_action("kubectl d", "BLOCK")]},
+    ]
+    blocks = run_blocks(rounds)
+    assert [verdict.command for verdict in blocks] == ["kubectl a"]
+
+
+def test_run_blocks_of_no_rounds_is_empty():
+    assert run_blocks([]) == []
+
+
+def test_a_simulated_block_of_the_fix_makes_m2_drop_it_and_say_why():
+    context = scenario_context()
+    write = [a for a in demo_report(context)["diagnosis"]["actions"] if a["is_write"]][0]
+    block = simulated_block(write["command"])
+    assert block.reason == SIMULATED_BLOCK_REASON
+
+    revised = demo_report(context, feedback=[block])["diagnosis"]
+    assert all(not action["is_write"] for action in revised["actions"])
+    assert "SIMULATED BLOCK" in revised["hypotheses"][0]["evidence"][-1]

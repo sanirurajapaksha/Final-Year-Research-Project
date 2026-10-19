@@ -8,13 +8,14 @@ file comes back "unavailable", exactly as with no cluster. Nothing here touches 
 import json
 from pathlib import Path
 
-from argus.contracts import DiagnosisResult, SafetyVerdict, SemanticContext
+from argus.contracts import DiagnosisResult, GateDecision, SafetyVerdict, SemanticContext
 from argus.diagnosis.ports.fakes import FakeReadExecutor
 from argus.diagnosis.service import diagnose, diagnose_report
 
 REPO = Path(__file__).resolve().parents[3]
 SCENARIO_READS = REPO / "data" / "fixtures" / "m2" / "scenario_01" / "reads.json"
 FAKE_READS_LABEL = "FAKE reads: canned scenario_01 kubectl output, no cluster"
+SIMULATED_BLOCK_REASON = "SIMULATED BLOCK: hand-made on the M2 page, not a real M3 verdict"
 
 
 def scenario_reads(path: Path = SCENARIO_READS) -> FakeReadExecutor:
@@ -33,6 +34,23 @@ def demo_report(context: SemanticContext, feedback: list[SafetyVerdict] | None =
     report = diagnose_report(context, feedback, reads=scenario_reads())
     report["reads_source"] = FAKE_READS_LABEL
     return report
+
+
+def run_blocks(rounds: list[dict]) -> list[SafetyVerdict]:
+    """M3's BLOCK verdicts from the first round of a demo run, as M4 hands them back to M2."""
+    blocks: list[SafetyVerdict] = []
+    if not rounds:
+        return blocks
+    for action in rounds[0]["actions"]:
+        verdict = action["verdict"]
+        if verdict is not None and verdict["decision"] == "BLOCK":
+            blocks.append(SafetyVerdict.model_validate(verdict))
+    return blocks
+
+
+def simulated_block(command: str) -> SafetyVerdict:
+    """A hand-made BLOCK of `command`, so the page can show M2's feedback path when M3 blocked nothing."""
+    return SafetyVerdict(command=command, decision=GateDecision.BLOCK, reason=SIMULATED_BLOCK_REASON)
 
 
 def prior_beliefs(report: dict) -> dict[str, float]:
