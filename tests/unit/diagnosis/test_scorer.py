@@ -1,3 +1,5 @@
+import json
+
 from argus.diagnosis.core.models import Candidate, DiagContext, Evidence, HypothesisSpec
 from argus.diagnosis.loop.scorer import RuleScorer
 
@@ -18,12 +20,50 @@ def score(command: str, output: str, ctx: DiagContext = CTX) -> dict[str, str]:
     return RuleScorer().score(evidence, HYPS, ctx)
 
 
+def deployment(env: list[dict] | None = None, container: str = "cart") -> str:
+    """`kubectl get deployment -o json` output with one container and the given env."""
+    spec = {"name": container, "image": "otel/demo:cart"}
+    if env is not None:
+        spec["env"] = env
+    return json.dumps({"kind": "Deployment", "spec": {"template": {"spec": {"containers": [spec]}}}})
+
+
 def test_missing_address_supports_the_config_fault():
-    assert score(DEPLOYMENT, "containers:\n- name: cart\n  image: otel/demo:cart") == {"H1": "strong-support"}
+    assert score(DEPLOYMENT, deployment()) == {"H1": "strong-support"}
 
 
-def test_address_present_refutes_the_config_fault():
-    assert score(DEPLOYMENT, "env:\n- name: CART_ADDR\n  value: redis-cart:6379") == {"H1": "strong-refute"}
+def test_the_right_address_refutes_the_config_fault():
+    output = deployment([{"name": "CART_ADDR", "value": "redis-cart:6379"}])
+    assert score(DEPLOYMENT, output) == {"H1": "strong-refute"}
+
+
+def test_a_wrong_address_supports_the_config_fault():
+    output = deployment([{"name": "CART_ADDR", "value": "wrong-host:9999"}])
+    assert score(DEPLOYMENT, output) == {"H1": "strong-support"}
+
+
+def test_an_empty_address_supports_the_config_fault():
+    assert score(DEPLOYMENT, deployment([{"name": "CART_ADDR", "value": ""}])) == {"H1": "strong-support"}
+
+
+def test_an_address_from_a_secret_stays_neutral():
+    output = deployment([{"name": "CART_ADDR", "valueFrom": {"secretKeyRef": {"name": "s", "key": "k"}}}])
+    assert score(DEPLOYMENT, output) == {}
+
+
+def test_an_address_m2_has_no_right_value_for_stays_neutral():
+    ctx = CTX.model_copy(update={"symptoms": ["cart: log_error (REDIS_ADDR environment variable not set)"]})
+    assert score(DEPLOYMENT, deployment([{"name": "REDIS_ADDR", "value": "redis:6379"}]), ctx) == {}
+
+
+def test_only_the_components_own_container_counts():
+    output = deployment([{"name": "CART_ADDR", "value": "redis-cart:6379"}], container="sidecar")
+    assert score(DEPLOYMENT, output) == {}  # no container named cart: M2 can't tell
+
+
+def test_unreadable_deployment_output_stays_neutral():
+    assert score(DEPLOYMENT, "Error from server (NotFound)") == {}
+    assert score(DEPLOYMENT, '{"kind": "Deployment"}') == {}
 
 
 def test_no_address_in_the_evidence_stays_neutral():
@@ -43,7 +83,7 @@ def test_crash_supports_and_running_refutes_the_resources_fault():
 
 
 def test_only_the_hypothesis_whose_test_ran_is_judged():
-    verdicts = score(DEPLOYMENT, "containers: []")
+    verdicts = score(DEPLOYMENT, deployment())
     assert set(verdicts) == {"H1"}  # H2 and H3 weren't tested by this read
 
 

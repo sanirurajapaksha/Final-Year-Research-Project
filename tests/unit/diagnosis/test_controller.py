@@ -1,3 +1,5 @@
+import json
+
 from argus.diagnosis.core.config import DiagnosisConfig
 from argus.diagnosis.core.models import Candidate, DiagContext
 from argus.diagnosis.core.readonly import is_read_only
@@ -119,7 +121,8 @@ def test_deadline_crossed_by_scoring_is_not_confident(monkeypatch):
 def test_rule_scorer_reads_the_evidence_when_there_is_no_llm():
     symptom = "frontend: log_error (CART_ADDR environment variable not set)"
     ctx = CTX.model_copy(update={"symptoms": [symptom]})
-    reads = FakeReadExecutor({FRONTEND_DEPLOYMENT: "image: otel/demo:frontend"})
+    frontend = {"spec": {"template": {"spec": {"containers": [{"name": "frontend", "image": "otel/demo"}]}}}}
+    reads = FakeReadExecutor({FRONTEND_DEPLOYMENT: json.dumps(frontend)})  # no env at all
     result = Controller(reads=reads, scorer=RuleScorer()).run(ctx)
     first_update = next(s for s in result.belief.history if s["event"] == "update")
     assert first_update["verdicts"] == {"H1": "strong-support"}
