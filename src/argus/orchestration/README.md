@@ -85,3 +85,51 @@ accuracy evidence. See [the routing policy](../../../docs/functions/m4-w3-05-rou
 - No write executes without an APPROVE verdict from M3. `tests/integration/test_pipeline.py` checks this.
 
 **Internal layout:** up to you. Put tests in `tests/unit/orchestration/`.
+
+## PP1 integrated dashboard (Nethmi)
+
+Use the team's single Streamlit app:
+
+```bash
+python -m streamlit run src/argus/demo/app.py
+```
+
+Run the incident on the first page, then open **M4 orchestration**. The page
+reads the saved incident from `st.session_state["record"]`. Compression is
+recomputed from the same synthetic `scenario_01` fixture; the table of safety
+verdicts and executor handoffs comes from the saved run, including its feedback
+round. The executor remains a labelled stub. There is no second app or extra
+dependency to install beyond the existing `demo` extra.
+
+`report.build_report(batch, record)` returns JSON-ready compression measurements
+(default and compact JSON baselines, TSV bytes, exact round-trip and alert-time
+checks) and the saved action handoffs. Byte reduction is not token savings.
+`report.routing_replay(record, budget=5, outcome="Timeout")` runs the existing
+router and dispatcher with a scripted replay of the first saved diagnosis.
+It never calls a provider, M3, or an executor. Its candidate costs and quality
+scores are synthetic. At budget 5 the timed-out primary (2 credits) falls back
+successfully (3 credits); budget 4 stops before fallback; budget 1 starts no
+attempt. Success, invalid-output and provider-error scripts are also available.
+The page explicitly distinguishes this replay from the original incident run.
+
+### Routing integration proposal for Saniru (PP1 plan item 2)
+
+Keep `pipeline.run_once(batch)` as the telemetry entry point. The merged PR #25
+resolution is correct: `feedback_handler=diagnoser` keeps the initial diagnosis
+and the single BLOCK feedback call on the same supplied implementation. Its
+regression test is `test_a_diagnoser_can_replace_m2` in `test_pipeline.py`.
+
+For a future routed incident run, give `run_once` optional M4-local dispatch
+configuration. After compression and M1, use `run_function2(context, ...)` and
+return its already handled `pipeline`; do not call `process_diagnosis` again,
+because Function 2 already gates and handles actions. Expose dispatch metadata
+through an M4-local report rather than changing shared contracts. Define the
+failure result when dispatch cannot produce a diagnosis before wiring this
+into the shared app. Any model-based feedback must use the same incident budget
+ledger and an explicit single feedback limit. M2 owns the prompt and diagnostic
+adapter. Start with labelled scripted responses; a real provider adapter and
+transport deadline enforcement remain optional work after team agreement.
+
+For this PP1 change, routing stays an explicitly labelled offline experiment.
+The main incident flow and M2's current simulation remain as integrated by
+their owners.

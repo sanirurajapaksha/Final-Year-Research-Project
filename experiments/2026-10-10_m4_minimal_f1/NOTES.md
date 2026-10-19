@@ -83,10 +83,6 @@ its inner quotes. The CSV reader removes the outer quoting, and
 This confirms the saved sample is correct under the implemented draft
 format. It does not mean M1 has approved this format or contract v1.
 
-AI assistance: Codex inspected the evidence, compressor, tests and specs,
-normalized path text, and checked the saved TSV and local checks. It did
-not rerun the experiment or change shared contracts or dependencies.
-
 Review checks used `.venv/Scripts/python.exe`: 31 tests passed in 0.15
 seconds; Ruff check passed; Ruff format reported 54 files already formatted;
 `python -m argus` returned 0 (M3 blocked the sample write and M4 executed

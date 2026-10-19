@@ -138,7 +138,3 @@ gate nor executor. Explicit action handoff then uses the real M3 gate and a
 recording execution stub to verify APPROVE/BLOCK, counterexamples and exact
 command preservation. No cluster command runs.
 
-AI assistance: Codex generated the M4 ledger, adapter protocol, fake adapter,
-dispatch policy/runtime, demo, tests and documentation. Validation uses pytest,
-Ruff and the runnable synthetic demo. No dependency or shared-contract changes
-were introduced, and no API keys were used.

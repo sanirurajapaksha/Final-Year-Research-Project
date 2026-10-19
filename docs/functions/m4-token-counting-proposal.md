@@ -151,9 +151,3 @@ need to change for this local measurement proposal.
    transfer one tokenizer's savings to another model or infer API cost savings.
    Review results against the agreed acceptance criteria before any completion
    decision. This proposal does not mark W2-08 complete.
-
-AI assistance: Codex read the repository instructions, F1 spec, dependency
-file, compressor, and recorded model decisions, then drafted this proposal.
-The original proposal changed no packages, application code, shared contracts,
-or dependencies. The later contract integration updates M4 code and tests,
-with no new dependencies or changes to historical experiment evidence.
