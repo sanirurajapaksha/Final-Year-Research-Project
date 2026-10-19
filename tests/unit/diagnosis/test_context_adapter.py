@@ -21,13 +21,23 @@ def signal(service, name="log_error"):
 
 def test_scenario_01_after_m1_f1_puts_cart_first_and_frontend_in():
     batch = TelemetryBatch.model_validate_json((SCENARIO_01 / "telemetry.json").read_text(encoding="utf-8"))
-    diag = adapt(build_context(compress(batch)), "online-boutique")  # the real M4 -> M1 path
+    # The real M4 -> M1 path, Stage 1 only: no graph, so the adapter falls back to signal counts.
+    diag = adapt(build_context(compress(batch), strategy="stage1"), "online-boutique")
 
     assert diag.namespace == "online-boutique"
     assert diag.candidates[0].service == "cart"  # most kept signals (5xx + two log errors)
     assert diag.candidates[0].weight == 1.5
     assert weights(diag)["frontend"] == 1.0
-    assert diag.failing_path == []  # no graph until M1 F2
+    assert diag.failing_path == []  # stage1 sends no graph
+    assert any("CART_ADDR" in s for s in diag.symptoms)
+
+
+def test_scenario_01_after_m1_f2_uses_the_failing_path():
+    batch = TelemetryBatch.model_validate_json((SCENARIO_01 / "telemetry.json").read_text(encoding="utf-8"))
+    diag = adapt(build_context(compress(batch)), "online-boutique")  # M1's default, failing_path
+
+    assert diag.failing_path == ["frontend", "cart"]
+    assert weights(diag) == {"cart": 1.5, "frontend": 1.0}  # cart is the deepest failing service
     assert any("CART_ADDR" in s for s in diag.symptoms)
 
 

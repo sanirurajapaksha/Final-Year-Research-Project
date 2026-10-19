@@ -4,7 +4,7 @@
 
 **Role in the flow:** M4's compressed telemetry → **M1** → Semantic Context Object → M4 → M2.
 
-**Entry point:** `service.build_context(CompressedTelemetry) -> SemanticContext`. F1 is wired in (Stage 1 anomaly set, `strategy="stage1"`). F2 pruning comes next.
+**Entry point:** `service.build_context(CompressedTelemetry) -> SemanticContext`. The default `strategy="failing_path"` runs F1 and then F2 (service graph and Stage 2 pruning); `strategy="stage1"` stops after F1. `service.build_report(...)` returns the same context plus the M1-internal results (the Stage 1 set, pruned signals with reasons, the graph) for experiments and the UI.
 
 **Functions** (specs in `docs/functions/`):
 - **F1, telemetry ingestion and Stage 1 noise filter** (`m1-F1-telemetry-noise-filter.md`): decode M4's TSV, validate records against the contract, and keep signals that cross threshold predicates. The output is an anomaly set.
@@ -18,11 +18,15 @@
 | `ingest.py` | F1: M4 TSV → record dicts → typed models (`ParsedTelemetry`) |
 | `filters.py` | F1: Stage 1 threshold predicates → `list[AnomalySignal]` |
 | `metrics.py` | Noise-reduction ratios (simple and labelled) and false-prune rate |
-| `service.py` | Public entry point `build_context`: M4 TSV → F1 → `SemanticContext` |
+| `sdg.py` | F2: alert window, service dependency graph from spans, failing services, entry point, failing path |
+| `isolator.py` | F2 Stage 2: keep anomalies on the failing path; prune the rest with a reason |
+| `service.py` | Public entry point `build_context` (and `build_report`): M4 TSV → F1 → F2 → `SemanticContext` |
 | `__main__.py` | Demo: `python -m argus.context [telemetry.json]` prints the anomaly set |
 
 **Try it:** `python -m argus.context` runs F1 on `data/fixtures/m1/scenario_01/telemetry.json`. It's a hand-written, synthetic CART_ADDR scenario, and its labels are in `ground_truth.json`.
 
-**Results:** `experiments/2026-10-11_m1_stage1_nrr/` has the first Stage 1 NRR (n = 1, synthetic).
+**Results** (n = 1, synthetic):
+- `experiments/2026-10-11_m1_stage1_nrr/`: Stage 1 alone.
+- `experiments/2026-10-18_m1_stage2_failing_path/`: Stage 2 removes the 3 noise signals that Stage 1 keeps, with no evidence lost.
 
 **Tests:** `tests/unit/context/`, and `tests/integration/test_m1_reads_m4_output.py` for reading M4's real output.

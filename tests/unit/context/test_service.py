@@ -1,8 +1,11 @@
+from datetime import UTC, datetime
+
 import pytest
 
 from argus.context.filters import Thresholds
-from argus.context.service import build_context
-from argus.contracts import CompressedTelemetry, SemanticContext, TelemetryBatch
+from argus.context.isolator import OFF_GRAPH, OFF_PATH
+from argus.context.service import build_context, build_report
+from argus.contracts import CompressedTelemetry, SemanticContext, ServiceNode, TelemetryBatch
 from argus.orchestration.service import compress
 
 
@@ -12,11 +15,110 @@ def test_build_context_returns_a_semantic_context():
 
 
 def test_build_context_runs_stage1_on_m4_output(scenario_01_batch):
-    context = build_context(compress(scenario_01_batch))
+    context = build_context(compress(scenario_01_batch), strategy="stage1")
     assert context.strategy == "stage1"
     assert len(context.kept_signals) == len(context.anomalies) == 8
     assert {"cart", "frontend"} <= set(context.services)
     assert "8 anomalies from 27 records" in context.notes
+    assert context.dependencies == context.nodes == context.failing_services == []
+
+
+def test_failing_path_is_the_default_strategy(scenario_01_batch):
+    assert build_context(compress(scenario_01_batch)).strategy == "failing_path"
+
+
+def test_failing_path_context_for_scenario_01(scenario_01_batch, scenario_01_truth):
+    context = build_context(compress(scenario_01_batch))
+    relevant = sorted(map(tuple, scenario_01_truth["stage1_expected"]["relevant"]))
+    assert sorted((s.service, s.name) for s in context.kept_signals) == relevant
+    assert len(context.anomalies) == 5
+    assert context.services == context.failing_services == ["cart", "frontend"]
+    assert context.dependencies == [("frontend", "cart")]
+    assert context.entry_point == "frontend"
+    assert context.symptoms == ["frontend GET /cart failed (HTTP 500)"]
+    assert context.nodes == [
+        ServiceNode(name="cart", k8s_status="Running"),
+        ServiceNode(name="frontend", k8s_status="Available", replicas=1),
+    ]
+    assert context.fallback_used is False
+    assert context.notes == "Stage 2 kept 5 of 8 Stage 1 anomalies (27 records, 6 spans in the window)."
+
+
+def test_report_keeps_what_the_contract_leaves_out(scenario_01_batch):
+    report = build_report(compress(scenario_01_batch))
+    assert (report.records, len(report.stage1), len(report.context.kept_signals)) == (27, 8, 5)
+    pruned = sorted((p.signal.service, p.signal.name, p.reason) for p in report.pruned)
+    assert pruned == [
+        ("metrics-server", "log_error", OFF_GRAPH),
+        ("metrics-server", "restart_count", OFF_GRAPH),
+        ("product-catalog", "memory_utilization", OFF_PATH),
+    ]
+    assert report.graph.entry_point == "frontend"
+
+
+def test_spans_after_the_alert_are_left_out(scenario_01_batch):
+    early = scenario_01_batch.model_copy(update={"alert_time": datetime(2026, 10, 10, 10, 4, tzinfo=UTC)})
+    context = build_context(compress(early))
+    assert len(context.kept_signals) == 8
+    assert context.failing_services == []
+    assert "0 spans in the window" in context.notes
+    assert "nothing was pruned" in context.notes
+
+
+def test_without_alert_time_every_span_is_used(scenario_01_batch):
+    batch = scenario_01_batch.model_copy(update={"alert_time": None})
+    context = build_context(compress(batch))
+    assert len(context.kept_signals) == 5
+    assert "No alert_time" in context.notes
+
+
+def naive_span_batch():
+    """An aware alert_time, an ERROR log, and a span whose start_time has no time zone."""
+    return TelemetryBatch(
+        source="otel",
+        collected_at="2026-10-10T10:05:00Z",
+        alert_time="2026-10-10T10:05:00Z",
+        records=[
+            {
+                "kind": "log",
+                "service": "cart",
+                "timestamp": "2026-10-10T10:04:00Z",
+                "severity": "ERROR",
+                "message": "boom",
+            },
+            {
+                "kind": "span",
+                "service": "cart",
+                "trace_id": "t",
+                "span_id": "s",
+                "operation": "op",
+                "span_kind": "SERVER",
+                "start_time": "2026-10-10T10:04:00",
+                "duration_ms": 1,
+                "otel_status_code": "ERROR",
+            },
+        ],
+    )
+
+
+def test_stage1_ignores_spans_it_does_not_use():
+    context = build_context(compress(naive_span_batch()), strategy="stage1")
+    assert [(s.service, s.name) for s in context.kept_signals] == [("cart", "log_error")]
+    assert context.notes.startswith("Stage 1 only")
+
+
+def test_spans_outside_any_window_prune_nothing_and_keep_stage1():
+    report = build_report(compress(naive_span_batch()))
+    assert [(s.service, s.name) for s in report.context.kept_signals] == [("cart", "log_error")]
+    assert report.pruned == []
+    assert report.context.failing_services == []
+    assert "couldn't be placed in the alert window" in report.context.notes
+    assert "nothing was pruned" in report.context.notes
+
+
+def test_unknown_strategy_is_a_caller_bug(scenario_01_batch):
+    with pytest.raises(ValueError, match="unknown context strategy"):
+        build_context(compress(scenario_01_batch), strategy="top_k")
 
 
 def test_build_context_round_trips_as_json(scenario_01_batch):
@@ -32,7 +134,7 @@ def test_build_context_passes_thresholds_through(scenario_01_batch):
 def test_empty_telemetry_gives_an_empty_context():
     context = build_context(CompressedTelemetry(content="", original_size=0, compressed_size=0))
     assert context.kept_signals == []
-    assert "0 anomalies from 0 records" in context.notes
+    assert context.notes.startswith("Stage 2 kept 0 of 0 Stage 1 anomalies (0 records")
 
 
 def test_unreadable_telemetry_is_reported_in_notes_not_raised():

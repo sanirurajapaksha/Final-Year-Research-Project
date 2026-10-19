@@ -1,0 +1,82 @@
+{
+  "scenario": "scenario_01",
+  "provenance": "synthetic (hand-written, modelled on the Stratus CART_ADDR example; not recorded from a cluster)",
+  "n_scenarios": 1,
+  "records_total": 27,
+  "spans": 6,
+  "stage1_input_signals": 21,
+  "labelled_evidence": 5,
+  "labelled_noise": 16,
+  "fault_service": "cart",
+  "strategies": {
+    "stage1": {
+      "kept_signals": 8,
+      "kept_evidence": 5,
+      "kept_noise": 3,
+      "nrr": 0.6190476190476191,
+      "labelled_nrr": 0.8125,
+      "false_prune_rate": 0.0,
+      "fault_service_in_context": true,
+      "context_services": [
+        "cart",
+        "frontend",
+        "metrics-server",
+        "product-catalog"
+      ]
+    },
+    "failing_path": {
+      "kept_signals": 5,
+      "kept_evidence": 5,
+      "kept_noise": 0,
+      "nrr": 0.7619047619047619,
+      "labelled_nrr": 1.0,
+      "false_prune_rate": 0.0,
+      "fault_service_in_context": true,
+      "context_services": [
+        "cart",
+        "frontend"
+      ]
+    }
+  },
+  "failing_path": {
+    "failing_services": [
+      "cart",
+      "frontend"
+    ],
+    "entry_point": "frontend",
+    "dependencies": [
+      [
+        "frontend",
+        "cart"
+      ]
+    ],
+    "pruned": [
+      {
+        "service": "product-catalog",
+        "name": "memory_utilization",
+        "reason": "in the call graph but not on the failing path"
+      },
+      {
+        "service": "metrics-server",
+        "name": "log_error",
+        "reason": "not in the call graph"
+      },
+      {
+        "service": "metrics-server",
+        "name": "restart_count",
+        "reason": "not in the call graph"
+      }
+    ]
+  },
+  "compute_time_ms_median": {
+    "decode": 0.2297194951097481,
+    "parse": 0.05819399666506797,
+    "filter": 0.0318020029226318,
+    "window": 0.008695504220668226,
+    "graph": 0.012580007023643702,
+    "prune": 0.005945505108684301,
+    "total": 0.3579425028874539
+  },
+  "timing_repeats": 200,
+  "lookback_seconds": 300.0
+}
