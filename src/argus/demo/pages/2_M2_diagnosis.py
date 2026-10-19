@@ -16,7 +16,7 @@ from argus.contracts import TelemetryBatch
 from argus.demo.run import TELEMETRY
 from argus.demo.views import the_run
 from argus.diagnosis.core.belief import H0
-from argus.diagnosis.demo import demo_report, prior_beliefs
+from argus.diagnosis.demo import demo_report, prior_beliefs, read_verdicts
 from argus.orchestration.service import compress
 
 
@@ -114,11 +114,23 @@ st.line_chart(belief)
 st.dataframe(step_rows, hide_index=True)
 
 st.subheader("Reads and results (FAKE: canned output, no cluster)")
+hypotheses_by_id = {}
+for hypothesis in hypotheses:
+    hypotheses_by_id[hypothesis["id"]] = hypothesis
+verdicts_by_read = read_verdicts(report)
 for read in report["reads"]:
     status = "ok" if read["ok"] else "failed"
     with st.expander(f"{read['id']} · {read['hypothesis']} · {status}"):
+        tested = hypotheses_by_id.get(read["hypothesis"])
+        if tested is not None:
+            st.markdown(f"Tests **{tested['component']} [{tested['layer']}]** {tested['fault']}.")
+            st.markdown(f"Expected if true: *{tested['expected']}*")
         st.code(read["command"], language="bash")
         st.code(read["output"], language="text")
+        verdicts = []
+        for hypothesis_id, verdict in verdicts_by_read.get(read["id"], {}).items():
+            verdicts.append(f"{hypothesis_id}: {verdict}")
+        st.markdown("Verdict: " + (", ".join(verdicts) or "none"))
 
 st.subheader("Proposed actions")
 st.caption("Nothing here runs. Every WRITE goes to M3 (the safety gate) via M4 before anything could run.")
