@@ -170,6 +170,10 @@ for action in report["diagnosis"]["actions"]:
     kind = "WRITE" if action["is_write"] else "READ"
     st.markdown(f"**{kind}** · namespace `{action['target_namespace']}`: {action['rationale']}")
     st.code(action["command"], language="bash")
+if report["diagnosis"]["hypotheses"]:
+    for line in report["diagnosis"]["hypotheses"][0]["evidence"]:
+        if line.startswith("No write:"):
+            st.markdown(line)
 
 st.subheader("When M3 blocks M2's fix")
 fix = None

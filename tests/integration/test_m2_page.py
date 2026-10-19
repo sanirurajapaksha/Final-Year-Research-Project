@@ -161,3 +161,11 @@ def test_the_no_cluster_toggle_runs_m2_with_no_reads():
     assert any(NO_READS_LABEL in warning.value for warning in app.warning)
     assert any("Low confidence" in warning.value for warning in app.warning)
     assert all(label.endswith("failed") for label in [expander.label for expander in app.expander])
+
+
+def test_with_no_reads_the_page_says_why_there_is_no_write():
+    app = run_page()
+    app.toggle[0].set_value(True).run(timeout=60)
+    assert not app.exception
+    assert not any(markdown.value.startswith("**WRITE**") for markdown in app.markdown)
+    assert any(markdown.value.startswith("No write: the reads did not confirm") for markdown in app.markdown)
