@@ -37,11 +37,13 @@ class Controller:
         llm: LLMClient | None = None,
         reads: ReadExecutor | None = None,
         generator=None,
+        scorer=None,
     ) -> None:
         self.cfg = config or DiagnosisConfig()
         self.llm = llm or NoLLM()
         self.reads = reads or NullReadExecutor()
         self.generator = generator or RuleGenerator()
+        self.scorer = scorer  # RuleScorer or None: what scores a read when the LLM can't
 
     def run(self, ctx: DiagContext) -> LoopResult:
         cfg = self.cfg
@@ -75,7 +77,7 @@ class Controller:
                 evidence.append(self._execute(hyp, f"E{len(evidence) + 1}"))  # EXECUTE
                 if time.monotonic() > deadline:  # the read itself ate the budget: skip the LLM call
                     return finish("budget", low=True)
-                bs.update(self._score(evidence[-1], bs, hyps), evidence[-1].id)  # SCORE + UPDATE
+                bs.update(self._score(evidence[-1], bs, hyps, ctx), evidence[-1].id)  # SCORE + UPDATE
                 if time.monotonic() > deadline:  # a late answer must not report "confident"
                     return finish("budget", low=True)
                 decision = bs.decide()  # DECIDE
@@ -119,8 +121,11 @@ class Controller:
             ok=result.ok,
         )
 
-    def _score(self, ev: Evidence, bs: BeliefState, hyps: dict[str, HypothesisSpec]) -> dict[str, str]:
-        """Verdict per active hypothesis. A failed read or no/invalid LLM answer is all neutral."""
+    def _score(
+        self, ev: Evidence, bs: BeliefState, hyps: dict[str, HypothesisSpec], ctx: DiagContext
+    ) -> dict[str, str]:
+        """Verdict per active hypothesis. A failed read is all neutral; so is no/invalid LLM answer,
+        unless a rule scorer is plugged in, which then reads the evidence instead."""
         if not ev.ok:
             return {}
         active = bs.active()
@@ -133,5 +138,7 @@ class Controller:
                 hypotheses={h: f"{hyps[h].label()} | expects: {hyps[h].expected}" for h in active},
             )
         except (LLMUnavailable, ValueError):  # pydantic's ValidationError is a ValueError
-            return {}
+            if self.scorer is None:
+                return {}
+            return self.scorer.score(ev, {h: hyps[h] for h in active}, ctx)
         return {h: v for h, v in answer.verdicts.items() if h in active}  # invented ids ignored
