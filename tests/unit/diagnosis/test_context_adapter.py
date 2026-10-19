@@ -4,6 +4,7 @@ from pathlib import Path
 from argus.context.service import build_context
 from argus.contracts import AnomalySignal, CompressedTelemetry, SemanticContext, TelemetryBatch
 from argus.diagnosis.loop.context_adapter import adapt, failing_path
+from argus.diagnosis.loop.generator import RuleGenerator
 from argus.orchestration.service import compress
 
 SCENARIO_01 = Path(__file__).resolve().parents[3] / "data" / "fixtures" / "m1" / "scenario_01"
@@ -84,6 +85,21 @@ def test_upstream_walk_stops_at_the_entry_point_and_skips_unrelated_callers():
 
     assert diag.failing_path == ["frontend", "checkout", "cart"]
     assert weights(diag) == {"cart": 1.5, "frontend": 1.0, "checkout": 1.0, "lb": 0.5, "batch-job": 0.5}
+
+
+def test_failing_caller_above_a_healthy_hop_is_not_deepest():
+    # frontend fails only because cart does; the healthy gateway between them must not hide that.
+    ctx = SemanticContext(
+        dependencies=[("frontend", "gateway"), ("gateway", "cart")],
+        failing_services=["frontend", "cart"],
+        entry_point="frontend",
+    )
+    diag = adapt(ctx, "ns")
+
+    assert diag.failing_path == ["frontend", "gateway", "cart"]
+    assert weights(diag) == {"cart": 1.5, "frontend": 1.0, "gateway": 1.0}
+    assert diag.candidates[0].service == "cart"
+    assert {h.component for h in RuleGenerator().draft(diag, k=3)} == {"cart"}  # first round tests cart
 
 
 def test_without_entry_point_healthy_callers_are_walked_to_the_top():

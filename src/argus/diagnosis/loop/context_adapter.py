@@ -92,16 +92,31 @@ def _callees_within(context: SemanticContext, services: set[str]) -> dict[str, s
 
 def _graph_candidates(context: SemanticContext, path: list[str]) -> list[Candidate]:
     failing = set(context.failing_services)
-    callees = _callees_within(context, failing)
-    # Deepest = a failing service whose own callees are all healthy, so the errors start there.
+    callees = _callees_within(context, set(path))
+    # Deepest = a failing service with no failing service below it, so the errors start there.
+    # "Below" follows the whole path, healthy hops included (frontend -> gateway -> cart: cart is below).
     # Only failing services qualify: a healthy caller on the path never originates the errors.
     failing_in_order = [s for s in path if s in failing]
+    deepest = {s for s in failing_in_order if not _descendants(s, callees) & failing}
     # A failing cycle has no leaf, so fall back to the last failing service on the path.
-    deepest = {s for s in failing_in_order if not callees.get(s)} or {failing_in_order[-1]}
+    deepest = deepest or {failing_in_order[-1]}
     weights = {s: DEEPEST if s in deepest else ON_PATH for s in path}
     for service in _known_services(context):
         weights.setdefault(service, OTHER)
     return _ranked(weights, path)
+
+
+def _descendants(service: str, callees: dict[str, set[str]]) -> set[str]:
+    """Every service `service` reaches through `callees`, directly or not, not counting itself."""
+    seen: set[str] = set()
+    queue = deque(callees.get(service, set()))
+    while queue:
+        callee = queue.popleft()
+        if callee in seen:
+            continue
+        seen.add(callee)
+        queue.extend(callees.get(callee, set()))
+    return seen - {service}
 
 
 def _signal_candidates(context: SemanticContext) -> list[Candidate]:
