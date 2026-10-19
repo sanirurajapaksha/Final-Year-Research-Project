@@ -4,7 +4,8 @@ Owner: Nethmi Herath
 
 Date: 2026-10-19
 
-Plan: `D:\SRE\team-integration-tasks.md`, M4 items 1, 2, 4, 5 and 6.
+Plan: [PP1 M4 integration plan](m4-pp1-integration-plan.md),
+M4 items 1, 2, 4, 5 and 6 (Planner task W3-08).
 
 - Confirmed that merged PR #25 passes the supplied diagnoser into
   `process_diagnosis(..., feedback_handler=diagnoser)`. The regression test

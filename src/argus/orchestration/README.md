@@ -90,7 +90,7 @@ accuracy evidence. See [the routing policy](../../../docs/functions/m4-w3-05-rou
 
 Use the team's single Streamlit app:
 
-```powershell
+```bash
 python -m streamlit run src/argus/demo/app.py
 ```
 
