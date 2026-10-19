@@ -1,0 +1,35 @@
+"""M2 for the PP1 demo: the REAL diagnose() with FAKE reads (canned scenario_01 kubectl output).
+
+There is no cluster for PP1, so every read M2 runs is answered from
+data/fixtures/m2/scenario_01/reads.json, which is hand-written. A read that isn't in the
+file comes back "unavailable", exactly as with no cluster. Nothing here touches a cluster.
+"""
+
+import json
+from pathlib import Path
+
+from argus.contracts import DiagnosisResult, SafetyVerdict, SemanticContext
+from argus.diagnosis.ports.fakes import FakeReadExecutor
+from argus.diagnosis.service import diagnose, diagnose_report
+
+REPO = Path(__file__).resolve().parents[3]
+SCENARIO_READS = REPO / "data" / "fixtures" / "m2" / "scenario_01" / "reads.json"
+FAKE_READS_LABEL = "FAKE reads: canned scenario_01 kubectl output, no cluster"
+
+
+def scenario_reads(path: Path = SCENARIO_READS) -> FakeReadExecutor:
+    """A read executor that answers from the canned file instead of a cluster."""
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    return FakeReadExecutor(data["reads"])
+
+
+def demo_diagnose(context: SemanticContext, feedback: list[SafetyVerdict] | None = None) -> DiagnosisResult:
+    """Called like diagnose(), so the demo can pass it to run_once(..., diagnoser=demo_diagnose)."""
+    return diagnose(context, feedback, reads=scenario_reads())
+
+
+def demo_report(context: SemanticContext, feedback: list[SafetyVerdict] | None = None) -> dict:
+    """diagnose_report() with the canned reads, labelled as fake, for the M2 dashboard page."""
+    report = diagnose_report(context, feedback, reads=scenario_reads())
+    report["reads_source"] = FAKE_READS_LABEL
+    return report
