@@ -1,0 +1,17 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "apps/v1", "kind": "Deployment",
+      "metadata": {"name": "coredns", "namespace": "kube-system"},
+      "spec": {
+        "replicas": 2,
+        "selector": {"matchLabels": {"k8s-app": "kube-dns"}},
+        "strategy": {"type": "RollingUpdate", "rollingUpdate": {"maxUnavailable": 1, "maxSurge": "25%"}},
+        "template": {"metadata": {"labels": {"k8s-app": "kube-dns"}}, "spec": {"containers": [{"name": "coredns", "image": "registry.k8s.io/coredns/coredns:v1.10.1"}]}}
+      }
+    }
+  ],
+  "metadata": {"resourceVersion": ""}
+}

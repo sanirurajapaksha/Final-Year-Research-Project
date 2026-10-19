@@ -1,7 +1,11 @@
+import json
+from pathlib import Path
+
 import pytest
 
 from argus.config import Settings
 from argus.contracts import GateDecision, ProposedAction, Z3Result
+from argus.safety import formulation
 from argus.safety.gate import check, decision_for
 
 SETTINGS = Settings(solver_timeout_s=30.0, solver_memory_mb=512)
@@ -49,7 +53,7 @@ def test_verdict_keeps_the_command_byte_exact(snapshot):
     assert check(write(command), snapshot, SETTINGS).command == command
 
 
-def test_without_a_snapshot_everything_is_blocked():
+def test_without_a_snapshot_or_fact_source_a_deployment_write_is_blocked():
     verdict = check(write("kubectl scale deployment geo --replicas=2 -n hotel-reservation"), None, SETTINGS)
     assert verdict.decision is GateDecision.BLOCK
     assert verdict.z3_result is None
@@ -195,3 +199,152 @@ def test_restart_solver_timeout_is_blocked(snapshot):
     verdict = check(write("kubectl rollout restart deployment/geo -n hotel-reservation"), snapshot, tiny)
     assert verdict.decision is GateDecision.BLOCK
     assert "timeout" in verdict.reason
+
+
+# Facts from the extractor (saved kubectl output) instead of a snapshot passed in.
+
+KUBECTL_OUTPUT = Path(__file__).resolve().parents[3] / "data" / "fixtures" / "m3" / "kubectl"
+WITH_EXTRACTOR = Settings(solver_timeout_s=30.0, solver_memory_mb=512, m3_kubectl_output=str(KUBECTL_OUTPUT))
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "kubectl scale deployment geo --replicas=2 -n hotel-reservation",
+        "kubectl scale deployment geo --replicas=1 -n hotel-reservation",
+        "kubectl scale deployment search --replicas=2 -n hotel-reservation",
+        "kubectl rollout restart deployment/frontend -n hotel-reservation",
+        "kubectl delete pvc geo-pvc -n hotel-reservation",
+    ],
+)
+def test_extractor_and_hand_written_snapshot_agree(snapshot, command):
+    from_snapshot = check(write(command), snapshot, SETTINGS)
+    from_extractor = check(write(command), None, WITH_EXTRACTOR)
+    assert from_extractor.decision is from_snapshot.decision
+    assert from_extractor.violated_invariants == from_snapshot.violated_invariants
+    assert "extractor" in from_extractor.timings_ms
+
+
+@pytest.mark.parametrize("settings", [WITH_EXTRACTOR, SETTINGS])
+@pytest.mark.parametrize(
+    "command",
+    [
+        "kubectl delete pod coredns-7db6d8ff4d-k2l3m -n kube-system",
+        "kubectl delete pod x -n kube-public",  # no saved output for kube-public: not needed
+        "kubectl delete pod geo-1 -A",
+        "kubectl delete ns kube-system",
+    ],
+)
+def test_pod_and_namespace_deletes_skip_the_extractor(command, settings):
+    # Their only rule (protected namespaces) needs no cluster facts, so M2 still gets the counterexample.
+    verdict = check(write(command), None, settings)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.violated_invariants == ["protected_namespace"]
+    assert "extractor" not in verdict.timings_ms
+
+
+def test_extractor_failure_is_blocked():
+    verdict = check(write("kubectl scale deployment geo --replicas=2 -n nowhere"), None, WITH_EXTRACTOR)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.reason.startswith("extractor: LookupError")
+
+
+def test_a_missing_or_broken_fact_source_is_blocked(tmp_path):
+    command = write("kubectl scale deployment geo --replicas=2 -n hotel-reservation")
+    missing = Settings(solver_timeout_s=30.0, m3_kubectl_output=str(tmp_path / "missing"))
+    verdict = check(command, None, missing)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.reason.startswith("extractor: FileNotFoundError")
+    assert "extractor" in verdict.timings_ms
+
+    (tmp_path / "index.json").write_text("{not json", encoding="utf-8")
+    broken = Settings(solver_timeout_s=30.0, m3_kubectl_output=str(tmp_path))
+    verdict = check(command, None, broken)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.reason.startswith("extractor: JSONDecodeError")
+
+
+def test_namespace_text_that_adds_flags_is_blocked_before_any_read():
+    command = "kubectl scale deployment web --replicas=1 -n 'ns --server=https://other.example'"
+    verdict = check(write(command), None, WITH_EXTRACTOR)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.reason.startswith("extractor: ValueError: not a valid namespace name")
+
+
+# Commands the parser can't read (patch) go to the Formulation Agent; the LLM is a fake here.
+
+
+def fake_llm(monkeypatch, answer: dict) -> None:
+    def fake_complete_json(prompt, schema, model, timeout_s):
+        return json.dumps(answer), {}
+
+    monkeypatch.setattr(formulation, "complete_json", fake_complete_json)
+
+
+def patch_ir(name: str, effect: str, replicas: int = 0) -> dict:
+    return {
+        "kind": "deployment",
+        "name": name,
+        "namespace": "hotel-reservation",
+        "effect": effect,
+        "replicas": replicas,
+    }
+
+
+@pytest.mark.parametrize(
+    ("command", "answer", "decision", "violated"),
+    [
+        (
+            'kubectl patch deployment geo -n hotel-reservation -p \'{"spec":{"replicas":1}}\'',
+            patch_ir("geo", "set_replicas", 1),
+            GateDecision.BLOCK,
+            ["min_replicas"],
+        ),
+        (
+            'kubectl patch deployment geo -n hotel-reservation -p \'{"spec":{"replicas":4}}\'',
+            patch_ir("geo", "set_replicas", 4),
+            GateDecision.APPROVE,
+            [],
+        ),
+        (
+            'kubectl patch deployment frontend -n hotel-reservation -p \'{"spec":{"template":{}}}\'',
+            patch_ir("frontend", "pod_template_change"),
+            GateDecision.BLOCK,
+            ["min_available_during_restart"],
+        ),
+        (
+            'kubectl patch deployment frontend -n hotel-reservation -p \'{"metadata":{"labels":{"t":"x"}}}\'',
+            patch_ir("frontend", "metadata_only"),
+            GateDecision.APPROVE,
+            [],
+        ),
+    ],
+)
+def test_patch_goes_through_the_formulation_agent(
+    snapshot, monkeypatch, tmp_path, command, answer, decision, violated
+):
+    fake_llm(monkeypatch, answer)
+    settings = Settings(solver_timeout_s=30.0, solver_memory_mb=512, m3_llm_log=str(tmp_path / "llm.jsonl"))
+    verdict = check(write(command), snapshot, settings)
+    assert verdict.decision is decision
+    assert verdict.violated_invariants == violated
+    assert "formulation" in verdict.timings_ms
+
+
+def test_patch_blocks_when_the_llm_is_unreachable(snapshot, tmp_path):
+    # No model is set, so the LLM client raises before any network call, and the gate blocks.
+    settings = Settings(solver_timeout_s=30.0, solver_memory_mb=512, m3_llm_log=str(tmp_path / "llm.jsonl"))
+    command = 'kubectl patch deployment geo -n hotel-reservation -p \'{"spec":{"replicas":4}}\''
+    verdict = check(write(command), snapshot, settings)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.reason.startswith("formulation: LLM:")
+
+
+def test_patch_blocks_when_the_llm_log_cant_be_written(snapshot, monkeypatch, tmp_path):
+    # Review on PR #23: the gate itself must block, not raise.
+    fake_llm(monkeypatch, patch_ir("geo", "set_replicas", 4))
+    settings = Settings(solver_timeout_s=30.0, solver_memory_mb=512, m3_llm_log=str(tmp_path))
+    command = 'kubectl patch deployment geo -n hotel-reservation -p \'{"spec":{"replicas":4}}\''
+    verdict = check(write(command), snapshot, settings)
+    assert verdict.decision is GateDecision.BLOCK
+    assert verdict.reason.startswith("formulation: can't keep the raw LLM answer")

@@ -1,0 +1,15 @@
+{
+  "_note": "Hand-written kubectl output (not recorded from a cluster). Maps each read-only command M3's extractor sends to the file that answers it.",
+  "kubectl get deployments -n hotel-reservation -o json": "hotel-reservation/deployments.json",
+  "kubectl get pdb -n hotel-reservation -o json": "hotel-reservation/pdb.json",
+  "kubectl get pods -n hotel-reservation -o json": "hotel-reservation/pods.json",
+  "kubectl get pvc -n hotel-reservation -o json": "hotel-reservation/pvc.json",
+  "kubectl get deployments -n kube-system -o json": "kube-system/deployments.json",
+  "kubectl get pdb -n kube-system -o json": "kube-system/pdb.json",
+  "kubectl get pods -n kube-system -o json": "kube-system/pods.json",
+  "kubectl get pvc -n kube-system -o json": "kube-system/pvc.json",
+  "kubectl get deployments -n default -o json": "default/deployments.json",
+  "kubectl get pdb -n default -o json": "default/pdb.json",
+  "kubectl get pods -n default -o json": "default/pods.json",
+  "kubectl get pvc -n default -o json": "default/pvc.json"
+}

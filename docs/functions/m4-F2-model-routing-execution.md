@@ -1,7 +1,20 @@
 # Function spec: M4 F2 — Model routing and execution handling
 
-Status: W1-09 design with the W3-03 gate/feedback integration implemented locally.
-Model routing and live execution remain planned.
+Status: W1-09 design with W3-03 gate/feedback integration merged and a W3-05
+offline router implemented for review. Provider routing and live execution remain
+planned. See [the prototype routing policy](m4-w3-05-routing-policy.md).
+
+The next local W3-05 slice adds a scripted fake model adapter, explicit retry and
+fallback policy, output validators and sequential estimated-budget reservations.
+See [the fallback runtime](m4-w3-05-fallback-runtime.md). This does not add real
+provider calls, actual billing settlement or a new cluster execution path.
+
+The shared-model entry point is now `function2.run_function2(SemanticContext,
+...) -> Function2Result` for one diagnostic task. It validates the configured
+adapter's output as `DiagnosisResult` before invoking the same W3-03 action and
+feedback handling used by the original pipeline. All shared models are unchanged.
+See [the entry-point contract](m4-w3-05-function2-entry.md) for arguments,
+failures, default stubs and integration evidence.
 
 | Field | Description |
 |---|---|
@@ -11,7 +24,7 @@ Model routing and live execution remain planned.
 | Processing logic | Planned: select models with an integer linear program (ILP), meeting each task's minimum quality requirement within the shared incident budget. Validate model output and apply a fallback policy for model errors, timeouts, and invalid output. Forward M2's command to M3 unchanged. Execute a write only after M3 returns `APPROVE`. On `BLOCK`, execute no command for that action and send its counterexample back to M2. |
 | Output | Existing draft models: `ExecutionResult` for execution results and `SafetyVerdict` for safety decisions and feedback. The current `PipelineResult` groups context, diagnosis, verdicts, and execution results; it is a pipeline dataclass, not a shared contract model. Planned model selection and budget reporting outputs have no agreed contract yet. |
 | Dependencies | M1 context, M2 diagnosis and feedback handling, M3 safety checks, shared draft contracts, and the M4 pipeline and execution handler. Planned dependencies include model access, cost and quality estimates, shared budget tracking, an ILP solver, and cluster access for execution. No provider, solver package, price, or budget value is agreed here. |
-| Test evidence | W3-03 gate/feedback tests are implemented; see below. Model-router tests and live execution evidence remain planned. No new CI result is claimed. |
+| Test evidence | W3-03 gate/feedback and W3-05 offline optimizer/measurement tests are implemented. Provider/fallback tests and live execution evidence remain planned. No new CI result is claimed. |
 
 ## Existing code and contracts
 
@@ -24,7 +37,10 @@ Model routing and live execution remain planned.
   Read actions bypass the gate. Gate errors and invalid verdicts block writes.
 - `src/argus/orchestration/service.py` still has an execution stub.
   It returns `ExecutionResult` with `executed=False` and runs no command.
-  There is no budget-aware model routing implementation.
+  `router.route()` now provides a local offline binary linear optimizer using
+  the existing Z3 dependency, explicit budget/estimates/objective, TAF layer
+  eligibility, and deterministic ties. It does not call providers or manage
+  actual incident spend. Its types remain local to M4; shared contracts are unchanged.
 - `ProposedAction.command` must stay exactly as M2 supplied it. It must not
   be trimmed, rewritten, compressed, or passed through F1. M3 must check
   the same command string that would be executed.
@@ -103,6 +119,15 @@ Model routing and live execution remain planned.
   W1-09 acceptance checklist. This draft does not mark W1-09 complete.
 
 ## Test evidence
+
+W3-05 adds offline routing and measurement coverage under
+`tests/unit/orchestration/test_router.py` and `test_router_benchmark.py`.
+Independent exhaustive enumeration checks optimal assignments. Tests include
+both explicit objectives, shared-budget competition, TAF task/layer eligibility,
+invalid input, zero costs, solver errors, deterministic ties, raw timing
+aggregation and overwrite protection. This is not provider/fallback coverage.
+The first synthetic latency run and local validation limits are recorded in
+[the experiment notes](../../experiments/2026-10-17_m4_w3_05_offline_router/NOTES.md).
 
 Existing coverage read for this spec:
 

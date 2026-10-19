@@ -1,6 +1,6 @@
 # Function spec: M3 F2 — live constraints and LLM formulation
 
-Status: spec only (planned for Week 3).
+Status: Constraint Extractor built on saved kubectl output (W3-01); Formulation Agent v0 built for `kubectl patch deployment` (W3-02).
 
 | Field | |
 |---|---|
@@ -12,7 +12,65 @@ Status: spec only (planned for Week 3).
 | Dependencies | F1; the dev cluster (W2-11); a shared read-only cluster client in `src/argus/integrations/`; an LLM provider (plan decision D2); contract v1. |
 | Test evidence | Extractor tests against the dev cluster; translation accuracy on a small hand-checked set (parses, runs, matches dry-run or observed state, verdict matches the label); failure paths (cluster unreachable, LLM timeout or invalid JSON) end in BLOCK. |
 
+## Constraint Extractor (built in W3-01, on saved kubectl output)
+
+The dev cluster is deferred past PP1, so the extractor runs on saved kubectl output for now. The code is the same as for a live cluster.
+
+- **What it reads.** `extractor.extract(namespace, run)` sends four read-only commands: `kubectl get deployments|pdb|pods|pvc -n NS -o json`. From them it builds the snapshot in F1's format.
+- **Where it reads from.** Every command goes through a `run(command)` function, chosen by the settings:
+  - `ARGUS_M3_KUBECTL_OUTPUT`: a folder of saved output, the PP1 setting (`data/fixtures/m3/kubectl/`);
+  - `ARGUS_KUBE_CONTEXT`: live kubectl, always run with that `--context`;
+  - later, SREGym's Kubernetes MCP server, which wraps the kubectl CLI (SREGym CAIS '26, §2.2), so it can take the same commands. Its exact tool interface is unverified until we have a cluster.
+- **Read-only.** The extractor only builds `kubectl get` commands, and both runners refuse anything else.
+- **Where each fact comes from:**
+
+| Fact | Source |
+|---|---|
+| `replicas` | `spec.replicas` |
+| `max_unavailable`, `max_surge` | `spec.strategy.rollingUpdate`. The `Recreate` strategy counts as `100%` / `0`. |
+| `min_replicas` | The one PodDisruptionBudget whose selector picks the deployment's pods: its `minAvailable`, with a percentage rounded up (Kubernetes docs). No PDB, more than one, or a PDB with only `maxUnavailable` → unknown, so M3 blocks (fail-safe). A PDB with `matchExpressions` that might pick the pods (its `matchLabels` don't rule them out) also makes the minimum unknown. A PDB without a selector picks no pods; an empty selector `{}` picks all of them (policy/v1). |
+| PVC `in_use` | A pod in the namespace mounts it (`spec.volumes[].persistentVolumeClaim.claimName`). |
+
+- **Namespace check.** The namespace comes from the proposed command, so it must be a valid namespace name (a DNS-1123 label: at most 63 characters, `a-z`, `0-9` and `-`) before it goes into a read command. Otherwise text like `-n 'ns --server=https://other.example'` would add flags to the read. Anything else blocks before any read.
+- **Gate.** With no snapshot passed in, the gate calls the extractor for the command's namespace and times it as the `extractor` stage. Any extractor error blocks, including a missing folder or a broken `index.json`. Pod and namespace deletes skip the extractor: their only rule (protected namespaces) needs no cluster facts.
+- **Check against F1.** On five commands, the extractor-built facts and the hand-written snapshot give the same decisions (`test_gate.py`).
+
+## Formulation Agent v0 (built in W3-02): `kubectl patch deployment`
+
+The fixed parser reads `scale`, `delete` and `rollout restart`. A `kubectl patch` (39% of Stratus's writes, SREGym Table 11) goes to an LLM instead:
+
+```
+command text ──► M3 reads name, -n, patch JSON itself (no LLM)
+            └──► LLM (OpenRouter, google/gemini-2.5-flash-lite, JSON-schema answer)
+                    {kind, name, namespace, effect, replicas}
+                 ──► Pydantic validation ──► cross-check with what M3 read ──► an action M3's rules check
+```
+
+| LLM says `effect` | M3 checks it as | Rules |
+|---|---|---|
+| `set_replicas` (only `spec.replicas`) | `scale` | I1, I2 |
+| `pod_template_change` (only `spec.template`) | `rollout-restart` (a template change starts a rolling update) | I3, I2 |
+| `metadata_only` (only the deployment's own `labels` and/or `annotations`, each a map of strings) | `patch-metadata` | I2 only (decided 17/10) |
+| `unknown` | BLOCK | |
+
+Other metadata (`ownerReferences`, `finalizers`, a `null` metadata, ...) counts as `unknown`, even if the LLM says `metadata_only`: an absent owner can make Kubernetes garbage-collect the deployment and its pods, which M3 doesn't model (review on PR #23). A patch JSON that gives a key twice also counts as `unknown`: Python keeps the last value, and kubectl or the API server might not.
+
+- **Cross-checks (decided 17/10).** The LLM's name and namespace must equal the command's. Its effect must equal the part of the patch JSON that is touched. Its replicas must equal the patch's value. Any disagreement blocks. For this narrow form, the cross-check can read the answer from the JSON itself, so a translation error can only cause a block, never an approval. For verbs without such a check (the long tail), translation accuracy has to be measured instead (risk 2).
+- **Blocked before the LLM is asked:** a patch to anything other than a deployment, a missing `-n`, JSON-patch (`--type=json`), or any other flag.
+- **Failure paths.** No key, no model, a network error, a timeout (20 s for the whole call), an answer outside the schema (including one cut short by the 300-token cap), or a log that can't be written all block.
+- **Evidence.** Every raw answer is appended to `ARGUS_M3_LLM_LOG` (JSONL: time, model, command, raw text, token usage).
+- **Privacy.** The whole command, including values in the patch such as env values, is sent to OpenRouter and written to the log. Redaction isn't built, so patches must not carry secrets.
+- **Prompt-tuned, not fine-tuned (D8, decided 17/10).** One fixed prompt plus a JSON schema. Fine-tuning is future work.
+- **Model tier.** A cheap model for development and the demo. The final numbers should use a stronger one (NSVIF got worse with a small model).
+- **First results (W3-10, 19/10, `experiments/2026-10-19_m3_corpus-v0-formulation/`).**
+  - Corpus v0 with `deepseek/deepseek-v4-flash-0731`, 5 runs each, $0.0027 in total.
+  - False blocks fell from 19/25 to 16/25. Detection stayed at 24/25, and 12 of those detections now come from an encoded rule (6 before).
+  - The LLM changed its answer between runs for one command (m12: the wrong `kind` in 2 of 5 runs). The cross-check blocked those runs, fail-closed.
+  - With the LLM, a whole M3 check had a median of 3.6 s on a Windows laptop under memory pressure. The LLM call alone had a median of about 1.0 s.
+
 ## Open points
+- PodDisruptionBudget as the source of the minimum was decided 17/10. A PDB limits voluntary disruptions; reading it as M3's minimum is our interpretation, and we need to be able to defend it.
+- `-A` (all namespaces) can't be extracted one namespace at a time. A PVC delete with `-A` blocks (not a valid namespace name); a pod delete with `-A` needs no facts and is blocked by the protected-namespace rule.
 - Direct reads vs reads through M4 (RESEARCH_CONTEXT §5): proposed direct, read-only; needs team agreement and a check of SREGym's rules.
 - The snapshot can change between the check and the write: record the snapshot time (or `resourceVersion`) and list it as a limitation.
 - Model tier: develop on a cheap model; evaluate on a stronger one (NSVIF got worse with a small model).

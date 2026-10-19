@@ -1,0 +1,17 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "geo-5d8f7c9b4-a1b2c", "namespace": "hotel-reservation", "labels": {"app": "geo"}}, "spec": {"containers": [{"name": "hotel-reserv-geo"}]}},
+    {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "geo-5d8f7c9b4-d3e4f", "namespace": "hotel-reservation", "labels": {"app": "geo"}}, "spec": {"containers": [{"name": "hotel-reserv-geo"}]}},
+    {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "geo-5d8f7c9b4-g5h6i", "namespace": "hotel-reservation", "labels": {"app": "geo"}}, "spec": {"containers": [{"name": "hotel-reserv-geo"}]}},
+    {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "frontend-7c4b9d6f8-k1l2m", "namespace": "hotel-reservation", "labels": {"app": "frontend"}}, "spec": {"containers": [{"name": "hotel-reserv-frontend"}]}},
+    {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "frontend-7c4b9d6f8-n3p4q", "namespace": "hotel-reservation", "labels": {"app": "frontend"}}, "spec": {"containers": [{"name": "hotel-reserv-frontend"}]}},
+    {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "search-6b5c8d7e9-r5s6t", "namespace": "hotel-reservation", "labels": {"app": "search"}}, "spec": {"containers": [{"name": "hotel-reserv-search"}]}},
+    {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "search-6b5c8d7e9-u7v8w", "namespace": "hotel-reservation", "labels": {"app": "search"}}, "spec": {"containers": [{"name": "hotel-reserv-search"}]}},
+    {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "profile-8d9e7f6a5-x9y1z", "namespace": "hotel-reservation", "labels": {"app": "profile"}}, "spec": {"containers": [{"name": "hotel-reserv-profile"}]}},
+    {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "profile-8d9e7f6a5-b2c3d", "namespace": "hotel-reservation", "labels": {"app": "profile"}}, "spec": {"containers": [{"name": "hotel-reserv-profile"}]}},
+    {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "mongodb-geo-5f6g7h8j9-e4f5g", "namespace": "hotel-reservation", "labels": {"app": "mongodb-geo"}}, "spec": {"containers": [{"name": "hotel-reserv-geo-mongo"}], "volumes": [{"name": "geo-data", "persistentVolumeClaim": {"claimName": "geo-pvc"}}]}}
+  ],
+  "metadata": {"resourceVersion": ""}
+}
