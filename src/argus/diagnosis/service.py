@@ -14,9 +14,10 @@ from argus.contracts import (
 )
 from argus.diagnosis.core.belief import H0
 from argus.diagnosis.core.config import DiagnosisConfig
-from argus.diagnosis.core.models import Evidence, HypothesisSpec
+from argus.diagnosis.core.models import DiagContext, Evidence, HypothesisSpec
 from argus.diagnosis.loop.context_adapter import adapt
 from argus.diagnosis.loop.controller import Controller, LoopResult
+from argus.diagnosis.loop.fixes import propose_fix
 from argus.diagnosis.ports.base import LLMClient, ReadExecutor
 
 EVIDENCE_CHARS = 200  # how much of each read's output a hypothesis carries as evidence
@@ -42,10 +43,10 @@ def diagnose(
     cfg = config or DiagnosisConfig()
     ctx = adapt(context, cfg.namespace)
     result = Controller(cfg, llm=llm, reads=reads).run(ctx)
-    return to_result(result, cfg.namespace, blocked_commands(feedback))
+    return to_result(result, ctx, blocked_commands(feedback))
 
 
-def to_result(result: LoopResult, namespace: str, blocked: set[str]) -> DiagnosisResult:
+def to_result(result: LoopResult, ctx: DiagContext, blocked: set[str]) -> DiagnosisResult:
     """Turn the loop's belief state into the contract: hypotheses best first, then actions."""
     ranked = [(h, p) for h, p in result.belief.ranked() if h != H0]
     hypotheses = [
@@ -59,15 +60,12 @@ def to_result(result: LoopResult, namespace: str, blocked: set[str]) -> Diagnosi
     actions: list[ProposedAction] = []
     if ranked:
         top = result.hypotheses[ranked[0][0]]
-        actions.append(_read_action(top, namespace))
-        actions += propose_writes(top, namespace)
+        actions.append(_read_action(top, ctx.namespace))
+        fix = propose_fix(top, ctx)
+        if fix is not None:
+            actions.append(fix)
     kept = [a for a in actions if a.command not in blocked]
     return DiagnosisResult(hypotheses=hypotheses, actions=kept)
-
-
-def propose_writes(top: HypothesisSpec, namespace: str) -> list[ProposedAction]:
-    """Write actions that would fix the top hypothesis. None yet: added in the next task (step 3)."""
-    return []
 
 
 def blocked_commands(feedback: list[SafetyVerdict] | None) -> set[str]:
