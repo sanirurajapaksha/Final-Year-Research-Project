@@ -8,12 +8,14 @@ PP1, so every kubectl read is answered from canned scenario_01 output
 The page only displays: the data comes from argus.diagnosis.demo.demo_report().
 """
 
+import pandas as pd
 import streamlit as st
 
 from argus.context.service import build_context
 from argus.contracts import TelemetryBatch
 from argus.demo.run import TELEMETRY
 from argus.demo.views import the_run
+from argus.diagnosis.core.belief import H0
 from argus.diagnosis.demo import demo_report
 from argus.orchestration.service import compress
 
@@ -74,3 +76,25 @@ for hypothesis in hypotheses:
     )
 st.dataframe(rows, hide_index=True)
 st.caption("✗ pruned: its belief fell below the pruning threshold (eps), so M2 stopped testing it.")
+
+st.subheader("Belief after each step")
+chart_rows = []
+step_rows = []
+for one_round in report["belief_rounds"]:
+    chart_rows.append(one_round["belief"])
+    verdicts = []
+    for hypothesis_id, verdict in one_round["verdicts"].items():
+        verdicts.append(f"{hypothesis_id}: {verdict}")
+    step_rows.append(
+        {
+            "step": one_round["step"],
+            "event": one_round["event"],
+            "read": one_round["evidence"] or "-",
+            "verdicts": ", ".join(verdicts) or "-",
+        }
+    )
+steps = [one_round["step"] for one_round in report["belief_rounds"]]
+belief = pd.DataFrame(chart_rows, index=pd.Index(steps, name="step"))
+belief = belief.rename(columns={H0: "H0 (none of these)"})
+st.line_chart(belief)
+st.dataframe(step_rows, hide_index=True)
