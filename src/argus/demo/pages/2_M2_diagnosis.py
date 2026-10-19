@@ -20,6 +20,7 @@ from argus.demo.run import TELEMETRY
 from argus.demo.views import the_run
 from argus.diagnosis.core.belief import H0
 from argus.diagnosis.demo import (
+    SCENARIO_READS,
     demo_report,
     no_cluster_report,
     prior_beliefs,
@@ -38,8 +39,12 @@ def scenario_context(telemetry_path: str) -> SemanticContext:
 
 
 @st.cache_data
-def m2_report(telemetry_path: str, no_cluster: bool) -> dict:
-    """M2's first answer on that context. Cached, so switching pages doesn't recompute it."""
+def m2_report(telemetry_path: str, no_cluster: bool, reads_changed_at: float) -> dict:
+    """M2's first answer on that context. Cached, so switching pages doesn't recompute it.
+
+    reads_changed_at (when reads.json was last saved) is only part of the cache key: editing the
+    canned reads re-runs M2 instead of showing the old answer.
+    """
     return feedback_report(telemetry_path, [], no_cluster)
 
 
@@ -62,7 +67,7 @@ no_cluster = st.toggle(
     "No cluster at all: run M2 with no reads, not even the canned ones",
     help="Shows what M2 does when every read fails: it should stop and say it is unsure.",
 )
-report = m2_report(str(TELEMETRY), no_cluster)
+report = m2_report(str(TELEMETRY), no_cluster, SCENARIO_READS.stat().st_mtime)
 
 st.warning(
     f"{report['reads_source']}. There is no cluster in PP1 and nothing is executed. "
