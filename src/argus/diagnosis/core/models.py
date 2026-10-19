@@ -22,6 +22,7 @@ class DiagContext(BaseModel):
     candidates: list[Candidate] = []
     symptoms: list[str] = []
     failing_path: list[str] = []
+    notes: str = ""  # M1's notes, e.g. why the context is empty
 
 
 class HypothesisSpec(BaseModel):
