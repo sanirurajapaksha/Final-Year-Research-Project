@@ -40,3 +40,18 @@ st.warning(
     f"{report['reads_source']}. There is no cluster in PP1 and nothing is executed. "
     "Scoring is rule-based (no LLM)."
 )
+
+st.subheader("Summary")
+hypotheses = report["hypotheses"]
+left, middle, right, last = st.columns(4)
+if hypotheses:
+    top = hypotheses[0]
+    left.metric("Top hypothesis", f"{top['component']} [{top['layer']}]")
+    middle.metric("Its probability", f"{top['probability']:.0%}")
+else:
+    left.metric("Top hypothesis", "none")
+    middle.metric("Its probability", "-")
+right.metric("Stop reason", report["stop_reason"])
+last.metric("Reads run", len(report["reads"]))
+if report["low_confidence"]:
+    st.warning("Low confidence: M2 stopped without a clear winner. Treat the top hypothesis as a guess.")
