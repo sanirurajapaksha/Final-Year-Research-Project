@@ -9,8 +9,8 @@ from argus.diagnosis.ports.fakes import FakeLLM, FakeReadExecutor
 CTX = DiagContext(
     namespace="demo", candidates=[Candidate(service="frontend", weight=1.5), Candidate(service="cart")]
 )
-FRONTEND_YAML = "kubectl get deployment frontend -n demo -o yaml"
-CART_YAML = "kubectl get deployment cart -n demo -o yaml"
+FRONTEND_DEPLOYMENT = "kubectl get deployment frontend -n demo -o json"
+CART_DEPLOYMENT = "kubectl get deployment cart -n demo -o json"
 REFUTE_ALL = {"H1": "strong-refute", "H2": "strong-refute", "H3": "strong-refute"}
 
 
@@ -31,7 +31,9 @@ def _example_b(name: str) -> Controller:
             ]
         }
     )
-    reads = FakeReadExecutor({FRONTEND_YAML: "env looks fine", CART_YAML: "env: REDIS_ADDR missing"})
+    reads = FakeReadExecutor(
+        {FRONTEND_DEPLOYMENT: "env looks fine", CART_DEPLOYMENT: "env: REDIS_ADDR missing"}
+    )
     return Controller(preset(name, namespace="demo"), llm, reads)
 
 
@@ -42,7 +44,7 @@ def test_every_line_is_json_and_tagged_with_its_run(tmp_path):
     assert {line["run"] for line in lines} == {"B-ach"}
     assert [line["event"] for line in lines][0] == "start" and lines[-1]["event"] == "finish"
     update = next(line for line in lines if line["event"] == "update")
-    assert update["command"] == FRONTEND_YAML and update["verdicts"]["H1"] == "strong-refute"
+    assert update["command"] == FRONTEND_DEPLOYMENT and update["verdicts"]["H1"] == "strong-refute"
 
 
 def test_greedy_is_confidently_wrong_where_ach_rca_backtracks(tmp_path):

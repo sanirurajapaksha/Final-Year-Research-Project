@@ -12,7 +12,7 @@ SIGNATURES = [
     (
         "app-config",
         "missing or wrong dependency address env var",
-        "kubectl get deployment {svc} -n {ns} -o yaml",
+        "kubectl get deployment {svc} -n {ns} -o json",
         "env var for a callee is absent or points nowhere",
     ),
     (

@@ -8,8 +8,8 @@ from argus.diagnosis.ports.fakes import FakeLLM, FakeReadExecutor
 CTX = DiagContext(
     namespace="demo", candidates=[Candidate(service="frontend", weight=1.5), Candidate(service="cart")]
 )
-FRONTEND_YAML = "kubectl get deployment frontend -n demo -o yaml"
-CART_YAML = "kubectl get deployment cart -n demo -o yaml"
+FRONTEND_DEPLOYMENT = "kubectl get deployment frontend -n demo -o json"
+CART_DEPLOYMENT = "kubectl get deployment cart -n demo -o json"
 REFUTE_ALL = {"H1": "strong-refute", "H2": "strong-refute", "H3": "strong-refute"}
 
 
@@ -17,12 +17,12 @@ def test_example_a_stops_on_h1_after_one_read():
     llm = FakeLLM(
         {"score": [{"verdicts": {"H1": "strong-support", "H2": "strong-refute", "H3": "strong-refute"}}]}
     )
-    reads = FakeReadExecutor({FRONTEND_YAML: "env: CART_ADDR missing"})
+    reads = FakeReadExecutor({FRONTEND_DEPLOYMENT: "env: CART_ADDR missing"})
     result = Controller(llm=llm, reads=reads).run(CTX)
     assert result.report.stop_reason == "confident"
     top, p = result.belief.ranked()[0]
     assert top == "H1" and p >= 0.80
-    assert reads.calls == [FRONTEND_YAML]
+    assert reads.calls == [FRONTEND_DEPLOYMENT]
 
 
 def test_example_b_backtracks_through_h0_to_h4():
@@ -41,14 +41,16 @@ def test_example_b_backtracks_through_h0_to_h4():
             ]
         }
     )
-    reads = FakeReadExecutor({FRONTEND_YAML: "env looks fine", CART_YAML: "env: REDIS_ADDR missing"})
+    reads = FakeReadExecutor(
+        {FRONTEND_DEPLOYMENT: "env looks fine", CART_DEPLOYMENT: "env: REDIS_ADDR missing"}
+    )
     result = Controller(llm=llm, reads=reads).run(CTX)
     assert [h["event"] for h in result.belief.history].count("rehypothesize") == 1
     top, p = result.belief.ranked()[0]
     assert top == "H4" and result.hypotheses["H4"].component == "cart"
     # One strong-support after a backtrack reaches ~0.77: H4 leads, but below theta, so it's flagged.
     assert 0.7 < p < 0.8 and result.report.low_confidence
-    assert reads.calls == [FRONTEND_YAML, CART_YAML]
+    assert reads.calls == [FRONTEND_DEPLOYMENT, CART_DEPLOYMENT]
 
 
 def test_no_llm_no_cluster_ends_low_confidence_without_crashing():
@@ -70,11 +72,11 @@ def test_empty_context_reports_why():
 def test_round_budget_stops_before_drafting_another_round():
     # max_rehyp alone would allow a second draft round; max_rounds=1 must stop it first.
     cfg = DiagnosisConfig(max_rounds=1, max_rehyp=5)
-    reads = FakeReadExecutor({FRONTEND_YAML: "ok", CART_YAML: "ok"})
+    reads = FakeReadExecutor({FRONTEND_DEPLOYMENT: "ok", CART_DEPLOYMENT: "ok"})
     result = Controller(config=cfg, reads=reads).run(CTX)
     assert result.report.stop_reason == "budget" and result.report.low_confidence
     assert len(result.hypotheses) == 3  # only the first round was drafted
-    assert CART_YAML not in reads.calls  # cart is only drafted in round 2
+    assert CART_DEPLOYMENT not in reads.calls  # cart is only drafted in round 2
 
 
 class _SlowReads(FakeReadExecutor):
@@ -91,7 +93,7 @@ def test_deadline_crossed_by_a_read_skips_scoring(monkeypatch):
     clock = {"now": 0.0}
     monkeypatch.setattr("argus.diagnosis.loop.controller.time.monotonic", lambda: clock["now"])
     llm = FakeLLM({"score": [{"verdicts": {"H1": "strong-support", "H2": "strong-refute"}}]})
-    reads = _SlowReads({FRONTEND_YAML: "env: CART_ADDR missing"}, clock)
+    reads = _SlowReads({FRONTEND_DEPLOYMENT: "env: CART_ADDR missing"}, clock)
     result = Controller(config=DiagnosisConfig(wall_clock_s=1), llm=llm, reads=reads).run(CTX)
     assert result.report.stop_reason == "budget" and result.report.low_confidence
     assert llm.usage["calls"] == 0  # no LLM call started after the budget ran out
@@ -109,7 +111,7 @@ def test_deadline_crossed_by_scoring_is_not_confident(monkeypatch):
     llm = SlowLLM(
         {"score": [{"verdicts": {"H1": "strong-support", "H2": "strong-refute", "H3": "strong-refute"}}]}
     )
-    reads = FakeReadExecutor({FRONTEND_YAML: "env: CART_ADDR missing"})
+    reads = FakeReadExecutor({FRONTEND_DEPLOYMENT: "env: CART_ADDR missing"})
     result = Controller(config=DiagnosisConfig(wall_clock_s=1), llm=llm, reads=reads).run(CTX)
     assert result.report.stop_reason == "budget" and result.report.low_confidence
 
@@ -117,13 +119,13 @@ def test_deadline_crossed_by_scoring_is_not_confident(monkeypatch):
 def test_rule_scorer_reads_the_evidence_when_there_is_no_llm():
     symptom = "frontend: log_error (CART_ADDR environment variable not set)"
     ctx = CTX.model_copy(update={"symptoms": [symptom]})
-    reads = FakeReadExecutor({FRONTEND_YAML: "image: otel/demo:frontend"})
+    reads = FakeReadExecutor({FRONTEND_DEPLOYMENT: "image: otel/demo:frontend"})
     result = Controller(reads=reads, scorer=RuleScorer()).run(ctx)
     first_update = next(s for s in result.belief.history if s["event"] == "update")
     assert first_update["verdicts"] == {"H1": "strong-support"}
 
 
 def test_without_a_scorer_no_llm_stays_neutral():
-    reads = FakeReadExecutor({FRONTEND_YAML: "image: otel/demo:frontend"})
+    reads = FakeReadExecutor({FRONTEND_DEPLOYMENT: "image: otel/demo:frontend"})
     result = Controller(reads=reads).run(CTX)
     assert all(s.get("verdicts", {}) == {} for s in result.belief.history)

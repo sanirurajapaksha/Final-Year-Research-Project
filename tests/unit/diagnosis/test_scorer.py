@@ -3,11 +3,11 @@ from argus.diagnosis.loop.scorer import RuleScorer
 
 CART_LOG = "cart: log_error (failed to connect to redis: CART_ADDR environment variable not set)"
 CTX = DiagContext(namespace="default", candidates=[Candidate(service="cart")], symptoms=[CART_LOG])
-YAML = "kubectl get deployment cart -n default -o yaml"
+DEPLOYMENT = "kubectl get deployment cart -n default -o json"
 ENDPOINTS = "kubectl get endpoints cart -n default"
 DESCRIBE = "kubectl describe pods -n default -l app=cart"
 HYPS = {
-    "H1": HypothesisSpec(component="cart", layer="app-config", fault="f", test=YAML),
+    "H1": HypothesisSpec(component="cart", layer="app-config", fault="f", test=DEPLOYMENT),
     "H2": HypothesisSpec(component="cart", layer="k8s-network", fault="f", test=ENDPOINTS),
     "H3": HypothesisSpec(component="cart", layer="resources", fault="f", test=DESCRIBE),
 }
@@ -19,16 +19,16 @@ def score(command: str, output: str, ctx: DiagContext = CTX) -> dict[str, str]:
 
 
 def test_missing_address_supports_the_config_fault():
-    assert score(YAML, "containers:\n- name: cart\n  image: otel/demo:cart") == {"H1": "strong-support"}
+    assert score(DEPLOYMENT, "containers:\n- name: cart\n  image: otel/demo:cart") == {"H1": "strong-support"}
 
 
 def test_address_present_refutes_the_config_fault():
-    assert score(YAML, "env:\n- name: CART_ADDR\n  value: redis-cart:6379") == {"H1": "strong-refute"}
+    assert score(DEPLOYMENT, "env:\n- name: CART_ADDR\n  value: redis-cart:6379") == {"H1": "strong-refute"}
 
 
 def test_no_address_in_the_evidence_stays_neutral():
     ctx = CTX.model_copy(update={"symptoms": ["cart: http_5xx_rate (0.92 > 0.05)"]})
-    assert score(YAML, "containers: []", ctx) == {}
+    assert score(DEPLOYMENT, "containers: []", ctx) == {}
 
 
 def test_endpoints_none_supports_and_an_address_refutes():
@@ -43,7 +43,7 @@ def test_crash_supports_and_running_refutes_the_resources_fault():
 
 
 def test_only_the_hypothesis_whose_test_ran_is_judged():
-    verdicts = score(YAML, "containers: []")
+    verdicts = score(DEPLOYMENT, "containers: []")
     assert set(verdicts) == {"H1"}  # H2 and H3 weren't tested by this read
 
 
