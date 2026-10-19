@@ -28,12 +28,6 @@ st.table(
 with st.expander("Compressed input passed to M1"):
     st.code(report["tsv"], language="text")
 
-st.subheader("Safety and executor handoffs: saved incident run")
-st.table(report["actions"])
-st.caption(
-    "Reads bypass M3; writes require APPROVE. The PP1 executor is a stub: nothing runs on any cluster. "
-    "The rows include the demo's explicitly handled feedback round."
-)
 
 st.subheader("Routing and fallback: offline scripted replay")
 st.caption(
@@ -61,4 +55,11 @@ st.download_button(
     json.dumps({"compression_and_actions": report, "routing_replay": replay}, ensure_ascii=False, indent=2),
     "m4-report.json",
     "application/json",
+)
+
+st.subheader("Safety and executor handoffs: saved incident run")
+st.table(report["actions"])
+st.caption(
+    "Reads bypass M3; writes require APPROVE. The PP1 executor is a stub: nothing runs on any cluster. "
+    "The rows include the demo's explicitly handled feedback round."
 )
