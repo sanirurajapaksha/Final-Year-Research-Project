@@ -44,6 +44,22 @@ def test_read_action_checks_the_top_hypothesis():
     assert is_read_only(reads_proposed[0].command)
 
 
+def test_top_hypothesis_gets_a_write_action_for_m3():
+    context = CONTEXT.model_copy(
+        update={
+            "anomalies": [
+                "cart: log_error (failed to connect to redis: CART_ADDR environment variable not set)"
+            ]
+        }
+    )
+    llm = FakeLLM({"score": [{"verdicts": CART_SUPPORTED}]})
+    reads = FakeReadExecutor({CART_YAML: "env: CART_ADDR missing"})
+    writes = [a for a in diagnose(context, llm=llm, reads=reads).actions if a.is_write]
+    assert len(writes) == 1
+    assert writes[0].command.startswith("kubectl patch deployment cart -n default -p ")
+    assert "CART_ADDR" in writes[0].command
+
+
 def test_no_llm_no_cluster_still_ranks_cart_first():
     result = diagnose(CONTEXT)
     assert result.hypotheses[0].root_cause.startswith("cart")
