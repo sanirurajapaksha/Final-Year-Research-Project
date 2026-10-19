@@ -111,3 +111,16 @@ def test_deadline_crossed_by_scoring_is_not_confident(monkeypatch):
     reads = FakeReadExecutor({FRONTEND_YAML: "env: CART_ADDR missing"})
     result = Controller(config=DiagnosisConfig(wall_clock_s=1), llm=llm, reads=reads).run(CTX)
     assert result.report.stop_reason == "budget" and result.report.low_confidence
+def test_rule_scorer_reads_the_evidence_when_there_is_no_llm():
+    symptom = "frontend: log_error (CART_ADDR environment variable not set)"
+    ctx = CTX.model_copy(update={"symptoms": [symptom]})
+    reads = FakeReadExecutor({FRONTEND_YAML: "image: otel/demo:frontend"})
+    result = Controller(reads=reads, scorer=RuleScorer()).run(ctx)
+    first_update = next(s for s in result.belief.history if s["event"] == "update")
+    assert first_update["verdicts"] == {"H1": "strong-support"}
+
+
+def test_without_a_scorer_no_llm_stays_neutral():
+    reads = FakeReadExecutor({FRONTEND_YAML: "image: otel/demo:frontend"})
+    result = Controller(reads=reads).run(CTX)
+    assert all(s.get("verdicts", {}) == {} for s in result.belief.history)
