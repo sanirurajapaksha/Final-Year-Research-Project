@@ -3,7 +3,15 @@ import json
 from argus.context.service import build_context
 from argus.contracts import TelemetryBatch
 from argus.diagnosis.core.readonly import is_read_only
-from argus.diagnosis.demo import FAKE_READS_LABEL, SCENARIO_READS, demo_diagnose, demo_report, scenario_reads
+from argus.diagnosis.demo import (
+    FAKE_READS_LABEL,
+    SCENARIO_READS,
+    demo_diagnose,
+    demo_report,
+    prior_beliefs,
+    read_verdicts,
+    scenario_reads,
+)
 from argus.orchestration.service import compress
 
 TELEMETRY = SCENARIO_READS.parents[2] / "m1" / "scenario_01" / "telemetry.json"
@@ -45,3 +53,24 @@ def test_report_is_labelled_plain_data():
     assert report["stop_reason"] == "confident"
     assert report["hypotheses"][0]["component"] == "cart"
     assert [r["ok"] for r in report["reads"]] == [True, True, True]
+
+
+def test_prior_is_the_first_belief_even_for_a_later_hypothesis():
+    report = {
+        "belief_rounds": [
+            {"evidence": "", "verdicts": {}, "belief": {"H1": 0.5, "H0": 0.5}},
+            {"evidence": "E1", "verdicts": {"H1": "strong-refute"}, "belief": {"H1": 0.1, "H0": 0.9}},
+            {"evidence": "", "verdicts": {}, "belief": {"H1": 0.1, "H2": 0.4, "H0": 0.5}},
+        ]
+    }
+    assert prior_beliefs(report) == {"H1": 0.5, "H0": 0.5, "H2": 0.4}
+
+
+def test_each_scenario_read_has_its_verdict():
+    verdicts = read_verdicts(demo_report(scenario_context()))
+    assert verdicts["E1"] == {"H1": "strong-support"}
+    assert sorted(verdicts) == ["E1", "E2", "E3"]
+
+
+def test_no_reads_means_no_verdicts():
+    assert read_verdicts({"belief_rounds": [{"evidence": "", "verdicts": {}, "belief": {}}]}) == {}

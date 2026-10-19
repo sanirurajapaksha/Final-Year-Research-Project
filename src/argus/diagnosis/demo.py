@@ -33,3 +33,22 @@ def demo_report(context: SemanticContext, feedback: list[SafetyVerdict] | None =
     report = diagnose_report(context, feedback, reads=scenario_reads())
     report["reads_source"] = FAKE_READS_LABEL
     return report
+
+
+def prior_beliefs(report: dict) -> dict[str, float]:
+    """Each hypothesis's belief when it first appears: at the start, or after a new round."""
+    priors: dict[str, float] = {}
+    for one_round in report["belief_rounds"]:
+        for hypothesis_id, probability in one_round["belief"].items():
+            if hypothesis_id not in priors:
+                priors[hypothesis_id] = probability
+    return priors
+
+
+def read_verdicts(report: dict) -> dict[str, dict[str, str]]:
+    """For each read (E id), the verdicts the scorer gave on it, e.g. {"E1": {"H1": "strong-support"}}."""
+    verdicts: dict[str, dict[str, str]] = {}
+    for one_round in report["belief_rounds"]:
+        if one_round["evidence"]:
+            verdicts[one_round["evidence"]] = one_round["verdicts"]
+    return verdicts
