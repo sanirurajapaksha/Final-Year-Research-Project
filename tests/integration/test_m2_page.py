@@ -57,3 +57,69 @@ def test_the_write_is_labelled_and_sent_to_m3():
     assert any(markdown.value.startswith("**WRITE**") for markdown in app.markdown)
     assert any("CART_ADDR" in code.value for code in app.code)
     assert any("goes to M3" in caption.value for caption in app.caption)
+
+
+def a_report(**changes):
+    """A small hand-made report in demo_report()'s shape: M2 found nothing and is unsure."""
+    report = {
+        "namespace": "default",
+        "candidates": [],
+        "hypotheses": [],
+        "reads": [],
+        "belief_rounds": [],
+        "stop_reason": "no hypotheses: no candidates",
+        "low_confidence": True,
+        "diagnosis": {"hypotheses": [], "actions": []},
+        "reads_source": FAKE_READS_LABEL,
+    }
+    report.update(changes)
+    return report
+
+
+@pytest.fixture
+def fake_report(monkeypatch):
+    """Replace M2's report for one test, with the page's cache cleared before and after."""
+    st = pytest.importorskip("streamlit")
+    import argus.diagnosis.demo
+
+    def use(report):
+        monkeypatch.setattr(argus.diagnosis.demo, "demo_report", lambda context, feedback=None: report)
+
+    st.cache_data.clear()
+    yield use
+    st.cache_data.clear()
+
+
+def test_no_hypotheses_shows_none_without_crashing(fake_report):
+    fake_report(a_report())
+    app = run_page()
+    assert not app.exception
+    values = [metric.value for metric in app.metric]
+    assert "none" in values
+    assert "no hypotheses: no candidates" in values
+    assert not app.expander
+
+
+def test_low_confidence_is_flagged(fake_report):
+    belief = {"H1": 0.4, "H0": 0.6}
+    fake_report(
+        a_report(
+            hypotheses=[
+                {
+                    "id": "H1",
+                    "component": "cart",
+                    "layer": "resources",
+                    "fault": "container OOMKilled or crash-looping",
+                    "probability": 0.4,
+                    "status": "active",
+                    "test": "kubectl describe pods -n default -l app=cart",
+                    "expected": "OOMKilled",
+                }
+            ],
+            belief_rounds=[{"step": 0, "event": "init", "evidence": "", "verdicts": {}, "belief": belief}],
+            stop_reason="budget",
+        )
+    )
+    app = run_page()
+    assert not app.exception
+    assert any("Low confidence" in warning.value for warning in app.warning)
