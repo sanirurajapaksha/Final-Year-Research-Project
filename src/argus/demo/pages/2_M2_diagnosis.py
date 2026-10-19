@@ -55,3 +55,22 @@ right.metric("Stop reason", report["stop_reason"])
 last.metric("Reads run", len(report["reads"]))
 if report["low_confidence"]:
     st.warning("Low confidence: M2 stopped without a clear winner. Treat the top hypothesis as a guess.")
+
+st.subheader("Hypotheses, best first")
+rows = []
+for hypothesis in hypotheses:
+    status = hypothesis["status"]
+    if status == "pruned":
+        status = "✗ pruned"
+    rows.append(
+        {
+            "id": hypothesis["id"],
+            "component": hypothesis["component"],
+            "layer": hypothesis["layer"],
+            "fault": hypothesis["fault"],
+            "probability": f"{hypothesis['probability']:.1%}",
+            "status": status,
+        }
+    )
+st.dataframe(rows, hide_index=True)
+st.caption("Pruned: the evidence made this hypothesis unlikely, so M2 stopped testing it.")
