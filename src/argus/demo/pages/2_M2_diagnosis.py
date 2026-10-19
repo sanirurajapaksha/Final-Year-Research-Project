@@ -112,3 +112,12 @@ for action in report["diagnosis"]["actions"]:
     kind = "WRITE" if action["is_write"] else "READ"
     st.markdown(f"**{kind}** · namespace `{action['target_namespace']}`: {action['rationale']}")
     st.code(action["command"], language="bash")
+
+st.subheader("M2 in this run's rounds (from page 1)")
+st.caption(
+    "What page 1's pipeline got from M2. Page 1 may still use the SIMULATED M2 (demo/scenario.py) "
+    "until run.py switches to demo_diagnose, so these rows can differ from the real M2 above."
+)
+for number, one_round in enumerate(record["rounds"], start=1):
+    st.markdown(f"**Round {number}: {one_round['title']}**")
+    st.table(one_round["hypotheses"])
