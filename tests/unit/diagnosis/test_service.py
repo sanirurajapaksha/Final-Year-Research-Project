@@ -58,7 +58,34 @@ def test_top_hypothesis_gets_a_write_action_for_m3():
 def test_no_llm_no_cluster_still_ranks_cart_first():
     result = diagnose(CONTEXT)
     assert result.hypotheses[0].root_cause.startswith("cart")
-    assert all("unavailable" in line for h in result.hypotheses for line in h.evidence)
+    for hypothesis in result.hypotheses:
+        for line in hypothesis.evidence:
+            assert "unavailable" in line or line.startswith("No write:")
+
+
+def test_no_write_when_no_read_confirmed_the_top_hypothesis():
+    # M4's default run_once(batch): no reads at all, so the loop ends unsure. Its patch must not
+    # reach M3, which could approve a config change M2 never confirmed.
+    context = CONTEXT.model_copy(update={"anomalies": [CART_LOG]})
+    report = diagnose_report(context)
+    assert report["low_confidence"]
+    actions = diagnose(context).actions
+    assert [a for a in actions if a.is_write] == []
+    assert [a.command for a in actions] == [CART_YAML]  # the read that would confirm it stays
+    reason = diagnose(context).hypotheses[0].evidence[-1]
+    assert reason.startswith("No write: the reads did not confirm this hypothesis")
+    assert report["stop_reason"] in reason
+
+
+def test_no_write_when_none_of_these_wins():
+    # Every read refutes its hypothesis, so H0 ("none of these") ends on top: no fix is proposed.
+    context = CONTEXT.model_copy(update={"anomalies": [CART_LOG]})
+    refuted = {"H1": "strong-refute", "H2": "strong-refute", "H3": "strong-refute"}
+    llm = FakeLLM({"score": [{"verdicts": refuted}] * 10})
+    reads = FakeReadExecutor({CART_YAML: "a healthy deployment"})
+    report = diagnose_report(context, llm=llm, reads=reads)
+    assert report["stop_reason"] != "confident"
+    assert [a for a in diagnose(context, llm=llm, reads=reads).actions if a.is_write] == []
 
 
 def test_empty_context_gives_no_hypotheses_and_no_actions():
@@ -84,14 +111,17 @@ def test_only_block_verdicts_count_as_blocked():
 
 def test_blocked_fix_is_dropped_with_m3s_reason():
     context = CONTEXT.model_copy(update={"anomalies": [CART_LOG]})
-    fix = next(a for a in diagnose(context).actions if a.is_write)
+    llm = FakeLLM({"score": [{"verdicts": CART_SUPPORTED}] * 2})
+    reads = FakeReadExecutor({CART_YAML: "env: CART_ADDR missing"})
+    fix = next(a for a in diagnose(context, llm=llm, reads=reads).actions if a.is_write)
+    llm = FakeLLM({"score": [{"verdicts": CART_SUPPORTED}] * 2})  # a fresh copy: answers are used up
     verdict = SafetyVerdict(
         command=fix.command,
         decision=GateDecision.BLOCK,
         reason="min_available violated",
         counterexample={"cart.available": 0},
     )
-    result = diagnose(context, feedback=[verdict])
+    result = diagnose(context, feedback=[verdict], llm=llm, reads=reads)
     assert [a for a in result.actions if a.is_write] == []
     reason = result.hypotheses[0].evidence[-1]
     assert reason.startswith("M3 blocked the fix")

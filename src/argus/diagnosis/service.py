@@ -103,7 +103,11 @@ def to_result(result: LoopResult, ctx: DiagContext, blocked: dict[str, SafetyVer
         top = result.hypotheses[ranked[0][0]]
         actions.append(_read_action(top, ctx.namespace))
         fix = propose_fix(top, ctx)
-        if fix is not None and fix.command in blocked:
+        if not confirmed(result):
+            # Test before acting: the reads never confirmed `top`, so M2 proposes only the read
+            # that would, and no write M3 might approve. The reason goes where the dashboard shows it.
+            hypotheses[0].evidence.append(_unconfirmed_line(result))
+        elif fix is not None and fix.command in blocked:
             # M3 proved this fix unsafe. M2 knows one fix per fault, so it proposes no other
             # write and records why, with M3's counterexample, where the dashboard shows it.
             hypotheses[0].evidence.append(_blocked_line(blocked[fix.command]))
@@ -111,6 +115,23 @@ def to_result(result: LoopResult, ctx: DiagContext, blocked: dict[str, SafetyVer
             actions.append(fix)
     kept = [a for a in actions if a.command not in blocked]
     return DiagnosisResult(hypotheses=hypotheses, actions=kept)
+
+
+def confirmed(result: LoopResult) -> bool:
+    """The loop stopped because one real hypothesis clearly beat the others and H0 ("none of these").
+
+    Only then may M2 propose a write. Running out of hypotheses or budget, or every read failing,
+    ends with low confidence: the top hypothesis is then just the least-refuted guess.
+    """
+    return result.report.stop_reason == "confident" and not result.report.low_confidence
+
+
+def _unconfirmed_line(result: LoopResult) -> str:
+    """Why there is no write: the loop stopped without confirming the top hypothesis."""
+    return (
+        f"No write: the reads did not confirm this hypothesis (stop reason: {result.report.stop_reason}), "
+        "so M2 proposes only the read that would check it."
+    )
 
 
 def blocked_verdicts(feedback: list[SafetyVerdict] | None) -> dict[str, SafetyVerdict]:
