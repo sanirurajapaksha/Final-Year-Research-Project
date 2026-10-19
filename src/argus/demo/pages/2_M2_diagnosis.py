@@ -98,3 +98,10 @@ belief = pd.DataFrame(chart_rows, index=pd.Index(steps, name="step"))
 belief = belief.rename(columns={H0: "H0 (none of these)"})
 st.line_chart(belief)
 st.dataframe(step_rows, hide_index=True)
+
+st.subheader("Reads and results (FAKE: canned output, no cluster)")
+for read in report["reads"]:
+    status = "ok" if read["ok"] else "failed"
+    with st.expander(f"{read['id']} · {read['hypothesis']} · {status}"):
+        st.code(read["command"], language="bash")
+        st.code(read["output"], language="text")
