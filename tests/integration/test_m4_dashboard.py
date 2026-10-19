@@ -9,6 +9,12 @@ from argus.orchestration.pipeline import run_once
 from argus.orchestration.report import load_scenario
 
 
+def table_with_columns(app, *columns):
+    matches = [table.value for table in app.table if set(columns) == set(table.value.columns)]
+    assert len(matches) == 1, f"Expected one table with columns {columns}, found {len(matches)}"
+    return matches[0]
+
+
 def test_m4_page_compression_fallback_and_budget_stop():
     pytest.importorskip("streamlit")
     from streamlit.testing.v1 import AppTest
@@ -29,10 +35,12 @@ def test_m4_page_compression_fallback_and_budget_stop():
     app.run(timeout=60)
     assert not app.exception
     assert app.metric[0].label == "Original JSON bytes"
-    assert "fake-fallback" in app.table[3].value.to_string()
+    attempts = table_with_columns(app, "task_id", "model_id", "status", "charged_estimated_units", "reason")
+    assert (attempts["model_id"] == "fake-fallback").any()
     app.slider[0].set_value(4).run(timeout=60)
     assert not app.exception
-    assert "budget_exhausted" in app.table[4].value.to_string()
+    tasks = table_with_columns(app, "task_id", "status", "reason")
+    assert (tasks["status"] == "budget_exhausted").any()
     app.slider[0].set_value(1).run(timeout=60)
     assert not app.exception
     assert app.warning
