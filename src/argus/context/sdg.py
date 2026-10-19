@@ -52,6 +52,14 @@ class ServiceGraph:
     # Failed CLIENT spans with no span from the callee: the callee crashed or isn't instrumented,
     # so the graph can't name it.
     unseen_callees: int = 0
+    # The services that made those calls.
+    unseen_callers: set[str] = field(default_factory=set)
+
+    def possible_unseen_callees(self) -> set[str]:
+        """Services an unseen callee could be, from the graph: whatever its callers called elsewhere
+        in the window. A callee that answered once and then crashed is in the graph, but may still be
+        the one that didn't answer the failed call."""
+        return {callee for caller, callee in self.edges if caller in self.unseen_callers}
 
     def failing_path(self) -> set[str]:
         """The failing services plus every service that calls them, directly or indirectly."""
@@ -86,13 +94,15 @@ def build_graph(spans: list[Span]) -> ServiceGraph:
             graph.edges.add((parent.service, span.service))
             called_elsewhere.add((parent.trace_id, parent.span_id))
 
-    graph.unseen_callees = sum(
-        1
+    unanswered = [
+        span
         for span in spans
         if span.span_kind is SpanKind.CLIENT
         and is_error(span)
         and (span.trace_id, span.span_id) not in called_elsewhere
-    )
+    ]
+    graph.unseen_callees = len(unanswered)
+    graph.unseen_callers = {span.service for span in unanswered}
 
     # A root span has no parent in the batch. The most common root service of the failed traces is
     # the entry point; ties go to the alphabetically first name so the result is repeatable.

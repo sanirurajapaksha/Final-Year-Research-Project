@@ -91,7 +91,32 @@ def test_failed_call_without_a_callee_span_is_counted():
         [span("frontend", "a"), span("frontend", "b", parent="a", kind="CLIENT", grpc_status_code=14)]
     )
     assert graph.unseen_callees == 1
+    assert graph.unseen_callers == {"frontend"}
     assert graph.failing == {"frontend"}
+
+
+def callee_answers_then_crashes():
+    """cart calls redis once successfully, then a later cart call to redis fails with no redis span."""
+    return [
+        span("cart", "a", trace="ok"),
+        span("cart", "b", parent="a", kind="CLIENT", trace="ok"),
+        span("redis", "c", parent="b", trace="ok"),
+        span("frontend", "d", trace="ok"),
+        span("product-catalog", "e", parent="d", trace="ok"),
+        span("cart", "x", trace="bad", otel_status_code="ERROR"),
+        span("cart", "y", parent="x", kind="CLIENT", trace="bad", otel_status_code="ERROR"),
+    ]
+
+
+def test_possible_unseen_callees_are_what_the_caller_called_elsewhere():
+    graph = build_graph(callee_answers_then_crashes())
+    assert graph.unseen_callees == 1
+    assert graph.possible_unseen_callees() == {"redis"}
+    assert "redis" not in graph.failing_path()
+
+
+def test_no_unseen_callees_means_no_possible_ones(scenario_01_batch):
+    assert build_graph(scenario_01_spans(scenario_01_batch)).possible_unseen_callees() == set()
 
 
 def test_span_whose_parent_is_missing_counts_as_a_root():

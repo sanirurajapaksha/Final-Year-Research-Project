@@ -53,6 +53,20 @@ def test_unseen_callee_keeps_signals_from_outside_the_graph():
     assert [(p.signal.service, p.reason) for p in pruned] == [("product-catalog", OFF_PATH)]
 
 
+def test_callee_seen_answering_earlier_is_kept_when_a_later_call_goes_unanswered():
+    # cart -> redis answered once, then a cart call failed with no redis span; redis was OOMKilled.
+    graph = ServiceGraph(
+        services={"cart", "redis", "frontend", "product-catalog"},
+        edges={("cart", "redis"), ("frontend", "product-catalog")},
+        failing={"cart"},
+        unseen_callees=1,
+        unseen_callers={"cart"},
+    )
+    kept, pruned = prune([signal("redis", "OOMKilled"), signal("product-catalog")], graph)
+    assert [s.service for s in kept] == ["redis"]
+    assert [(p.signal.service, p.reason) for p in pruned] == [("product-catalog", OFF_PATH)]
+
+
 def test_order_is_preserved():
     signals = [signal("cart", "b"), signal("frontend", "a"), signal("cart", "a")]
     kept, _ = prune(signals, graph())
