@@ -60,7 +60,6 @@ def build_report(
     try:
         parsed = parse_records(decode_tsv(telemetry.content))
         signals = extract_anomalies(parsed, thresholds)
-        spans = spans_in_window(parsed.spans, telemetry.alert_time, lookback)
     except IngestError as error:
         return ContextReport(
             SemanticContext(strategy=strategy, notes=f"M1 could not read the telemetry: {error}")
@@ -76,6 +75,14 @@ def build_report(
         )
         return ContextReport(context, parsed.total, signals)
 
+    # Spans that can't be placed in the alert window can't locate the fault either, so Stage 2 gets
+    # no spans and prunes nothing: the Stage 1 anomalies (e.g. an ERROR log) still reach M2.
+    window_error = None
+    try:
+        spans = spans_in_window(parsed.spans, telemetry.alert_time, lookback)
+    except IngestError as error:
+        spans = []
+        window_error = str(error)
     graph = build_graph(spans)
     kept, pruned = prune(signals, graph)
     path = graph.failing_path()
@@ -90,7 +97,7 @@ def build_report(
         entry_point=graph.entry_point,
         symptoms=_symptoms(spans),
         nodes=[_node(name, parsed.k8s) for name in services],
-        notes=_notes(parsed, signals, kept, spans, graph, telemetry),
+        notes=_notes(parsed, signals, kept, spans, graph, telemetry, window_error),
     )
     return ContextReport(context, parsed.total, signals, pruned, graph)
 
@@ -137,12 +144,15 @@ def _notes(
     spans: list[Span],
     graph: ServiceGraph,
     telemetry: CompressedTelemetry,
+    window_error: str | None,
 ) -> str:
     notes = [
         f"Stage 2 kept {len(kept)} of {len(signals)} Stage 1 anomalies "
         f"({parsed.total} records, {len(spans)} spans in the window)."
     ]
-    if telemetry.alert_time is None:
+    if window_error is not None:
+        notes.append(f"Spans couldn't be placed in the alert window ({window_error}), so none were used.")
+    elif telemetry.alert_time is None:
         notes.append("No alert_time, so every span was used.")
     if not graph.failing:
         notes.append("No failing spans, so the fault couldn't be located and nothing was pruned.")

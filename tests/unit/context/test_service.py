@@ -72,6 +72,50 @@ def test_without_alert_time_every_span_is_used(scenario_01_batch):
     assert "No alert_time" in context.notes
 
 
+def naive_span_batch():
+    """An aware alert_time, an ERROR log, and a span whose start_time has no time zone."""
+    return TelemetryBatch(
+        source="otel",
+        collected_at="2026-10-10T10:05:00Z",
+        alert_time="2026-10-10T10:05:00Z",
+        records=[
+            {
+                "kind": "log",
+                "service": "cart",
+                "timestamp": "2026-10-10T10:04:00Z",
+                "severity": "ERROR",
+                "message": "boom",
+            },
+            {
+                "kind": "span",
+                "service": "cart",
+                "trace_id": "t",
+                "span_id": "s",
+                "operation": "op",
+                "span_kind": "SERVER",
+                "start_time": "2026-10-10T10:04:00",
+                "duration_ms": 1,
+                "otel_status_code": "ERROR",
+            },
+        ],
+    )
+
+
+def test_stage1_ignores_spans_it_does_not_use():
+    context = build_context(compress(naive_span_batch()), strategy="stage1")
+    assert [(s.service, s.name) for s in context.kept_signals] == [("cart", "log_error")]
+    assert context.notes.startswith("Stage 1 only")
+
+
+def test_spans_outside_any_window_prune_nothing_and_keep_stage1():
+    report = build_report(compress(naive_span_batch()))
+    assert [(s.service, s.name) for s in report.context.kept_signals] == [("cart", "log_error")]
+    assert report.pruned == []
+    assert report.context.failing_services == []
+    assert "couldn't be placed in the alert window" in report.context.notes
+    assert "nothing was pruned" in report.context.notes
+
+
 def test_unknown_strategy_is_a_caller_bug(scenario_01_batch):
     with pytest.raises(ValueError, match="unknown context strategy"):
         build_context(compress(scenario_01_batch), strategy="top_k")
