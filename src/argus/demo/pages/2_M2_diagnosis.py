@@ -16,7 +16,7 @@ from argus.contracts import TelemetryBatch
 from argus.demo.run import TELEMETRY
 from argus.demo.views import the_run
 from argus.diagnosis.core.belief import H0
-from argus.diagnosis.demo import demo_report
+from argus.diagnosis.demo import demo_report, prior_beliefs
 from argus.orchestration.service import compress
 
 
@@ -67,23 +67,29 @@ if report["low_confidence"]:
     st.warning("Low confidence: M2 stopped without a clear winner. Treat the top hypothesis as a guess.")
 
 st.subheader("Hypotheses, best first")
+priors = prior_beliefs(report)
 rows = []
 for hypothesis in hypotheses:
     status = hypothesis["status"]
     if status == "pruned":
         status = "✗ pruned"
+    prior = priors.get(hypothesis["id"], 0.0)
     rows.append(
         {
             "id": hypothesis["id"],
             "component": hypothesis["component"],
             "layer": hypothesis["layer"],
             "fault": hypothesis["fault"],
+            "prior → final": f"{prior:.0%} → {hypothesis['probability']:.0%}",
             "probability": f"{hypothesis['probability']:.1%}",
             "status": status,
         }
     )
 st.dataframe(rows, hide_index=True)
-st.caption("✗ pruned: its belief fell below the pruning threshold (eps), so M2 stopped testing it.")
+st.caption(
+    "prior → final: the belief before any read, and after the last one. "
+    "✗ pruned: its belief fell below the pruning threshold (eps), so M2 stopped testing it."
+)
 
 st.subheader("Belief after each step")
 chart_rows = []
