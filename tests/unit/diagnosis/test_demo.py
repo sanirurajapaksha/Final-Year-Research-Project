@@ -5,10 +5,12 @@ from argus.contracts import TelemetryBatch
 from argus.diagnosis.core.readonly import is_read_only
 from argus.diagnosis.demo import (
     FAKE_READS_LABEL,
+    NO_READS_LABEL,
     SCENARIO_READS,
     SIMULATED_BLOCK_REASON,
     demo_diagnose,
     demo_report,
+    no_cluster_report,
     prior_beliefs,
     read_verdicts,
     run_blocks,
@@ -114,3 +116,11 @@ def test_a_simulated_block_of_the_fix_makes_m2_drop_it_and_say_why():
     revised = demo_report(context, feedback=[block])["diagnosis"]
     assert all(not action["is_write"] for action in revised["actions"])
     assert "SIMULATED BLOCK" in revised["hypotheses"][0]["evidence"][-1]
+
+
+def test_with_no_reads_m2_says_it_is_unsure():
+    report = no_cluster_report(scenario_context())
+    assert report["reads_source"] == NO_READS_LABEL
+    assert report["reads"]
+    assert all(not read["ok"] for read in report["reads"])
+    assert report["low_confidence"]

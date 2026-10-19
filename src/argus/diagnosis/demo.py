@@ -15,6 +15,7 @@ from argus.diagnosis.service import diagnose, diagnose_report
 REPO = Path(__file__).resolve().parents[3]
 SCENARIO_READS = REPO / "data" / "fixtures" / "m2" / "scenario_01" / "reads.json"
 FAKE_READS_LABEL = "FAKE reads: canned scenario_01 kubectl output, no cluster"
+NO_READS_LABEL = "NO reads: no cluster and no canned output, so every read comes back unavailable"
 SIMULATED_BLOCK_REASON = "SIMULATED BLOCK: hand-made on the M2 page, not a real M3 verdict"
 
 
@@ -33,6 +34,13 @@ def demo_report(context: SemanticContext, feedback: list[SafetyVerdict] | None =
     """diagnose_report() with the canned reads, labelled as fake, for the M2 dashboard page."""
     report = diagnose_report(context, feedback, reads=scenario_reads())
     report["reads_source"] = FAKE_READS_LABEL
+    return report
+
+
+def no_cluster_report(context: SemanticContext, feedback: list[SafetyVerdict] | None = None) -> dict:
+    """diagnose_report() with no reads at all: every read is unavailable, as with no cluster and no fakes."""
+    report = diagnose_report(context, feedback)
+    report["reads_source"] = NO_READS_LABEL
     return report
 
 
