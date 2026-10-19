@@ -1,4 +1,3 @@
-
 from argus.diagnosis.core.config import DiagnosisConfig
 from argus.diagnosis.core.models import Candidate, DiagContext
 from argus.diagnosis.core.readonly import is_read_only
