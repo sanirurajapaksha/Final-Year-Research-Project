@@ -391,5 +391,7 @@ def test_default_gate_and_feedback_stub_are_labelled_and_fail_closed(setup):
     assert result.pipeline.verdicts[0].decision is GateDecision.BLOCK
     assert "no cluster snapshot" in result.pipeline.verdicts[0].reason
     assert isinstance(result.pipeline.feedback_diagnosis, DiagnosisResult)
-    assert result.pipeline.feedback_diagnosis.hypotheses[0].root_cause.startswith("stub:")
+    feedback = result.pipeline.feedback_diagnosis
+    assert feedback.hypotheses  # M2 answered the feedback
+    assert command not in [action.command for action in feedback.actions]  # never repeats a BLOCKed command
     executor.assert_not_called()
