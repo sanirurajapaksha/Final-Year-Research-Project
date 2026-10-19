@@ -21,12 +21,15 @@
 | `sdg.py` | F2: alert window, service dependency graph from spans, failing services, entry point, failing path |
 | `isolator.py` | F2 Stage 2: keep anomalies on the failing path; prune the rest with a reason |
 | `service.py` | Public entry point `build_context` (and `build_report`): M4 TSV → F1 → F2 → `SemanticContext` |
+| `report.py` | `report_data(ContextReport)`: the run as plain data for the dashboard (graph edges, failing path, every Stage 1 anomaly kept or pruned with its reason) |
 | `__main__.py` | Demo: `python -m argus.context [telemetry.json]` prints the anomaly set |
 
 **Try it:** `python -m argus.context` runs F1 on `data/fixtures/m1/scenario_01/telemetry.json`. It's a hand-written, synthetic CART_ADDR scenario, and its labels are in `ground_truth.json`.
+
+**Dashboard:** the **M1 context** page of the team app (`python -m streamlit run src/argus/demo/app.py`, page file `src/argus/demo/pages/1_M1_context.py`). After the incident runs on the first page, it re-runs M1 on the same telemetry and shows the graph, the kept and pruned signals with reasons, and the context M2 receives.
 
 **Results** (n = 1, synthetic):
 - `experiments/2026-10-11_m1_stage1_nrr/`: Stage 1 alone.
 - `experiments/2026-10-18_m1_stage2_failing_path/`: Stage 2 removes the 3 noise signals that Stage 1 keeps, with no evidence lost.
 
-**Tests:** `tests/unit/context/`, and `tests/integration/test_m1_reads_m4_output.py` for reading M4's real output.
+**Tests:** `tests/unit/context/`, `tests/integration/test_m1_reads_m4_output.py` for reading M4's real output, and `tests/integration/test_m1_page.py` for the dashboard page.
