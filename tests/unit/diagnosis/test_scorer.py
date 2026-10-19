@@ -89,3 +89,18 @@ def test_only_the_hypothesis_whose_test_ran_is_judged():
 
 def test_unreadable_output_stays_neutral():
     assert score(DESCRIBE, "Error from server (NotFound)") == {}
+
+
+def test_endpoints_only_reads_the_components_own_row():
+    ad = HypothesisSpec(component="ad", layer="k8s-network", fault="f", test=ENDPOINTS)
+    evidence = Evidence(id="E1", hyp_id="H1", command=ENDPOINTS, output="", ok=True)
+
+    def verdicts(output: str) -> dict[str, str]:
+        return RuleScorer().score(evidence.model_copy(update={"output": output}), {"H1": ad}, CTX)
+
+    header = "NAME        ENDPOINTS          AGE\n"
+    assert verdicts(header + "adservice   10.244.0.9:9555    3d") == {}  # "ad" is not "adservice"
+    assert verdicts(header + "cart        <none>             3d\nad   10.244.0.8:9555   3d") == {
+        "H1": "strong-refute"
+    }  # another service's <none> doesn't count
+    assert verdicts(header + "ad          <none>             3d") == {"H1": "strong-support"}

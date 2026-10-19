@@ -83,10 +83,16 @@ def _container_env(component: str, deployment_json: str) -> dict[str, str | None
 
 
 def _endpoints_ready(component: str, endpoints: str) -> str:
-    """`kubectl get endpoints`: "<none>" means the Service selects no ready pods."""
-    if "<none>" in endpoints:
-        return "strong-support"
-    if component in endpoints:
+    """`kubectl get endpoints`: in the row whose NAME is the component, "<none>" means no ready pods.
+
+    Only that row counts: matching the whole name means a service "ad" doesn't match "adservice".
+    """
+    for line in endpoints.splitlines():
+        columns = line.split()
+        if len(columns) < 2 or columns[0] != component:
+            continue  # the header, another service's row, or a line that isn't a row
+        if columns[1] == "<none>":
+            return "strong-support"
         return "strong-refute"  # the Service's row lists at least one address
     return "neutral"
 
