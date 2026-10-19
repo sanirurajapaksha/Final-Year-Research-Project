@@ -150,3 +150,14 @@ def test_a_block_from_the_run_is_used_as_is(monkeypatch):
     assert not app.exception
     assert not any(warning.value.startswith("SIMULATED BLOCK") for warning in app.warning)
     assert any("test block" in markdown.value for markdown in app.markdown)
+
+
+def test_the_no_cluster_toggle_runs_m2_with_no_reads():
+    from argus.diagnosis.demo import NO_READS_LABEL
+
+    app = run_page()
+    app.toggle[0].set_value(True).run(timeout=60)
+    assert not app.exception
+    assert any(NO_READS_LABEL in warning.value for warning in app.warning)
+    assert any("Low confidence" in warning.value for warning in app.warning)
+    assert all(label.endswith("failed") for label in [expander.label for expander in app.expander])

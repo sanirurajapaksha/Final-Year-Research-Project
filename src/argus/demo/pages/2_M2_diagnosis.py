@@ -5,7 +5,10 @@ reads and their results, and the actions M2 proposes. The reads are FAKE: there 
 PP1, so every kubectl read is answered from canned scenario_01 output
 (data/fixtures/m2/scenario_01/reads.json). Nothing is executed. Scoring is rule-based (no LLM).
 
-The page only displays: the data comes from argus.diagnosis.demo.demo_report().
+It also shows M2's answer when M3 blocks its fix: the BLOCK from page 1's run if there is one,
+otherwise a hand-made BLOCK labelled SIMULATED. A toggle re-runs M2 with no reads at all.
+
+The page only displays: the data comes from argus.diagnosis.demo (demo_report() and its helpers).
 """
 
 import pandas as pd
@@ -16,7 +19,14 @@ from argus.contracts import SafetyVerdict, SemanticContext, TelemetryBatch
 from argus.demo.run import TELEMETRY
 from argus.demo.views import the_run
 from argus.diagnosis.core.belief import H0
-from argus.diagnosis.demo import demo_report, prior_beliefs, read_verdicts, run_blocks, simulated_block
+from argus.diagnosis.demo import (
+    demo_report,
+    no_cluster_report,
+    prior_beliefs,
+    read_verdicts,
+    run_blocks,
+    simulated_block,
+)
 from argus.orchestration.service import compress
 
 
@@ -28,14 +38,17 @@ def scenario_context(telemetry_path: str) -> SemanticContext:
 
 
 @st.cache_data
-def m2_report(telemetry_path: str) -> dict:
+def m2_report(telemetry_path: str, no_cluster: bool) -> dict:
     """M2's first answer on that context. Cached, so switching pages doesn't recompute it."""
-    return demo_report(scenario_context(telemetry_path))
+    return feedback_report(telemetry_path, [], no_cluster)
 
 
-def feedback_report(telemetry_path: str, feedback: list[SafetyVerdict]) -> dict:
-    """M2's second answer, given M3's BLOCK verdicts. Not cached: the verdicts change per run."""
-    return demo_report(scenario_context(telemetry_path), feedback)
+def feedback_report(telemetry_path: str, feedback: list[SafetyVerdict], no_cluster: bool) -> dict:
+    """M2's answer given M3's BLOCK verdicts (none on the first call). With no_cluster, no reads at all."""
+    context = scenario_context(telemetry_path)
+    if no_cluster:
+        return no_cluster_report(context, feedback)
+    return demo_report(context, feedback)
 
 
 st.title("M2: diagnosis")
@@ -45,7 +58,11 @@ st.caption(
 )
 
 record = the_run()
-report = m2_report(str(TELEMETRY))
+no_cluster = st.toggle(
+    "No cluster at all: run M2 with no reads, not even the canned ones",
+    help="Shows what M2 does when every read fails: it should stop and say it is unsure.",
+)
+report = m2_report(str(TELEMETRY), no_cluster)
 
 st.warning(
     f"{report['reads_source']}. There is no cluster in PP1 and nothing is executed. "
@@ -122,7 +139,8 @@ belief = belief.rename(columns={H0: "H0 (none of these)"})
 st.line_chart(belief)
 st.dataframe(step_rows, hide_index=True)
 
-st.subheader("Reads and results (FAKE: canned output, no cluster)")
+st.subheader("Reads and results")
+st.caption(report["reads_source"])
 hypotheses_by_id = {}
 for hypothesis in hypotheses:
     hypotheses_by_id[hypothesis["id"]] = hypothesis
@@ -169,7 +187,7 @@ else:
             "SIMULATED BLOCK: page 1's run did not block this exact command, so a hand-made BLOCK "
             "is used here to show what M2 does when M3 says no. It is not a real M3 verdict."
         )
-    revised = feedback_report(str(TELEMETRY), feedback)
+    revised = feedback_report(str(TELEMETRY), feedback, no_cluster)
     st.markdown("M2's revised actions (it never proposes a blocked command again):")
     for action in revised["diagnosis"]["actions"]:
         kind = "WRITE" if action["is_write"] else "READ"
