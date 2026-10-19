@@ -55,6 +55,43 @@ def test_graph_mode_weights_deepest_failing_service_highest():
     assert [c.service for c in diag.candidates][:3] == ["cart", "frontend", "checkout"]
 
 
+def test_healthy_upstream_caller_stays_on_the_failing_path():
+    # The gateway catches cart's error and reports none itself, but the failing requests went through it.
+    ctx = SemanticContext(
+        services=["gateway", "cart"],
+        dependencies=[("gateway", "cart")],
+        failing_services=["cart"],
+        entry_point="gateway",
+    )
+    diag = adapt(ctx, "ns")
+
+    assert diag.failing_path == ["gateway", "cart"]
+    assert weights(diag) == {"cart": 1.5, "gateway": 1.0}
+
+
+def test_upstream_walk_stops_at_the_entry_point_and_skips_unrelated_callers():
+    ctx = SemanticContext(
+        dependencies=[
+            ("lb", "frontend"),  # above the entry point
+            ("frontend", "checkout"),
+            ("checkout", "cart"),
+            ("batch-job", "cart"),  # calls cart, but not on the route the failing requests took
+        ],
+        failing_services=["cart"],
+        entry_point="frontend",
+    )
+    diag = adapt(ctx, "ns")
+
+    assert diag.failing_path == ["frontend", "checkout", "cart"]
+    assert weights(diag) == {"cart": 1.5, "frontend": 1.0, "checkout": 1.0, "lb": 0.5, "batch-job": 0.5}
+
+
+def test_without_entry_point_healthy_callers_are_walked_to_the_top():
+    ctx = SemanticContext(dependencies=[("a", "b"), ("b", "c")], failing_services=["c"])
+    assert failing_path(ctx) == ["a", "b", "c"]
+    assert weights(adapt(ctx, "ns")) == {"c": 1.5, "a": 1.0, "b": 1.0}
+
+
 def test_failing_path_without_entry_point_starts_from_the_uncalled_service():
     ctx = SemanticContext(dependencies=[("a", "b"), ("b", "c")], failing_services=["c", "b", "a"])
     assert failing_path(ctx) == ["a", "b", "c"]
