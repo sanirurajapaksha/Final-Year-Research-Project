@@ -1,7 +1,7 @@
 from argus.contracts import DiagnosisResult, GateDecision, SafetyVerdict, SemanticContext
 from argus.diagnosis.core.readonly import is_read_only
 from argus.diagnosis.ports.fakes import FakeLLM, FakeReadExecutor
-from argus.diagnosis.service import blocked_commands, diagnose
+from argus.diagnosis.service import blocked_verdicts, diagnose, diagnose_report
 
 # scenario_01 in M1 F2 form: frontend calls cart, and cart is the failing service.
 CONTEXT = SemanticContext(
@@ -12,6 +12,7 @@ CONTEXT = SemanticContext(
 )
 CART_YAML = "kubectl get deployment cart -n default -o yaml"
 CART_SUPPORTED = {"H1": "strong-support", "H2": "strong-refute", "H3": "strong-refute"}
+CART_LOG = "cart: log_error (failed to connect to redis: CART_ADDR environment variable not set)"
 
 
 def test_diagnose_returns_a_diagnosis_result():
@@ -45,13 +46,7 @@ def test_read_action_checks_the_top_hypothesis():
 
 
 def test_top_hypothesis_gets_a_write_action_for_m3():
-    context = CONTEXT.model_copy(
-        update={
-            "anomalies": [
-                "cart: log_error (failed to connect to redis: CART_ADDR environment variable not set)"
-            ]
-        }
-    )
+    context = CONTEXT.model_copy(update={"anomalies": [CART_LOG]})
     llm = FakeLLM({"score": [{"verdicts": CART_SUPPORTED}]})
     reads = FakeReadExecutor({CART_YAML: "env: CART_ADDR missing"})
     writes = [a for a in diagnose(context, llm=llm, reads=reads).actions if a.is_write]
@@ -83,5 +78,33 @@ def test_only_block_verdicts_count_as_blocked():
         command="kubectl get pods -n default", decision=GateDecision.APPROVE, reason="ok"
     )
     blocked = SafetyVerdict(command=CART_YAML, decision=GateDecision.BLOCK, reason="test block")
-    assert blocked_commands([approved, blocked]) == {CART_YAML}
-    assert blocked_commands(None) == set()
+    assert blocked_verdicts([approved, blocked]) == {CART_YAML: blocked}
+    assert blocked_verdicts(None) == {}
+
+
+def test_blocked_fix_is_dropped_with_m3s_reason():
+    context = CONTEXT.model_copy(update={"anomalies": [CART_LOG]})
+    fix = next(a for a in diagnose(context).actions if a.is_write)
+    verdict = SafetyVerdict(
+        command=fix.command,
+        decision=GateDecision.BLOCK,
+        reason="min_available violated",
+        counterexample={"cart.available": 0},
+    )
+    result = diagnose(context, feedback=[verdict])
+    assert [a for a in result.actions if a.is_write] == []
+    reason = result.hypotheses[0].evidence[-1]
+    assert reason.startswith("M3 blocked the fix")
+    assert "min_available violated" in reason and '"cart.available": 0' in reason
+    assert "proposes no write" in reason
+
+
+def test_report_matches_the_diagnosis():
+    llm = FakeLLM({"score": [{"verdicts": CART_SUPPORTED}]})
+    reads = FakeReadExecutor({CART_YAML: "env: CART_ADDR missing"})
+    report = diagnose_report(CONTEXT, llm=llm, reads=reads)
+    assert report["stop_reason"] == "confident"
+    assert report["hypotheses"][0]["id"] == "H1"
+    assert report["reads"][0]["command"] == CART_YAML
+    assert [r["event"] for r in report["belief_rounds"]] == ["init", "update"]
+    assert report["diagnosis"]["hypotheses"][0]["root_cause"].startswith("cart [app-config]")
