@@ -12,21 +12,30 @@ import pandas as pd
 import streamlit as st
 
 from argus.context.service import build_context
-from argus.contracts import TelemetryBatch
+from argus.contracts import SafetyVerdict, SemanticContext, TelemetryBatch
 from argus.demo.run import TELEMETRY
 from argus.demo.views import the_run
 from argus.diagnosis.core.belief import H0
-from argus.diagnosis.demo import demo_report, prior_beliefs, read_verdicts
+from argus.diagnosis.demo import demo_report, prior_beliefs, read_verdicts, run_blocks, simulated_block
 from argus.orchestration.service import compress
+
+
+def scenario_context(telemetry_path: str) -> SemanticContext:
+    """The same scenario input as page 1: M4 compresses the telemetry -> M1 builds the context."""
+    with open(telemetry_path, encoding="utf-8") as file:
+        batch = TelemetryBatch.model_validate_json(file.read())
+    return build_context(compress(batch))
 
 
 @st.cache_data
 def m2_report(telemetry_path: str) -> dict:
-    """M2 on the same scenario input as page 1: M4 compresses -> M1 builds the context -> M2."""
-    with open(telemetry_path, encoding="utf-8") as file:
-        batch = TelemetryBatch.model_validate_json(file.read())
-    context = build_context(compress(batch))
-    return demo_report(context)
+    """M2's first answer on that context. Cached, so switching pages doesn't recompute it."""
+    return demo_report(scenario_context(telemetry_path))
+
+
+def feedback_report(telemetry_path: str, feedback: list[SafetyVerdict]) -> dict:
+    """M2's second answer, given M3's BLOCK verdicts. Not cached: the verdicts change per run."""
+    return demo_report(scenario_context(telemetry_path), feedback)
 
 
 st.title("M2: diagnosis")
@@ -138,6 +147,39 @@ for action in report["diagnosis"]["actions"]:
     kind = "WRITE" if action["is_write"] else "READ"
     st.markdown(f"**{kind}** · namespace `{action['target_namespace']}`: {action['rationale']}")
     st.code(action["command"], language="bash")
+
+st.subheader("When M3 blocks M2's fix")
+fix = None
+for action in report["diagnosis"]["actions"]:
+    if action["is_write"] and fix is None:
+        fix = action["command"]
+if fix is None:
+    st.caption("M2 proposed no write this time, so there is nothing for M3 to block.")
+else:
+    feedback = run_blocks(record["rounds"])
+    blocked_in_run = False
+    for verdict in feedback:
+        if verdict.command == fix:
+            blocked_in_run = True
+    if blocked_in_run:
+        st.markdown("In page 1's run M3 blocked this fix, and M4 handed the verdict back to M2.")
+    else:
+        feedback.append(simulated_block(fix))
+        st.warning(
+            "SIMULATED BLOCK: page 1's run did not block this exact command, so a hand-made BLOCK "
+            "is used here to show what M2 does when M3 says no. It is not a real M3 verdict."
+        )
+    revised = feedback_report(str(TELEMETRY), feedback)
+    st.markdown("M2's revised actions (it never proposes a blocked command again):")
+    for action in revised["diagnosis"]["actions"]:
+        kind = "WRITE" if action["is_write"] else "READ"
+        st.markdown(f"**{kind}**: {action['rationale']}")
+        st.code(action["command"], language="bash")
+    if revised["diagnosis"]["hypotheses"]:
+        top_revised = revised["diagnosis"]["hypotheses"][0]
+        for line in top_revised["evidence"]:
+            if line.startswith("M3 blocked the fix"):
+                st.markdown(f"Why there is no write now: {line}")
 
 st.subheader("M2 in this run's rounds (from page 1)")
 st.caption(

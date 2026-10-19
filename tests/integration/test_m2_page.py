@@ -123,3 +123,30 @@ def test_low_confidence_is_flagged(fake_report):
     app = run_page()
     assert not app.exception
     assert any("Low confidence" in warning.value for warning in app.warning)
+
+
+def test_without_a_block_in_the_run_a_simulated_block_is_shown_and_labelled():
+    app = run_page()
+    assert not app.exception
+    assert any(warning.value.startswith("SIMULATED BLOCK") for warning in app.warning)
+    assert any(markdown.value.startswith("Why there is no write now") for markdown in app.markdown)
+
+
+def test_a_block_from_the_run_is_used_as_is(monkeypatch):
+    from argus.context.service import build_context
+    from argus.contracts import TelemetryBatch
+    from argus.demo.run import TELEMETRY
+    from argus.diagnosis.demo import demo_report
+    from argus.orchestration.service import compress
+
+    batch = TelemetryBatch.model_validate_json(TELEMETRY.read_text(encoding="utf-8"))
+    actions = demo_report(build_context(compress(batch)))["diagnosis"]["actions"]
+    fix = [action["command"] for action in actions if action["is_write"]][0]
+    verdict = {"command": fix, "decision": "BLOCK", "reason": "test block", "z3_result": "sat"}
+    blocked = {"title": "M2 proposes", "hypotheses": [], "actions": [{"command": fix, "verdict": verdict}]}
+    monkeypatch.setitem(RECORD, "rounds", [blocked])
+
+    app = run_page()
+    assert not app.exception
+    assert not any(warning.value.startswith("SIMULATED BLOCK") for warning in app.warning)
+    assert any("test block" in markdown.value for markdown in app.markdown)
