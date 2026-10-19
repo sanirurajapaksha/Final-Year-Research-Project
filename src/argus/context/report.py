@@ -88,3 +88,80 @@ def _why_kept(signal: AnomalySignal, graph: ServiceGraph | None) -> str:
     if signal.service in graph.possible_unseen_callees():
         return MAYBE_UNSEEN
     return OUTSIDE_KEPT
+
+
+# Colours for graph_dot, readable on the dashboard's light and dark themes.
+FAILING_COLOUR = "#c0392b"
+CALLER_COLOUR = "#d68910"
+OFF_PATH_COLOUR = "#5d6d7e"
+FADED_COLOUR = "#95a5a6"
+
+
+def graph_dot(data: dict) -> str:
+    """The service graph from report_data() as Graphviz DOT text, for the page to draw.
+
+    Red: failing services. Orange: healthy callers on the failing path. Grey: in the graph but off
+    the path. Dashed: services with Stage 1 anomalies but no spans, so not in the graph at all.
+    Each node says how many of its anomalies were kept and pruned. Empty text when there's no graph.
+    """
+    graph = data["graph"]
+    if graph is None:
+        return ""
+
+    counts: dict[str, list[int]] = {}
+    for row in data["signals"]:
+        kept_and_pruned = counts.setdefault(row["service"], [0, 0])
+        if row["kept"]:
+            kept_and_pruned[0] += 1
+        else:
+            kept_and_pruned[1] += 1
+
+    lines = [
+        "digraph sdg {",
+        '  rankdir=LR; bgcolor="transparent"; nodesep=0.5; ranksep=1.4;',
+        '  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=16, fontcolor="white",'
+        ' margin="0.3,0.15"];',
+        "  edge [arrowsize=1.2];",
+    ]
+    for service in graph["services"]:
+        if service in graph["failing_services"]:
+            colour = FAILING_COLOUR
+        elif service in graph["failing_path"]:
+            colour = CALLER_COLOUR
+        else:
+            colour = OFF_PATH_COLOUR
+        label = service + _anomaly_note(counts.get(service))
+        extra = ""
+        if service == graph["entry_point"]:
+            label += "\\nentry point"
+            extra = ", peripheries=2"
+        lines.append(f'  "{service}" [label="{label}", fillcolor="{colour}", color="{colour}"{extra}];')
+
+    for service in sorted(counts):
+        if service not in graph["services"]:
+            label = service + "\\n(no spans)" + _anomaly_note(counts[service])
+            lines.append(
+                f'  "{service}" [label="{label}", style="rounded,dashed", '
+                f'color="{FADED_COLOUR}", fontcolor="{FADED_COLOUR}"];'
+            )
+
+    for edge in graph["edges"]:
+        if edge["on_failing_path"]:
+            style = f'color="{FAILING_COLOUR}", penwidth=2.5'
+        else:
+            style = f'color="{FADED_COLOUR}", style=dashed'
+        lines.append(f'  "{edge["caller"]}" -> "{edge["callee"]}" [{style}];')
+    lines.append("}")
+    return "\n".join(lines)
+
+
+def _anomaly_note(kept_and_pruned: list[int] | None) -> str:
+    if kept_and_pruned is None:
+        return ""
+    kept, pruned = kept_and_pruned
+    parts = []
+    if kept:
+        parts.append(f"{kept} kept")
+    if pruned:
+        parts.append(f"{pruned} pruned")
+    return "\\n" + ", ".join(parts)

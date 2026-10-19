@@ -7,7 +7,7 @@ page can show what M1 keeps to itself (the graph and the pruned signals). M1 mak
 
 import streamlit as st
 
-from argus.context.report import report_data
+from argus.context.report import graph_dot, report_data
 from argus.context.service import build_report
 from argus.contracts import TelemetryBatch
 from argus.demo.run import TELEMETRY
@@ -38,13 +38,25 @@ graph = data["graph"]
 if graph is None:
     st.info("No graph: M1 ran Stage 1 only.")
 else:
-    st.table(graph["edges"])
-    st.write(f"Failing services: {', '.join(graph['failing_services']) or 'none'}")
-    path = ", ".join(graph["failing_path"]) or "none"
-    st.write(f"Failing path (failing services and their callers): {path}")
-    st.write(f"Entry point: {graph['entry_point'] or 'unknown'}")
+    cards = st.columns(3)
+    cards[0].metric("Entry point", graph["entry_point"] or "unknown")
+    cards[1].metric("Failing services", ", ".join(graph["failing_services"]) or "none")
+    cards[2].metric("On the failing path", ", ".join(graph["failing_path"]) or "none")
+    left, right = st.columns([3, 2])
+    left.graphviz_chart(graph_dot(data))
+    right.markdown(
+        "**How to read it**\n\n"
+        "- An arrow points from caller to callee, from a span whose parent is in another service.\n"
+        "- **Red:** failing services (error spans).\n"
+        "- **Orange:** healthy callers on the failing path.\n"
+        "- **Grey:** in the graph but off the failing path, so its anomalies are pruned.\n"
+        "- **Dashed:** a service with anomalies but no spans, so it isn't in the graph.\n"
+        "- **Double border:** the entry point, where the failing requests came in."
+    )
     if graph["unseen_callees"]:
         st.write(f"Failed calls with no span from the callee: {graph['unseen_callees']}")
+    with st.expander("Edges as a table"):
+        st.table(graph["edges"])
 
 st.subheader(f"Stage 2: kept {data['kept_count']} of {data['stage1_count']} anomalies")
 kept = [row for row in data["signals"] if row["kept"]]

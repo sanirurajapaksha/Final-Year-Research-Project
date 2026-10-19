@@ -65,3 +65,19 @@ def test_kept_reasons_follow_the_pruning_rules():
     ]
     no_fault = ContextReport(SemanticContext(kept_signals=signals), 2, signals, [], ServiceGraph())
     assert {r["reason"] for r in m1_report.report_data(no_fault)["signals"]} == {m1_report.NO_FAULT_FOUND}
+
+
+def test_graph_dot_colours_the_failing_path_and_shows_services_without_spans(scenario_01_batch):
+    dot = m1_report.graph_dot(m1_report.report_data(build_report(compress(scenario_01_batch))))
+    assert dot.startswith("digraph sdg {") and dot.endswith("}")
+    assert f'"cart" [label="cart\\n3 kept", fillcolor="{m1_report.FAILING_COLOUR}"' in dot
+    assert '"frontend" [label="frontend\\n2 kept\\nentry point"' in dot
+    assert '"product-catalog" [label="product-catalog\\n1 pruned"' in dot
+    assert '"metrics-server" [label="metrics-server\\n(no spans)\\n2 pruned", style="rounded,dashed"' in dot
+    assert f'"frontend" -> "cart" [color="{m1_report.FAILING_COLOUR}", penwidth=2.5];' in dot
+    assert '"frontend" -> "product-catalog"' in dot and "style=dashed];" in dot
+
+
+def test_graph_dot_is_empty_without_a_graph(scenario_01_batch):
+    data = m1_report.report_data(build_report(compress(scenario_01_batch), strategy="stage1"))
+    assert m1_report.graph_dot(data) == ""

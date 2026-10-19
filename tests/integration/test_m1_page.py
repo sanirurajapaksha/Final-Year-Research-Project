@@ -36,6 +36,8 @@ def test_m1_page_shows_the_graph_and_kept_and_pruned_signals(monkeypatch):
         ("product-catalog", "in the call graph but not on the failing path"),
     ]
     assert any("Stage 2: kept 5 of 8" in header.value for header in app.subheader)
+    assert '"frontend" -> "cart"' in app.get("graphviz_chart")[0].proto.spec
+    assert [metric.value for metric in app.metric][3:] == ["frontend", "cart, frontend", "cart, frontend"]
 
 
 def test_m1_page_warns_when_the_first_pages_run_differs():
