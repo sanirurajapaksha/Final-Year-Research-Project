@@ -173,8 +173,3 @@ Confirm the optimization and tie rules, cost units and quality scale, solver,
 task boundaries and local input/output design. Share any newer team decisions
 that supersede the current F2 specification. Provider integration additionally
 needs model identities, approved prices, budget and fallback/accounting policy.
-
-AI assistance: Codex inspected the merged W3-03 implementation, current F2 spec,
-older personal implementation plan and TAF (including visual inspection of page
-6), then drafted and revised this proposal. No provider calls, dependency changes
-or shared-contract changes were made.

@@ -92,11 +92,6 @@ Historical experiments and other fixtures are unchanged.
 Remaining W2-08 work includes team review, agreed broader samples and coordinated
 demo-fixture migration. Token evaluation awaits model/tokenizer and measurement rules.
 
-AI assistance: Codex inspected repository instructions, the PR diff, reviews and
-remote checks; corrected the approved path, simplified the runner/evidence, and
-reported both JSON baselines. Local checks and clean-commit evidence regeneration
-are performed separately; the evidence commit records the preceding source commit.
-
 Latest review validation on 2026-10-14: the recorded source commit exists in Git
 and is an ancestor of remote PR head `c0db9bfd2a21b1cbef8c8d71b14717ca8bd40f4a`.
 Its `src` and `tests` match that head exactly. The detached checkout failure was

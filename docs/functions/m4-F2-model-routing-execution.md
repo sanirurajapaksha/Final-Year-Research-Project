@@ -152,10 +152,6 @@ interpreter, so validation used the bundled Python with `src` and the existing
 `.venv/Lib/site-packages` on `PYTHONPATH`, a writable `--basetemp`, and
 `-p no:cacheprovider`. These are local results, not CI evidence.
 
-AI assistance: Codex generated the M4 action handler, pipeline feedback handoff,
-integration tests and documentation, and checked them using pytest and Ruff.
-M3, M2 and shared contracts were not modified. Teammate review is pending.
-
 Planned tests, to be added under `tests/unit/orchestration/` and
 `tests/integration/` after implementation:
 

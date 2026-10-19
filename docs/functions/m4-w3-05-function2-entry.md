@@ -163,7 +163,3 @@ counterexamples delivered to M2, exact commands, context preservation, malformed
 shared-model instances, unsupported task shapes, empty diagnoses and the
 fail-closed defaults. Existing pipeline and W3-03 tests also run after the shared
 action-handler extraction.
-
-AI assistance: Codex inspected the current shared contracts and module entry
-points, implemented this M4 facade and reused action handling, then added tests
-and documentation. No other owner's module or shared model was modified.
