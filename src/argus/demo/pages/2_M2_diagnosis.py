@@ -105,3 +105,10 @@ for read in report["reads"]:
     with st.expander(f"{read['id']} · {read['hypothesis']} · {status}"):
         st.code(read["command"], language="bash")
         st.code(read["output"], language="text")
+
+st.subheader("Proposed actions")
+st.caption("Nothing here runs. Every WRITE goes to M3 (the safety gate) via M4 before anything could run.")
+for action in report["diagnosis"]["actions"]:
+    kind = "WRITE" if action["is_write"] else "READ"
+    st.markdown(f"**{kind}** · namespace `{action['target_namespace']}`: {action['rationale']}")
+    st.code(action["command"], language="bash")
