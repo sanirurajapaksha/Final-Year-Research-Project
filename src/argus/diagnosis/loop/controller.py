@@ -107,9 +107,9 @@ class Controller:
         return new
 
     def _prior(self, hyp: HypothesisSpec, ctx: DiagContext) -> float:
-        """c(confidence) x g(component): the graph prior only when graph_priors is on."""
+        """c(confidence) x g(component): the graph prior unless graph_priors is "off"."""
         weight = {c.service: c.weight for c in ctx.candidates}.get(hyp.component, 1.0)
-        return max(hyp.confidence, 0.01) * (weight if self.cfg.graph_priors else 1.0)
+        return max(hyp.confidence, 0.01) * (weight if self.cfg.graph_priors != "off" else 1.0)
 
     def _execute(self, hyp: HypothesisSpec, evidence_id: str) -> Evidence:
         result = guarded_run(self.reads, hyp.test)

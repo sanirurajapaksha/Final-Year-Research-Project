@@ -1,4 +1,5 @@
 from argus.contracts import DiagnosisResult, GateDecision, SafetyVerdict, SemanticContext
+from argus.diagnosis.core.config import preset
 from argus.diagnosis.core.readonly import is_read_only
 from argus.diagnosis.ports.fakes import FakeLLM, FakeReadExecutor
 from argus.diagnosis.service import blocked_verdicts, diagnose, diagnose_report
@@ -138,3 +139,12 @@ def test_report_matches_the_diagnosis():
     assert report["reads"][0]["command"] == CART_DEPLOYMENT
     assert [r["event"] for r in report["belief_rounds"]] == ["init", "update"]
     assert report["diagnosis"]["hypotheses"][0]["root_cause"].startswith("cart [app-config]")
+
+
+def test_a5_hop_preset_reaches_the_adapter(m2_context):
+    ctx, _ = m2_context("cart_addr")
+    almanac = {c["service"]: c["weight"] for c in diagnose_report(ctx)["candidates"]}
+    hop = {c["service"]: c["weight"] for c in diagnose_report(ctx, config=preset("A5-hop"))["candidates"]}
+
+    assert almanac == {"cart": 1.5, "frontend": 1.0}
+    assert hop == {"cart": 1.5, "frontend": 1.0, "redis": 1.0}  # redis named in cart's error

@@ -82,7 +82,7 @@ def _run(
     reads: ReadExecutor | None,
 ) -> tuple[DiagContext, LoopResult]:
     cfg = config or DiagnosisConfig()
-    ctx = adapt(context, cfg.namespace)
+    ctx = adapt(context, cfg.namespace, scheme="hop" if cfg.graph_priors == "hop" else "almanac")
     controller = Controller(cfg, llm=llm, reads=reads, scorer=RuleScorer())
     return ctx, controller.run(ctx)
 
