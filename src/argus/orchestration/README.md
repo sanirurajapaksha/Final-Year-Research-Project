@@ -96,9 +96,10 @@ python -m streamlit run src/argus/demo/app.py
 
 Run the incident on the first page, then open **M4 orchestration**. The page
 reads the saved incident from `st.session_state["record"]`. Compression is
-recomputed from the same synthetic `scenario_01` fixture; the table of safety
-verdicts and executor handoffs comes from the saved run, including its feedback
-round. The executor remains a labelled stub. There is no second app or extra
+recomputed from the same synthetic `scenario_01` fixture. The M4 page and its
+download focus on compression and offline routing. Safety verdicts and executor
+handoffs remain on the shared incident page. The executor remains a labelled stub.
+There is no second app or extra
 dependency to install beyond the existing `demo` extra.
 
 `report.build_report(batch, record)` returns JSON-ready compression measurements
