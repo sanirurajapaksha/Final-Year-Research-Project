@@ -7,6 +7,7 @@ diagnose_report() runs the same thing and returns plain data for the dashboard.
 
 import json
 
+from argus.config import load_settings
 from argus.contracts import (
     DiagnosisResult,
     GateDecision,
@@ -23,6 +24,7 @@ from argus.diagnosis.loop.controller import Controller, LoopResult
 from argus.diagnosis.loop.fixes import propose_fix
 from argus.diagnosis.loop.scorer import RuleScorer
 from argus.diagnosis.ports.base import LLMClient, ReadExecutor
+from argus.diagnosis.ports.openrouter import llm_from_env
 
 EVIDENCE_CHARS = 200  # how much of each read's output a hypothesis carries as evidence
 
@@ -42,8 +44,8 @@ def diagnose(
     in the top hypothesis's evidence instead.
 
     The keyword-only arguments are for tests and the demo. M4 calls diagnose(context) and
-    diagnose(context, feedback=...), so with no LLM and no cluster the loop falls back to rules
-    and neutral reads.
+    diagnose(context, feedback=...): the LLM is then the team's model when ARGUS_LLM_API_KEY and
+    ARGUS_LLM_MODEL are set, and rules otherwise; with no cluster every read is neutral.
     """
     ctx, result = _run(context, config, llm, reads)
     return to_result(result, ctx, blocked_verdicts(feedback))
@@ -83,6 +85,8 @@ def _run(
 ) -> tuple[DiagContext, LoopResult]:
     cfg = config or DiagnosisConfig()
     ctx = adapt(context, cfg.namespace)
+    if llm is None:  # M4's plain diagnose(context): the team's model when a key is set, else rules
+        llm = llm_from_env(load_settings().llm_model)
     controller = Controller(cfg, llm=llm, reads=reads, scorer=RuleScorer())
     return ctx, controller.run(ctx)
 
