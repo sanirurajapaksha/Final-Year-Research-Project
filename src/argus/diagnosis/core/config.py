@@ -28,6 +28,9 @@ class DiagnosisConfig:
     use_eig: bool = True
     backtracking: bool = True
     graph_priors: GraphPriors = "almanac"
+    # At most this many hypotheses per component in a round (None: no limit). Spreading tests rival
+    # services earlier, but costs a read when the origin really is the cause; Step 10 measures it.
+    per_component: int | None = None
     params: Params = field(default_factory=Params)
 
     def __post_init__(self) -> None:

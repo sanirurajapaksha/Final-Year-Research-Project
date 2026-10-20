@@ -42,7 +42,7 @@ class Controller:
         self.cfg = config or DiagnosisConfig()
         self.llm = llm or NoLLM()
         self.reads = reads or NullReadExecutor()
-        self.generator = generator or RuleGenerator()
+        self.generator = generator or RuleGenerator(per_component=self.cfg.per_component)
         self.scorer = scorer  # RuleScorer or None: what scores a read when the LLM can't
 
     def run(self, ctx: DiagContext) -> LoopResult:

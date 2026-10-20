@@ -148,3 +148,24 @@ def test_a5_hop_preset_reaches_the_adapter(m2_context):
 
     assert almanac == {"cart": 1.5, "frontend": 1.0}
     assert hop == {"cart": 1.5, "frontend": 1.0, "redis": 1.0}  # redis named in cart's error
+
+
+def _starting_odds(ctx, config):
+    report = diagnose_report(ctx, config=config)
+    labels = {h["id"]: h["component"] for h in report["hypotheses"]}
+    first = report["belief_rounds"][0]["belief"]
+    return {labels.get(h, h): round(p, 3) for h, p in first.items()}
+
+
+def test_graph_prior_changes_the_starting_odds_once_a_round_spans_services(m2_context):
+    ctx, _ = m2_context("chain4")
+    odds = {
+        name: _starting_odds(ctx, preset(name, per_component=1))
+        for name in ("A4", "ach_rca", "A5-hop")  # off, almanac, hop
+    }
+    assert len({tuple(sorted(o.items())) for o in odds.values()}) == 3  # all three differ
+
+
+def test_without_the_spread_one_service_holds_the_round_and_the_prior_cancels(m2_context):
+    ctx, _ = m2_context("chain4")
+    assert _starting_odds(ctx, preset("A4")) == _starting_odds(ctx, preset("ach_rca"))
