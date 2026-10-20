@@ -60,5 +60,5 @@ def test_every_tag_is_a_plain_word():
     assert all(t.isidentifier() for t in TAGS)
 
 
-def test_no_templates_yet():
-    assert PROMPTS == {}  # step 5 adds "score"; until then every task falls back to rules
+def test_only_the_score_template_exists_so_far():
+    assert set(PROMPTS) == {"score"}  # draft, fix and report come in later steps; they fall back to rules

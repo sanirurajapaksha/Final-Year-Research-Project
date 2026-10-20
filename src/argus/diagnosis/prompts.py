@@ -97,5 +97,40 @@ class Template:
     render: Callable[..., str]
 
 
-# task name -> template. Filled in by later steps; an unknown task means "no LLM for this, use rules".
-PROMPTS: dict[str, Template] = {}
+# ---------- score: judge one read's output against each active hypothesis ----------
+
+SCORE_VERSION = "score-v1"
+READ_OUTPUT_CAP = 6000  # same as DiagnosisConfig.max_output_chars
+
+
+def render_score(command: str, output: str, hypotheses: dict[str, str]) -> str:
+    """The controller's SCORE step. `hypotheses` maps id -> "label | expects: ..."."""
+    listed = "\n".join(f"{h}: {text}" for h, text in hypotheses.items())
+    return "\n".join(
+        [
+            "You check evidence for a Kubernetes root-cause diagnosis.",
+            "For each hypothesis in <hypotheses>, say how the output of the read in <command> bears on it,",
+            "using exactly one word: strong-support, weak-support, neutral, weak-refute, strong-refute.",
+            "",
+            "Rules:",
+            "- Judge only from the text in <read_output>. If it says nothing about a hypothesis: neutral.",
+            "- strong-support / strong-refute only when the output directly shows, or directly rules out,",
+            "  what the hypothesis expects. Use weak-* when it fits or contradicts only indirectly.",
+            "- A read run for one hypothesis can still bear on another; judge each one on its own.",
+            "- Give exactly one verdict for every id listed, and no other ids.",
+            "- [ip], [redacted] and similar marks are values removed for privacy, not evidence of a fault.",
+            "",
+            wrap("hypotheses", listed, cap=4000),
+            wrap("command", command, cap=500),
+            wrap("read_output", output, cap=READ_OUTPUT_CAP),
+            "",
+            untrusted_note("hypotheses", "command", "read_output"),
+            'Answer with JSON only: {"verdicts": [{"id": "H1", "verdict": "neutral"}, ...]}',
+        ]
+    )
+
+
+# task name -> template. A task with no template means "no LLM for this, use rules".
+PROMPTS: dict[str, Template] = {
+    "score": Template("score", SCORE_VERSION, render_score),
+}

@@ -138,8 +138,12 @@ def test_diagnose_with_a_key_builds_the_teams_model_and_still_falls_back(monkeyp
         return llm
 
     monkeypatch.setattr("argus.diagnosis.service.llm_from_env", spy)
-    monkeypatch.setattr(openrouter, "complete_json", fake_complete_json(AssertionError("no template yet")))
+    monkeypatch.setattr(
+        openrouter,
+        "complete_json",
+        fake_complete_json(AssertionError("must not be called: no read succeeds")),
+    )
     report = diagnose_report(CONTEXT)
 
     assert [llm.model for llm in built] == ["deepseek/test-model"]
-    assert report["hypotheses"]  # no task has a template yet, so every step fell back to rules
+    assert report["hypotheses"]  # no draft template yet, and with no cluster no read reaches the scorer
