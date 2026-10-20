@@ -1,4 +1,4 @@
-"""Display helpers shared by the dashboard's pages. Display only: no module logic lives here."""
+"""Display helpers for the dashboard (app.py). Display only: no module logic lives here."""
 
 import streamlit as st
 
@@ -19,12 +19,3 @@ def show_verdict(verdict: dict) -> None:
     for stage, ms in verdict["timings_ms"].items():
         stages.append(f"{stage} {ms:.1f} ms")
     st.caption("M3 timings: " + ", ".join(stages))
-
-
-def the_run() -> dict:
-    """The run made on the first page. Without one, this page shows a hint and stops."""
-    record = st.session_state.get("record")
-    if record is None:
-        st.info("Run the incident on the first page (**app**) first.")
-        st.stop()
-    return record
