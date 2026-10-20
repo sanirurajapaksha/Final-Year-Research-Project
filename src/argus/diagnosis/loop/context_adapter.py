@@ -51,6 +51,7 @@ def adapt(context: SemanticContext, namespace: str, scheme: Scheme = "almanac") 
         candidates=candidates,
         symptoms=_symptoms(context),
         failing_path=path,
+        node_status={n.name: n.k8s_status for n in context.nodes if n.k8s_status},
         notes=context.notes,
     )
 

@@ -6,6 +6,7 @@ faults. `validate` holds the rules every generator must obey, so LLMGenerator (s
 
 from argus.diagnosis.core.models import DiagContext, HypothesisSpec
 from argus.diagnosis.core.readonly import is_read_only
+from argus.diagnosis.loop.clues import layer_score
 
 # (layer, fault, test template, what the test shows if the fault is real)
 SIGNATURES = [
@@ -54,7 +55,15 @@ def validate(
 
 
 class RuleGenerator:
-    """Signature table x candidates, highest graph prior first. Deterministic."""
+    """Signature table x candidates, highest graph prior first. Deterministic.
+
+    With `use_clues` (the default) each guess's confidence comes from clues.layer_score, and within a
+    candidate the layers the evidence points at come first. Without it every guess gets 0.5, as in
+    the Almanac's plain rule fallback.
+    """
+
+    def __init__(self, use_clues: bool = True) -> None:
+        self.use_clues = use_clues
 
     def draft(
         self,
@@ -63,15 +72,18 @@ class RuleGenerator:
         refuted: set[tuple[str, str]] = frozenset(),
         next_id: int = 1,
     ) -> list[HypothesisSpec]:
-        specs = [
-            HypothesisSpec(
-                component=c.service,
-                layer=layer,
-                fault=fault,
-                test=test.format(svc=c.service, ns=ctx.namespace),
-                expected=expected,
-            )
-            for c in ctx.candidates
-            for layer, fault, test, expected in SIGNATURES
-        ]
+        specs: list[HypothesisSpec] = []
+        for c in ctx.candidates:
+            own = [
+                HypothesisSpec(
+                    component=c.service,
+                    layer=layer,
+                    fault=fault,
+                    test=test.format(svc=c.service, ns=ctx.namespace),
+                    expected=expected,
+                    confidence=layer_score(c.service, layer, ctx) if self.use_clues else 0.5,
+                )
+                for layer, fault, test, expected in SIGNATURES
+            ]
+            specs += sorted(own, key=lambda h: -h.confidence)  # stable: ties keep the table's order
         return validate(specs, ctx, refuted, k, next_id)

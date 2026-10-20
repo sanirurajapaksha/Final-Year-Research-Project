@@ -33,6 +33,7 @@ class DiagContext(BaseModel):
     candidates: list[Candidate] = []
     symptoms: list[str] = []
     failing_path: list[str] = []
+    node_status: dict[str, str] = {}  # M1's k8s status per service, e.g. "Running", "CrashLoopBackOff"
     notes: str = ""  # M1's notes, e.g. why the context is empty
 
 
