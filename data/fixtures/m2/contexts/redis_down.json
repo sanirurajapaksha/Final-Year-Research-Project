@@ -1,0 +1,35 @@
+{
+  "provenance": "SYNTHETIC, hand-written: redis-cart is down and reports nothing; M1 only sees frontend and cart, and redis-cart appears only inside cart's error text.",
+  "truth": {"component": "redis-cart", "layer": "dependency", "fault": "redis-cart has no ready pods"},
+  "context": {
+    "anomalies": [
+      "frontend: http_5xx_rate (http_5xx_rate=0.35 > 0.05)",
+      "cart: http_5xx_rate (http_5xx_rate=0.88 > 0.05)",
+      "cart: log_error (failed to connect to redis-cart:6379: connection refused)",
+      "frontend: log_error (rpc error: code = Unavailable desc = cart)"
+    ],
+    "services": ["cart", "frontend"],
+    "dependencies": [["frontend", "cart"]],
+    "notes": "",
+    "symptoms": ["frontend GET /cart failed (HTTP 500)"],
+    "kept_signals": [
+      {"service": "frontend", "source": "metric", "name": "http_5xx_rate", "value": 0.35,
+       "timestamp": "2026-10-10T10:04:30Z", "evidence": "http_5xx_rate=0.35 > 0.05"},
+      {"service": "cart", "source": "metric", "name": "http_5xx_rate", "value": 0.88,
+       "timestamp": "2026-10-10T10:04:30Z", "evidence": "http_5xx_rate=0.88 > 0.05"},
+      {"service": "cart", "source": "log", "name": "log_error", "value": null,
+       "timestamp": "2026-10-10T10:04:41Z",
+       "evidence": "failed to connect to redis-cart:6379: connection refused"},
+      {"service": "frontend", "source": "log", "name": "log_error", "value": null,
+       "timestamp": "2026-10-10T10:04:42Z", "evidence": "rpc error: code = Unavailable desc = cart"}
+    ],
+    "nodes": [
+      {"name": "cart", "k8s_status": "Running", "replicas": 1},
+      {"name": "frontend", "k8s_status": "Available", "replicas": 1}
+    ],
+    "failing_services": ["cart", "frontend"],
+    "entry_point": "frontend",
+    "fallback_used": false,
+    "strategy": "failing_path"
+  }
+}
