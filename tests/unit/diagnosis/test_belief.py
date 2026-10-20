@@ -79,3 +79,31 @@ def test_unknown_hypothesis_in_verdicts_is_ignored():
     bs = start()
     bs.update({"H9": "strong-support"}, "E1")  # an LLM inventing an id must not change anything
     assert bs.belief["H1"] == approx(0.35)
+
+
+def test_new_hypotheses_share_h0_in_proportion_to_their_scores():
+    bs = start()
+    bs.update({"H1": "strong-refute", "H2": "strong-refute", "H3": "strong-refute"}, "E1")
+    h0 = bs.belief[H0]
+
+    bs.add_hypotheses(["H4", "H5"], {"H4": 0.75, "H5": 0.25})  # e.g. c x g: origin vs off-path service
+
+    assert bs.belief["H4"] == approx(0.8 * h0 * 0.75)
+    assert bs.belief["H5"] == approx(0.8 * h0 * 0.25)
+    assert sum(bs.belief.values()) == approx(1.0)
+
+
+def test_add_hypotheses_rejects_a_zero_score_and_changes_nothing():
+    bs = start()
+    before = dict(bs.belief)
+    with pytest.raises(ValueError):
+        bs.add_hypotheses(["H4", "H5"], {"H4": 0.5, "H5": 0.0})
+    assert bs.belief == before
+
+
+def test_duplicate_id_changes_nothing():
+    bs = start()
+    before = dict(bs.belief)
+    with pytest.raises(ValueError):
+        bs.add_hypotheses(["H4", "H1"])  # H4 is new, H1 is not: neither may be added
+    assert bs.belief == before

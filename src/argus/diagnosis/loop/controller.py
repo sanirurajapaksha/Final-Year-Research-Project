@@ -95,7 +95,7 @@ class Controller:
             new = self._draft(ctx, hyps)
             if not new:
                 return finish("out of hypotheses", low=True)
-            bs.add_hypotheses([h.id for h in new])
+            bs.add_hypotheses([h.id for h in new], {h.id: self._prior(h, ctx) for h in new})
             rehyps += 1
             rounds += 1
 
