@@ -277,6 +277,42 @@ def render_fix(
     )
 
 
+# ---------- report: say the decided diagnosis in plain words ----------
+
+REPORT_VERSION = "report-v1"
+
+
+def render_report(facts: list[str], evidence: list[dict], signals: list[str], confirmed: bool) -> str:
+    """The REPORT step. The diagnosis and the fix are decided; the model only explains them."""
+    shown = "\n\n".join(f"{e['id']}: {e['command']}\n{e['output']}" for e in evidence)
+    status = (
+        "The reads confirmed this diagnosis."
+        if confirmed
+        else "The reads did NOT confirm this diagnosis: say plainly that it is unconfirmed, a best guess."
+    )
+    return "\n".join(
+        [
+            "Write a short incident note (at most 120 words) for an SRE about the Kubernetes diagnosis",
+            "in <diagnosis>. Say where the fault is, what it is, what it affects, and what M2 proposes.",
+            "",
+            "Rules:",
+            "- Use only the facts in <diagnosis>, <evidence> and <signals>. Add no new cause, number or fix.",
+            "- Cite evidence ids in brackets after each claim they support, e.g. [E1] or [L1]. M1's signals",
+            "  are [S1]. Cite only ids that exist.",
+            "- Name the service. Say a proposed fix is checked by the safety gate (M3) before it runs.",
+            f"- {status}",
+            "- Plain text, no markdown, no lists.",
+            "",
+            wrap("diagnosis", "\n".join(facts), cap=3000),
+            wrap("evidence", shown or "(no reads)", cap=6000),
+            wrap("signals", "\n".join(signals) or "(none)", cap=3000),
+            "",
+            untrusted_note("diagnosis", "evidence", "signals"),
+            'Answer with JSON only: {"text": "...", "cited": ["E1", ...]}',
+        ]
+    )
+
+
 # task name -> template. A task with no template means "no LLM for this, use rules".
 PROMPTS: dict[str, Template] = {
     "score": Template(
@@ -286,4 +322,5 @@ PROMPTS: dict[str, Template] = {
     # fix: with thinking "low" it used all 3000 tokens and sent nothing; off answers in seconds, and the
     # code checks plus the revise loop catch a wrong value (measured on deepseek-v4-flash, 21 Oct 2026).
     "fix": Template("fix", FIX_VERSION, render_fix, max_tokens=1500, reasoning={"enabled": False}),
+    "report": Template("report", REPORT_VERSION, render_report, max_tokens=800, reasoning={"enabled": False}),
 }

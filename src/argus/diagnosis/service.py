@@ -20,6 +20,7 @@ from argus.diagnosis.core.models import DiagContext, Evidence, HypothesisSpec
 from argus.diagnosis.loop.context_adapter import adapt
 from argus.diagnosis.loop.controller import Controller, LoopResult
 from argus.diagnosis.loop.llm_fixer import FixProposer
+from argus.diagnosis.loop.report import ReportWriter, top_verdicts
 from argus.diagnosis.loop.scorer import RuleScorer
 from argus.diagnosis.ports.base import LLMClient, ReadExecutor
 from argus.diagnosis.ports.openrouter import llm_from_env
@@ -71,6 +72,8 @@ def diagnose_report(
         "belief_rounds": _belief_rounds(result),
         "stop_reason": result.report.stop_reason,
         "low_confidence": result.report.low_confidence,
+        "report_text": result.report.report_text,
+        "report_source": result.report.report_source,
         "diagnosis": diagnosis.model_dump(),
     }
 
@@ -110,20 +113,38 @@ def to_result(
     if ranked:
         top = result.hypotheses[ranked[0][0]]
         actions.append(_read_action(top, ctx.namespace))
+        fixer = fixer or FixProposer()
+        fix, note, lookups = None, "", []
         if not confirmed(result):
             # Test before acting: the reads never confirmed `top`, so M2 proposes only the read
             # that would, and no write M3 might approve. The reason goes where the dashboard shows it.
-            hypotheses[0].evidence.append(_unconfirmed_line(result))
+            note = _unconfirmed_line(result)
+            hypotheses[0].evidence.append(note)
         else:
             # The LLM picks a fix template and its values from the evidence (rules without an LLM);
             # anything M3 blocked last round is never proposed again. The reason for no write, and
             # any extra read the fix needed, go where the dashboard shows them.
-            outcome = (fixer or FixProposer()).propose(top, ctx, result.evidence, blocked)
-            hypotheses[0].evidence.extend(_evidence_lines(top.id, outcome.lookups))
-            if outcome.action is not None:
-                actions.append(outcome.action)
-            elif outcome.note:
-                hypotheses[0].evidence.append(outcome.note)
+            outcome = fixer.propose(top, ctx, result.evidence, blocked)
+            fix, note, lookups = outcome.action, outcome.note, outcome.lookups
+            hypotheses[0].evidence.extend(_evidence_lines(top.id, lookups))
+            if fix is not None:
+                actions.append(fix)
+            elif note:
+                hypotheses[0].evidence.append(note)
+        # REPORT: the decided diagnosis and fix in plain words, first in the top hypothesis's evidence.
+        text, source = ReportWriter(fixer.llm).write(
+            top,
+            ranked[0][1],
+            confirmed(result),
+            result.report.stop_reason,
+            [*result.evidence, *lookups],
+            top_verdicts(result.belief.history, top.id),
+            fix,
+            note,
+            ctx,
+        )
+        result.report.report_text, result.report.report_source = text, source
+        hypotheses[0].evidence.insert(0, f"Report ({source}): {text}")
     kept = [a for a in actions if a.command not in blocked]
     return DiagnosisResult(hypotheses=hypotheses, actions=kept)
 

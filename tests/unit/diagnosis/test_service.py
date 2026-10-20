@@ -27,7 +27,8 @@ def test_top_hypothesis_is_cart_missing_address():
     top = result.hypotheses[0]
     assert top.root_cause.startswith("cart [app-config]")
     assert top.probability >= 0.80
-    assert top.evidence == [f"E1 (ok): {CART_DEPLOYMENT} -> env: CART_ADDR missing"]
+    assert top.evidence[0].startswith("Report (template): Root cause: cart [app-config]")
+    assert top.evidence[1:] == [f"E1 (ok): {CART_DEPLOYMENT} -> env: CART_ADDR missing"]
 
 
 def test_hypotheses_are_ranked_best_first():
@@ -61,7 +62,7 @@ def test_no_llm_no_cluster_still_ranks_cart_first():
     assert result.hypotheses[0].root_cause.startswith("cart")
     for hypothesis in result.hypotheses:
         for line in hypothesis.evidence:
-            assert "unavailable" in line or line.startswith("No write:")
+            assert "unavailable" in line or line.startswith(("No write:", "Report (template): Unconfirmed"))
 
 
 def test_no_write_when_no_read_confirmed_the_top_hypothesis():

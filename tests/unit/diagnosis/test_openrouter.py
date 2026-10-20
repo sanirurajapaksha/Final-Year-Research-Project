@@ -110,7 +110,7 @@ def test_task_without_a_template_is_unavailable_and_makes_no_call(monkeypatch):
     monkeypatch.setattr(openrouter, "complete_json", fake_complete_json(AssertionError("must not be called")))
     llm = OpenRouterLLM("m")
     with pytest.raises(LLMUnavailable):
-        llm.structured("report", Answer)
+        llm.structured("no-such-task", Answer)
     assert llm.usage["calls"] == 0
 
 
@@ -148,7 +148,7 @@ def test_diagnose_with_a_key_builds_the_teams_model_and_still_falls_back(monkeyp
 
     assert [llm.model for llm in built] == ["deepseek/test-model"]
     assert report["hypotheses"]  # the draft call failed, so the rules drafted instead
-    assert {c["task"] for c in built[0].calls} == {"draft"}  # one try per round, each fell back
+    assert {c["task"] for c in built[0].calls} == {"draft", "report"}  # each try failed and fell back
     assert built[0].usage["failed"] == built[0].usage["calls"] >= 1
 
 

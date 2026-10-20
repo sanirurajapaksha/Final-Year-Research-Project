@@ -68,5 +68,6 @@ class DiagnosisReport(BaseModel):
 
     stop_reason: str = ""
     low_confidence: bool = False
-    report_text: str = ""
+    report_text: str = ""  # the REPORT step's plain-words note (loop/report.py)
+    report_source: str = ""  # "llm" or "template"
     usage: dict[str, int] = {}

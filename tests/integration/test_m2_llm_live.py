@@ -130,3 +130,42 @@ def test_real_model_fills_the_env_patch_from_the_service_list():
     assert outcome.source == "llm", [c["reply"] for c in llm.calls]
     assert outcome.action.command == patch_env_command("cart", "CART_ADDR", "redis-cart:6379", "default")
     assert "L1" in outcome.action.rationale
+
+
+def test_real_model_writes_a_report_that_passes_the_checks():
+    """Step 8: a confirmed diagnosis with a fix; the note must cite real ids, name cart, fit 120 words."""
+    from argus.contracts import ProposedAction
+    from argus.diagnosis.core.models import Candidate, DiagContext, Evidence, HypothesisSpec
+    from argus.diagnosis.loop.report import ReportWriter
+
+    ctx = DiagContext(
+        namespace="default",
+        candidates=[Candidate(service="cart")],
+        symptoms=["cart: log_error (failed to connect to redis: CART_ADDR environment variable not set)"],
+    )
+    top = HypothesisSpec(
+        id="H1",
+        component="cart",
+        layer="app-config",
+        fault="CART_ADDR env var missing",
+        test="kubectl get deployment cart -n default -o json",
+    )
+    e1 = Evidence(
+        id="E1",
+        hyp_id="H1",
+        command=top.test,
+        output='{"containers": [{"name": "cart", "env": []}]}',
+        ok=True,
+    )
+    fix = ProposedAction(
+        command="kubectl patch deployment cart -n default -p '{...CART_ADDR=redis-cart:6379...}'",
+        is_write=True,
+    )
+    llm = OpenRouterLLM(os.environ["ARGUS_LLM_MODEL"])
+
+    text, source = ReportWriter(llm).write(
+        top, 0.85, True, "confident", [e1], {"E1": "strong-support"}, fix, "", ctx
+    )
+
+    assert source == "llm", [c["reply"] for c in llm.calls]
+    print(text)
