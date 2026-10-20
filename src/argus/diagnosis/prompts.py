@@ -32,6 +32,7 @@ TAGS = (
     "evidence",
     "fix_templates",
     "diagnosis",
+    "rejected",
 )
 _TAG = re.compile(r"<\s*/?\s*(?:" + "|".join(TAGS) + r")\b[^>]*>", re.IGNORECASE)
 # ASCII control characters (keeping tab and newline), plus zero-width and text-direction marks,
@@ -224,10 +225,65 @@ def render_draft(
     )
 
 
+# ---------- fix: pick a fix template and fill in its values from the evidence ----------
+
+FIX_VERSION = "fix-v3"
+
+
+def render_fix(
+    diagnosis: str,
+    evidence: list[dict],
+    templates: list[dict],
+    rejected: list[str],
+    namespace: str,
+) -> str:
+    """The FIX step. M2 has already decided the diagnosis; the model only chooses how to repair it.
+
+    `evidence` items are {id, command, output}; `templates` items are {id, does, values}.
+    """
+    shown = "\n\n".join(f"{e['id']}: {e['command']}\n{e['output']}" for e in evidence)
+    listed = "\n".join(f"{t['id']}: {t['does']} Values: {t['values']}" for t in templates)
+    return "\n".join(
+        [
+            "A Kubernetes fault has been diagnosed (see <diagnosis>). Choose how to repair it.",
+            "",
+            "Pick exactly one template from <fix_templates>, or none if no template would fix this fault",
+            "safely. Fill in only the values that template uses; leave the others as empty strings.",
+            "",
+            "Rules:",
+            "- Every value must come from <evidence>: the env var name as the logs spell it, a service",
+            "  name and port as the service list shows them. Never invent or guess a value: if the",
+            "  evidence does not show it, choose none.",
+            "- An address variable (a name ending in _ADDR, _HOST or _URL) holds host:port of a Service.",
+            "  Build it from the service list: the NAME of the Service the error says the component cannot",
+            "  reach, a colon, and the port number from that Service's PORT(S) column. For example, an",
+            "  error 'failed to connect to db: DB_ADDR not set' and a service row 'orders-db ... 5432/TCP'",
+            "  give DB_ADDR = orders-db:5432. Use the Service's full NAME, not the short word in the log.",
+            "  The address is never the component's own Service: the variable says where it must connect.",
+            "- target is the deployment to change, spelled exactly as in the evidence.",
+            "- In cited, list the evidence ids (E1, L1, ...) that show each value you used.",
+            "- Do not propose anything listed in <rejected>; the reason it was rejected is given.",
+            "",
+            wrap("diagnosis", diagnosis, cap=1000),
+            wrap("evidence", shown or "(no evidence)", cap=8000),
+            wrap("fix_templates", listed, cap=2000),
+            wrap("rejected", "\n".join(rejected) or "(none)", cap=3000),
+            "",
+            f"Namespace: {namespace}",
+            untrusted_note("diagnosis", "evidence", "fix_templates", "rejected"),
+            'Answer with JSON only: {"template": ..., "target": ..., "var": ..., "value": ..., '
+            '"cited": [...], "rationale": ...}',
+        ]
+    )
+
+
 # task name -> template. A task with no template means "no LLM for this, use rules".
 PROMPTS: dict[str, Template] = {
     "score": Template(
         "score", SCORE_VERSION, render_score, max_tokens=3000, timeout_s=60.0, reasoning={"effort": "low"}
     ),
     "draft": Template("draft", DRAFT_VERSION, render_draft, max_tokens=1500, reasoning={"enabled": False}),
+    # fix: with thinking "low" it used all 3000 tokens and sent nothing; off answers in seconds, and the
+    # code checks plus the revise loop catch a wrong value (measured on deepseek-v4-flash, 21 Oct 2026).
+    "fix": Template("fix", FIX_VERSION, render_fix, max_tokens=1500, reasoning={"enabled": False}),
 }

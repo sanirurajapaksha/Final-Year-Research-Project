@@ -60,5 +60,5 @@ def test_every_tag_is_a_plain_word():
     assert all(t.isidentifier() for t in TAGS)
 
 
-def test_score_and_draft_have_templates():
-    assert set(PROMPTS) == {"score", "draft"}  # fix and report come in later steps; they fall back to rules
+def test_score_draft_and_fix_have_templates():
+    assert set(PROMPTS) == {"score", "draft", "fix"}  # report comes in step 8; until then it uses rules

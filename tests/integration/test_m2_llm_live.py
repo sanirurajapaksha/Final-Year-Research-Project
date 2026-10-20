@@ -92,3 +92,41 @@ def test_real_model_drafts_the_cart_config_hypothesis_from_your_m1_log():
     from_llm = [h for h in hyps if h.source == "llm"]
     assert from_llm, llm.calls[-1]["reply"]  # at least one usable LLM hypothesis
     assert ("cart", "app-config") in {(h.component, h.layer) for h in from_llm}
+
+
+def test_real_model_fills_the_env_patch_from_the_service_list():
+    """Step 7: given the confirmed cart/app-config diagnosis, the model should fill CART_ADDR=redis-cart:6379
+    from the canned service list, cite it, and so produce the exact patch the rules produce."""
+    import json
+    from pathlib import Path
+
+    from argus.contracts import SemanticContext
+    from argus.diagnosis.core.models import Evidence, HypothesisSpec
+    from argus.diagnosis.demo import scenario_reads
+    from argus.diagnosis.loop.context_adapter import adapt
+    from argus.diagnosis.loop.fixes import patch_env_command
+    from argus.diagnosis.loop.llm_fixer import FixProposer
+
+    root = Path(__file__).resolve().parents[2]
+    context = SemanticContext.model_validate(
+        json.loads((root / "data/fixtures/m2/contexts/cart_addr.json").read_text(encoding="utf-8"))["context"]
+    )
+    ctx = adapt(context, "default", scheme="hop")
+    reads = scenario_reads()
+    deployment = "kubectl get deployment cart -n default -o json"
+    top = HypothesisSpec(
+        id="H1",
+        component="cart",
+        layer="app-config",
+        fault="CART_ADDR env var missing",
+        test=deployment,
+        expected="no CART_ADDR in the cart container env",
+    )
+    e1 = Evidence(id="E1", hyp_id="H1", command=deployment, output=reads.run(deployment).output, ok=True)
+    llm = OpenRouterLLM(os.environ["ARGUS_LLM_MODEL"])
+
+    outcome = FixProposer(llm, reads).propose(top, ctx, [e1], {})
+
+    assert outcome.source == "llm", [c["reply"] for c in llm.calls]
+    assert outcome.action.command == patch_env_command("cart", "CART_ADDR", "redis-cart:6379", "default")
+    assert "L1" in outcome.action.rationale

@@ -5,8 +5,6 @@ ADAPT (context_adapter) -> loop (controller) -> convert (this file).
 diagnose_report() runs the same thing and returns plain data for the dashboard.
 """
 
-import json
-
 from argus.config import load_settings
 from argus.contracts import (
     DiagnosisResult,
@@ -21,7 +19,7 @@ from argus.diagnosis.core.config import DiagnosisConfig
 from argus.diagnosis.core.models import DiagContext, Evidence, HypothesisSpec
 from argus.diagnosis.loop.context_adapter import adapt
 from argus.diagnosis.loop.controller import Controller, LoopResult
-from argus.diagnosis.loop.fixes import propose_fix
+from argus.diagnosis.loop.llm_fixer import FixProposer
 from argus.diagnosis.loop.scorer import RuleScorer
 from argus.diagnosis.ports.base import LLMClient, ReadExecutor
 from argus.diagnosis.ports.openrouter import llm_from_env
@@ -47,8 +45,8 @@ def diagnose(
     diagnose(context, feedback=...): the LLM is then the team's model when ARGUS_LLM_API_KEY and
     ARGUS_LLM_MODEL are set, and rules otherwise; with no cluster every read is neutral.
     """
-    ctx, result = _run(context, config, llm, reads)
-    return to_result(result, ctx, blocked_verdicts(feedback))
+    ctx, result, fixer = _run(context, config, llm, reads)
+    return to_result(result, ctx, blocked_verdicts(feedback), fixer)
 
 
 def diagnose_report(
@@ -60,8 +58,8 @@ def diagnose_report(
     reads: ReadExecutor | None = None,
 ) -> dict:
     """The same run as diagnose(), as plain data the dashboard can show and a test can check."""
-    ctx, result = _run(context, config, llm, reads)
-    diagnosis = to_result(result, ctx, blocked_verdicts(feedback))
+    ctx, result, fixer = _run(context, config, llm, reads)
+    diagnosis = to_result(result, ctx, blocked_verdicts(feedback), fixer)
     return {
         "namespace": ctx.namespace,
         "candidates": [{"service": c.service, "weight": c.weight} for c in ctx.candidates],
@@ -82,16 +80,22 @@ def _run(
     config: DiagnosisConfig | None,
     llm: LLMClient | None,
     reads: ReadExecutor | None,
-) -> tuple[DiagContext, LoopResult]:
+) -> tuple[DiagContext, LoopResult, FixProposer]:
     cfg = config or DiagnosisConfig()
     ctx = adapt(context, cfg.namespace, scheme="hop" if cfg.graph_priors == "hop" else "almanac")
     if llm is None:  # M4's plain diagnose(context): the team's model when a key is set, else rules
         llm = llm_from_env(load_settings().llm_model)
     controller = Controller(cfg, llm=llm, reads=reads, scorer=RuleScorer())
-    return ctx, controller.run(ctx)
+    fixer = FixProposer(controller.llm, controller.reads, cfg.max_revisions)  # same LLM and cluster
+    return ctx, controller.run(ctx), fixer
 
 
-def to_result(result: LoopResult, ctx: DiagContext, blocked: dict[str, SafetyVerdict]) -> DiagnosisResult:
+def to_result(
+    result: LoopResult,
+    ctx: DiagContext,
+    blocked: dict[str, SafetyVerdict],
+    fixer: FixProposer | None = None,
+) -> DiagnosisResult:
     """Turn the loop's belief state into the contract: hypotheses best first, then actions."""
     ranked = [(h, p) for h, p in result.belief.ranked() if h != H0]
     hypotheses = [
@@ -106,17 +110,20 @@ def to_result(result: LoopResult, ctx: DiagContext, blocked: dict[str, SafetyVer
     if ranked:
         top = result.hypotheses[ranked[0][0]]
         actions.append(_read_action(top, ctx.namespace))
-        fix = propose_fix(top, ctx)
         if not confirmed(result):
             # Test before acting: the reads never confirmed `top`, so M2 proposes only the read
             # that would, and no write M3 might approve. The reason goes where the dashboard shows it.
             hypotheses[0].evidence.append(_unconfirmed_line(result))
-        elif fix is not None and fix.command in blocked:
-            # M3 proved this fix unsafe. M2 knows one fix per fault, so it proposes no other
-            # write and records why, with M3's counterexample, where the dashboard shows it.
-            hypotheses[0].evidence.append(_blocked_line(blocked[fix.command]))
-        elif fix is not None:
-            actions.append(fix)
+        else:
+            # The LLM picks a fix template and its values from the evidence (rules without an LLM);
+            # anything M3 blocked last round is never proposed again. The reason for no write, and
+            # any extra read the fix needed, go where the dashboard shows them.
+            outcome = (fixer or FixProposer()).propose(top, ctx, result.evidence, blocked)
+            hypotheses[0].evidence.extend(_evidence_lines(top.id, outcome.lookups))
+            if outcome.action is not None:
+                actions.append(outcome.action)
+            elif outcome.note:
+                hypotheses[0].evidence.append(outcome.note)
     kept = [a for a in actions if a.command not in blocked]
     return DiagnosisResult(hypotheses=hypotheses, actions=kept)
 
@@ -145,14 +152,6 @@ def blocked_verdicts(feedback: list[SafetyVerdict] | None) -> dict[str, SafetyVe
         if verdict.decision == GateDecision.BLOCK:
             blocked[verdict.command] = verdict
     return blocked
-
-
-def _blocked_line(verdict: SafetyVerdict) -> str:
-    """Why the fix was dropped: M3's reason and counterexample, and that no other write follows."""
-    line = f"M3 blocked the fix `{verdict.command}`: {verdict.reason}"
-    if verdict.counterexample:
-        line += f"; counterexample: {json.dumps(verdict.counterexample, sort_keys=True)}"
-    return line + ". M2 knows no other safe fix for this fault, so it proposes no write."
 
 
 def _read_action(top: HypothesisSpec, namespace: str) -> ProposedAction:
