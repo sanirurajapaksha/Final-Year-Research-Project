@@ -26,6 +26,9 @@ class Settings:
     m3_kubectl_output: str = ""
     # JSONL file where M3's Formulation Agent appends every raw LLM answer (scratch/ is git-ignored).
     m3_llm_log: str = "scratch/m3_llm_outputs.jsonl"
+    # M2 uses the LLM only when this is on. The key and model above are shared with M3, so having them
+    # set must not make every M2 run paid and non-repeatable; off means M2 runs on its rules.
+    m2_use_llm: bool = False
 
 
 def load_settings() -> Settings:
@@ -37,4 +40,5 @@ def load_settings() -> Settings:
         solver_memory_mb=int(os.environ.get("ARGUS_SOLVER_MEMORY_MB", Settings.solver_memory_mb)),
         m3_kubectl_output=os.environ.get("ARGUS_M3_KUBECTL_OUTPUT", Settings.m3_kubectl_output),
         m3_llm_log=os.environ.get("ARGUS_M3_LLM_LOG", Settings.m3_llm_log),
+        m2_use_llm=os.environ.get("ARGUS_M2_USE_LLM", "").strip().lower() in ("1", "true", "yes", "on"),
     )

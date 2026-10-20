@@ -44,8 +44,9 @@ def diagnose(
     in the top hypothesis's evidence instead.
 
     The keyword-only arguments are for tests and the demo. M4 calls diagnose(context) and
-    diagnose(context, feedback=...): the LLM is then the team's model when ARGUS_LLM_API_KEY and
-    ARGUS_LLM_MODEL are set, and rules otherwise; with no cluster every read is neutral.
+    diagnose(context, feedback=...): M2 then runs on its rules, and uses the team's model only when
+    ARGUS_M2_USE_LLM is on and ARGUS_LLM_API_KEY / ARGUS_LLM_MODEL are set (opt-in, because those two
+    are shared with M3). With no cluster every read is neutral.
     """
     ctx, result = _run(context, config, llm, reads)
     return to_result(result, ctx, blocked_verdicts(feedback))
@@ -85,8 +86,9 @@ def _run(
 ) -> tuple[DiagContext, LoopResult]:
     cfg = config or DiagnosisConfig()
     ctx = adapt(context, cfg.namespace)
-    if llm is None:  # M4's plain diagnose(context): the team's model when a key is set, else rules
-        llm = llm_from_env(load_settings().llm_model)
+    if llm is None:  # M4's plain diagnose(context): rules, unless ARGUS_M2_USE_LLM turns the LLM on
+        settings = load_settings()
+        llm = llm_from_env(settings.llm_model) if settings.m2_use_llm else None
     controller = Controller(cfg, llm=llm, reads=reads, scorer=RuleScorer())
     return ctx, controller.run(ctx)
 
