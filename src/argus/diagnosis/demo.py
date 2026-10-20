@@ -8,8 +8,10 @@ file comes back "unavailable", exactly as with no cluster. Nothing here touches 
 import json
 from pathlib import Path
 
+from argus.config import load_settings
 from argus.contracts import DiagnosisResult, GateDecision, SafetyVerdict, SemanticContext
 from argus.diagnosis.ports.fakes import FakeReadExecutor, NoLLM
+from argus.diagnosis.ports.openrouter import llm_from_env
 from argus.diagnosis.service import diagnose, diagnose_report
 
 REPO = Path(__file__).resolve().parents[3]
@@ -27,8 +29,11 @@ def scenario_reads(path: Path = SCENARIO_READS) -> FakeReadExecutor:
 
 def _demo_llm(use_llm: bool):
     """The demo runs on rules unless asked: free, the same every time, and what main always did.
-    use_llm=True lets diagnose() pick the team's model from ARGUS_LLM_API_KEY / ARGUS_LLM_MODEL."""
-    return None if use_llm else NoLLM()
+    use_llm=True (the page's toggle) is an explicit opt-in, so it builds the team's model from
+    ARGUS_LLM_API_KEY / ARGUS_LLM_MODEL without needing ARGUS_M2_USE_LLM; with no key, rules."""
+    if not use_llm:
+        return NoLLM()
+    return llm_from_env(load_settings().llm_model) or NoLLM()
 
 
 def demo_diagnose(

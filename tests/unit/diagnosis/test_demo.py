@@ -124,3 +124,15 @@ def test_with_no_reads_m2_says_it_is_unsure():
     assert report["reads"]
     assert all(not read["ok"] for read in report["reads"])
     assert report["low_confidence"]
+
+
+def test_the_dashboard_toggle_is_an_opt_in_on_its_own(monkeypatch):
+    # The page's LLM toggle builds the team's model directly; diagnose() alone needs ARGUS_M2_USE_LLM.
+    import argus.diagnosis.demo as demo
+    from argus.diagnosis.ports.fakes import FakeLLM
+
+    monkeypatch.setattr(demo, "llm_from_env", lambda model: FakeLLM({}))
+    assert isinstance(demo._demo_llm(True), FakeLLM)
+    assert type(demo._demo_llm(False)).__name__ == "NoLLM"
+    monkeypatch.setattr(demo, "llm_from_env", lambda model: None)  # no key: rules
+    assert type(demo._demo_llm(True)).__name__ == "NoLLM"
