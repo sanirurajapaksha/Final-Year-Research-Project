@@ -90,16 +90,23 @@ def untrusted_note(*tags: str) -> str:
 
 @dataclass(frozen=True)
 class Template:
-    """One task's prompt: a version for the logs and a function that builds the text."""
+    """One task's prompt: a version for the logs, a function that builds the text, and the call
+    settings that task needs (None: the adapter's defaults)."""
 
     task: str
     version: str
     render: Callable[..., str]
+    max_tokens: int | None = None
+    timeout_s: float | None = None
+    # Passed to OpenRouter's `reasoning`. Measured on deepseek-v4-flash, 21 Oct 2026: with no limit the
+    # model spent the whole token budget thinking and returned no answer on both tasks. score needs some
+    # thinking (with it off, it missed the absent CART_ADDR); draft only answers with thinking off.
+    reasoning: dict | None = None
 
 
 # ---------- score: judge one read's output against each active hypothesis ----------
 
-SCORE_VERSION = "score-v1"
+SCORE_VERSION = "score-v2"
 READ_OUTPUT_CAP = 6000  # same as DiagnosisConfig.max_output_chars
 
 
@@ -116,6 +123,10 @@ def render_score(command: str, output: str, hypotheses: dict[str, str]) -> str:
             "- Judge only from the text in <read_output>. If it says nothing about a hypothesis: neutral.",
             "- strong-support / strong-refute only when the output directly shows, or directly rules out,",
             "  what the hypothesis expects. Use weak-* when it fits or contradicts only indirectly.",
+            "- Absence is evidence when the output is the whole object the hypothesis is about: a",
+            "  deployment whose container has no DB_HOST in its env directly shows DB_HOST is",
+            "  missing (strong-support for 'missing', not neutral). Only call it neutral when the output",
+            "  does not cover the place the hypothesis points at.",
             "- A read run for one hypothesis can still bear on another; judge each one on its own.",
             "- Give exactly one verdict for every id listed, and no other ids.",
             "- [ip], [redacted] and similar marks are values removed for privacy, not evidence of a fault.",
@@ -132,7 +143,7 @@ def render_score(command: str, output: str, hypotheses: dict[str, str]) -> str:
 
 # ---------- draft: rival hypotheses for the components M2 suspects ----------
 
-DRAFT_VERSION = "draft-v1"
+DRAFT_VERSION = "draft-v2"
 LAYERS = ("app-config", "k8s-network", "resources", "dependency", "code")
 
 # role -> how the candidate list explains it. The weight itself is never shown: position is weighted
@@ -181,9 +192,13 @@ def render_draft(
             "- component: ONE service from <candidates>, or a service named in <signals>, spelled exactly.",
             "- layer: one of " + ", ".join(LAYERS) + ". Use dependency when a service the component",
             "  calls is down; use code for a bug in the service's own code.",
-            "- fault: a short, specific claim, e.g. 'CART_ADDR env var missing'.",
+            "- fault: a short, specific claim, e.g. 'DB_HOST env var missing'.",
             f"- test: ONE read-only kubectl command (get, describe, logs, top or events) with -n {namespace}",
             "  that would confirm or refute this hypothesis. No pipes, no other commands, no changes.",
+            "  Pod names are generated (e.g. cart-6b7c9) and you do not know them: reach pods through",
+            "  their deployment or a label instead, e.g. `kubectl get deployment cart -n NS -o json`,",
+            "  `kubectl logs deployment/cart -n NS`, `kubectl describe pods -n NS -l app=cart`.",
+            "  Never write placeholders such as <pod-name>: the command is run exactly as written.",
             "- expected: what that command's output shows if the hypothesis is true.",
             "- confidence: high, medium or low.",
             "",
@@ -211,6 +226,8 @@ def render_draft(
 
 # task name -> template. A task with no template means "no LLM for this, use rules".
 PROMPTS: dict[str, Template] = {
-    "score": Template("score", SCORE_VERSION, render_score),
-    "draft": Template("draft", DRAFT_VERSION, render_draft),
+    "score": Template(
+        "score", SCORE_VERSION, render_score, max_tokens=3000, timeout_s=60.0, reasoning={"effort": "low"}
+    ),
+    "draft": Template("draft", DRAFT_VERSION, render_draft, max_tokens=1500, reasoning={"enabled": False}),
 }

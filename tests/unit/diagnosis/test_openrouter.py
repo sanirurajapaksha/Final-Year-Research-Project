@@ -38,9 +38,10 @@ def echo_task(monkeypatch):
 def fake_complete_json(reply, usage=None, seen=None):
     """Stands in for argus.llm.client.complete_json: no network, no key."""
 
-    def call(prompt, schema, model, timeout_s, max_tokens):
+    def call(prompt, schema, model, timeout_s, max_tokens, reasoning=None):
         if seen is not None:
             seen.update(prompt=prompt, schema=schema, model=model, timeout_s=timeout_s, max_tokens=max_tokens)
+            seen["reasoning"] = reasoning
         if isinstance(reply, Exception):
             raise reply
         return reply, usage or {"prompt_tokens": 12, "completion_tokens": 5}
@@ -149,3 +150,37 @@ def test_diagnose_with_a_key_builds_the_teams_model_and_still_falls_back(monkeyp
     assert report["hypotheses"]  # the draft call failed, so the rules drafted instead
     assert {c["task"] for c in built[0].calls} == {"draft"}  # one try per round, each fell back
     assert built[0].usage["failed"] == built[0].usage["calls"] >= 1
+
+
+def test_each_task_sends_its_own_token_budget_and_reasoning_setting(monkeypatch):
+    from argus.diagnosis.loop.controller import ScoreAnswer
+    from argus.diagnosis.loop.llm_generator import DraftAnswer
+
+    seen = {}
+    monkeypatch.setattr(openrouter, "complete_json", fake_complete_json('{"verdicts": []}', seen=seen))
+    llm = OpenRouterLLM("m")
+    llm.structured("score", ScoreAnswer, command="kubectl get pods", output="x", hypotheses={})
+    assert (seen["max_tokens"], seen["timeout_s"], seen["reasoning"]) == (3000, 60.0, {"effort": "low"})
+
+    monkeypatch.setattr(openrouter, "complete_json", fake_complete_json('{"hypotheses": []}', seen=seen))
+    llm.structured(
+        "draft",
+        DraftAnswer,
+        candidates=[],
+        failing_path=[],
+        signals=[],
+        pod_status={},
+        refuted=[],
+        k=3,
+        namespace="ns",
+    )
+    assert (seen["max_tokens"], seen["timeout_s"], seen["reasoning"]) == (1500, 30.0, {"enabled": False})
+
+
+def test_an_empty_reply_is_unavailable_not_a_crash(monkeypatch, echo_task):
+    # What deepseek-v4-flash sent when it thought until the token budget ran out: content None.
+    monkeypatch.setattr(openrouter, "complete_json", fake_complete_json(None))
+    llm = OpenRouterLLM("m")
+    with pytest.raises(LLMUnavailable, match="empty reply"):
+        llm.structured("echo", Answer, text="x")
+    assert llm.usage["failed"] == 1

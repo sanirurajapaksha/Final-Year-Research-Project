@@ -76,7 +76,12 @@ class OpenRouterLLM:
         self.usage["calls"] += 1
         try:
             text, usage = complete_json(
-                prompt, strict_schema(schema), self.model, self.timeout_s, self.max_tokens
+                prompt,
+                strict_schema(schema),
+                self.model,
+                template.timeout_s or self.timeout_s,
+                template.max_tokens or self.max_tokens,
+                reasoning=template.reasoning,
             )
         except LLMError as exc:
             self.usage["failed"] += 1
@@ -85,6 +90,9 @@ class OpenRouterLLM:
         self.usage["prompt_tokens"] += int(usage.get("prompt_tokens", 0) or 0)
         self.usage["completion_tokens"] += int(usage.get("completion_tokens", 0) or 0)
         self._keep(task, template.version, usage, text)
+        if not text:  # a reasoning model that thought until max_tokens ran out sends no answer at all
+            self.usage["failed"] += 1
+            raise LLMUnavailable(f"{task}: empty reply, the token budget ran out before the answer")
         try:
             return schema.model_validate_json(text)
         except ValueError:  # pydantic's ValidationError: the controller falls back to rules

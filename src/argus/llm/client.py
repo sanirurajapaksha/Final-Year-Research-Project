@@ -20,7 +20,12 @@ class LLMError(RuntimeError):
 
 
 def complete_json(
-    prompt: str, schema: dict, model: str, timeout_s: float = 20.0, max_tokens: int = 300
+    prompt: str,
+    schema: dict,
+    model: str,
+    timeout_s: float = 20.0,
+    max_tokens: int = 300,
+    reasoning: dict | None = None,
 ) -> tuple[str, dict]:
     """Return (the model's JSON text, token usage) for one prompt.
 
@@ -29,6 +34,9 @@ def complete_json(
     `timeout_s` limits the whole call. `max_tokens` caps the answer's length (and cost); an
     answer cut short no longer matches the schema, so the caller rejects it. Reasoning models
     may need a higher cap.
+    `reasoning` is passed to OpenRouter as is, e.g. {"effort": "low"} or {"enabled": False}: a
+    reasoning model can otherwise spend all of max_tokens thinking and return no answer at all.
+    Leave it None to send exactly the request this function always sent.
     """
     api_key = os.environ.get("ARGUS_LLM_API_KEY", "")
     if not api_key:
@@ -47,6 +55,8 @@ def complete_json(
         },
         "provider": {"require_parameters": True},
     }
+    if reasoning is not None:
+        body["reasoning"] = reasoning
     request = urllib.request.Request(
         OPENROUTER_URL,
         data=json.dumps(body).encode("utf-8"),

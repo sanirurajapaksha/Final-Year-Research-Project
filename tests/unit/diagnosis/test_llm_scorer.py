@@ -29,7 +29,7 @@ def scripted(*replies):
     queue = list(replies)
     prompts = []
 
-    def call(prompt, schema, model, timeout_s, max_tokens):
+    def call(prompt, schema, model, timeout_s, max_tokens, reasoning=None):
         prompts.append(prompt)
         reply = queue.pop(0)
         if isinstance(reply, Exception):

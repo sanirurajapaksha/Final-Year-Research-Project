@@ -87,3 +87,24 @@ def test_network_errors_and_odd_replies_are_errors(monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", lambda request, timeout: FakeResponse(b'{"error": "x"}'))
     with pytest.raises(LLMError, match="unexpected reply"):
         complete_json("p", SCHEMA, "some/model")
+
+
+def _capture_body(monkeypatch):
+    sent = {}
+
+    def fake_urlopen(request, timeout):
+        sent["body"] = json.loads(request.data)
+        return FakeResponse(b'{"choices": [{"message": {"content": "{\\"x\\": 1}"}}]}')
+
+    monkeypatch.setenv("ARGUS_LLM_API_KEY", "test-key")
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    return sent
+
+
+def test_reasoning_is_sent_only_when_given(monkeypatch):
+    sent = _capture_body(monkeypatch)
+    complete_json("say x", SCHEMA, "some/model")
+    assert "reasoning" not in sent["body"]  # existing callers (M3) send exactly what they sent before
+
+    complete_json("say x", SCHEMA, "some/model", reasoning={"effort": "low"})
+    assert sent["body"]["reasoning"] == {"effort": "low"}
