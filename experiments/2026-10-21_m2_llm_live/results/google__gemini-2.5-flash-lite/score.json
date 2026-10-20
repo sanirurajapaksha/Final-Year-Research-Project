@@ -1,0 +1,92 @@
+[
+  {
+    "run": 0,
+    "command": "kubectl get deployment cart -n default -o json",
+    "verdicts": {
+      "H1": "strong-support",
+      "H2": "strong-refute",
+      "H3": "neutral"
+    },
+    "pass": true
+  },
+  {
+    "run": 0,
+    "command": "kubectl get endpoints cart -n default",
+    "verdicts": {
+      "H1": "neutral",
+      "H2": "strong-refute",
+      "H3": "neutral"
+    },
+    "pass": true
+  },
+  {
+    "run": 0,
+    "command": "kubectl describe pods -n default -l app=cart",
+    "verdicts": {
+      "H1": "neutral",
+      "H2": "strong-refute",
+      "H3": "strong-refute"
+    },
+    "pass": true
+  },
+  {
+    "run": 1,
+    "command": "kubectl get deployment cart -n default -o json",
+    "verdicts": {
+      "H1": "strong-support",
+      "H2": "strong-refute",
+      "H3": "neutral"
+    },
+    "pass": true
+  },
+  {
+    "run": 1,
+    "command": "kubectl get endpoints cart -n default",
+    "verdicts": {
+      "H1": "neutral",
+      "H2": "strong-refute",
+      "H3": "neutral"
+    },
+    "pass": true
+  },
+  {
+    "run": 1,
+    "command": "kubectl describe pods -n default -l app=cart",
+    "verdicts": {
+      "H1": "neutral",
+      "H2": "strong-refute",
+      "H3": "strong-refute"
+    },
+    "pass": true
+  },
+  {
+    "run": 2,
+    "command": "kubectl get deployment cart -n default -o json",
+    "verdicts": {
+      "H1": "strong-support",
+      "H2": "strong-refute",
+      "H3": "neutral"
+    },
+    "pass": true
+  },
+  {
+    "run": 2,
+    "command": "kubectl get endpoints cart -n default",
+    "verdicts": {
+      "H1": "neutral",
+      "H2": "strong-refute",
+      "H3": "neutral"
+    },
+    "pass": true
+  },
+  {
+    "run": 2,
+    "command": "kubectl describe pods -n default -l app=cart",
+    "verdicts": {
+      "H1": "neutral",
+      "H2": "strong-refute",
+      "H3": "strong-refute"
+    },
+    "pass": true
+  }
+]

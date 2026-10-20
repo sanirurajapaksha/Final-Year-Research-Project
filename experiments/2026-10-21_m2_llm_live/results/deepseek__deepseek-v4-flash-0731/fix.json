@@ -1,0 +1,42 @@
+[
+  {
+    "run": 0,
+    "source": "llm",
+    "command": "kubectl patch deployment cart -n default -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"cart\",\"env\":[{\"name\":\"CART_ADDR\",\"value\":\"redis-cart:6379\"}]}]}}}}'",
+    "note": "",
+    "tries": 2,
+    "pass": true
+  },
+  {
+    "run": 1,
+    "source": "llm",
+    "command": "kubectl patch deployment cart -n default -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"cart\",\"env\":[{\"name\":\"CART_ADDR\",\"value\":\"redis-cart:6379\"}]}]}}}}'",
+    "note": "",
+    "tries": 2,
+    "pass": true
+  },
+  {
+    "run": 2,
+    "source": "llm",
+    "command": "kubectl patch deployment cart -n default -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"cart\",\"env\":[{\"name\":\"CART_ADDR\",\"value\":\"redis-cart:6379\"}]}]}}}}'",
+    "note": "",
+    "tries": 2,
+    "pass": true
+  },
+  {
+    "run": 3,
+    "source": "llm",
+    "command": "kubectl patch deployment cart -n default -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"cart\",\"env\":[{\"name\":\"CART_ADDR\",\"value\":\"redis-cart:6379\"}]}]}}}}'",
+    "note": "",
+    "tries": 2,
+    "pass": true
+  },
+  {
+    "run": 4,
+    "source": "llm",
+    "command": "kubectl patch deployment cart -n default -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"cart\",\"env\":[{\"name\":\"CART_ADDR\",\"value\":\"redis-cart:6379\"}]}]}}}}'",
+    "note": "",
+    "tries": 2,
+    "pass": true
+  }
+]
