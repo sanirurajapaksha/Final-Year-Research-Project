@@ -128,9 +128,28 @@ def test_diagnose_without_a_key_runs_on_rules():
     assert diagnose_report(CONTEXT)["hypotheses"]  # rules drafted them, nothing touched the network
 
 
-def test_diagnose_with_a_key_builds_the_teams_model_and_still_falls_back(monkeypatch):
+def test_a_key_alone_does_not_turn_the_llm_on(monkeypatch):
+    # Review on #41: the key and model are shared with M3, so having them set must not make M2 paid.
     monkeypatch.setenv("ARGUS_LLM_API_KEY", "test-key")
     monkeypatch.setenv("ARGUS_LLM_MODEL", "deepseek/test-model")
+    monkeypatch.setattr("argus.diagnosis.service.llm_from_env", lambda model: pytest.fail("LLM was built"))
+    monkeypatch.setattr(openrouter, "complete_json", fake_complete_json(AssertionError("must not be called")))
+    assert diagnose_report(CONTEXT)["hypotheses"]  # rules, as before this PR
+
+
+@pytest.mark.parametrize("value", ["0", "", "no", "false"])
+def test_the_opt_in_flag_must_say_yes(monkeypatch, value):
+    monkeypatch.setenv("ARGUS_LLM_API_KEY", "test-key")
+    monkeypatch.setenv("ARGUS_LLM_MODEL", "deepseek/test-model")
+    monkeypatch.setenv("ARGUS_M2_USE_LLM", value)
+    monkeypatch.setattr("argus.diagnosis.service.llm_from_env", lambda model: pytest.fail("LLM was built"))
+    diagnose_report(CONTEXT)
+
+
+def test_diagnose_with_the_opt_in_builds_the_teams_model_and_still_falls_back(monkeypatch):
+    monkeypatch.setenv("ARGUS_LLM_API_KEY", "test-key")
+    monkeypatch.setenv("ARGUS_LLM_MODEL", "deepseek/test-model")
+    monkeypatch.setenv("ARGUS_M2_USE_LLM", "1")
     built = []
 
     def spy(model):
