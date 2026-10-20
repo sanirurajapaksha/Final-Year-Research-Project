@@ -68,7 +68,7 @@ class Controller:
         self.cfg = config or DiagnosisConfig()
         self.llm = llm or NoLLM()
         self.reads = reads or NullReadExecutor()
-        self.generator = generator or RuleGenerator()
+        self.generator = generator or RuleGenerator(per_component=self.cfg.per_component)
         self.scorer = scorer  # RuleScorer or None: what scores a read when the LLM can't
 
     def run(self, ctx: DiagContext) -> LoopResult:
@@ -121,7 +121,7 @@ class Controller:
             new = self._draft(ctx, hyps)
             if not new:
                 return finish("out of hypotheses", low=True)
-            bs.add_hypotheses([h.id for h in new])
+            bs.add_hypotheses([h.id for h in new], {h.id: self._prior(h, ctx) for h in new})
             rehyps += 1
             rounds += 1
 
@@ -133,9 +133,9 @@ class Controller:
         return new
 
     def _prior(self, hyp: HypothesisSpec, ctx: DiagContext) -> float:
-        """c(confidence) x g(component): the graph prior only when graph_priors is on."""
+        """c(confidence) x g(component): the graph prior unless graph_priors is "off"."""
         weight = {c.service: c.weight for c in ctx.candidates}.get(hyp.component, 1.0)
-        return max(hyp.confidence, 0.01) * (weight if self.cfg.graph_priors else 1.0)
+        return max(hyp.confidence, 0.01) * (weight if self.cfg.graph_priors != "off" else 1.0)
 
     def _execute(self, hyp: HypothesisSpec, evidence_id: str) -> Evidence:
         result = guarded_run(self.reads, hyp.test)

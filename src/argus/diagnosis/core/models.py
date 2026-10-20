@@ -8,11 +8,22 @@ from pydantic import BaseModel, Field
 Verdict = Literal["strong-support", "weak-support", "neutral", "weak-refute", "strong-refute"]
 
 
+Role = Literal["origin", "upstream", "quiet-dependency", "top-signals", "has-signals", "other"]
+
+
 class Candidate(BaseModel):
-    """A component that could hold the root cause, with its graph prior g(component)."""
+    """A component that could hold the root cause, with its graph prior g(component).
+
+    `role` and `hops` say why it is suspected, so the LLM prompt and the report can explain the weight:
+    origin = deepest failing service (hops 0), upstream = a caller on the failing path (hops up from
+    the origin, None if the walk can't reach it), quiet-dependency = something the origin calls or
+    names in its errors that reports nothing itself (hops 1). Without a graph: top-signals / has-signals.
+    """
 
     service: str
-    weight: float = 1.0  # 1.5 deepest failing service, 1.0 on the failing path, 0.5 otherwise
+    weight: float = 1.0  # see context_adapter: the "almanac" or "hop" scheme
+    role: Role = "other"
+    hops: int | None = None
 
 
 class DiagContext(BaseModel):
@@ -22,6 +33,7 @@ class DiagContext(BaseModel):
     candidates: list[Candidate] = []
     symptoms: list[str] = []
     failing_path: list[str] = []
+    node_status: dict[str, str] = {}  # M1's k8s status per service, e.g. "Running", "CrashLoopBackOff"
     notes: str = ""  # M1's notes, e.g. why the context is empty
 
 

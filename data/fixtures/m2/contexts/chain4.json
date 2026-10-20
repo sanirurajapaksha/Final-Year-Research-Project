@@ -1,0 +1,42 @@
+{
+  "provenance": "SYNTHETIC, hand-written for M2's hop-weight tests: a four-service call chain where errors climb from cart to the gateway.",
+  "truth": {"component": "cart", "layer": "app-config", "fault": "CART_ADDR environment variable missing"},
+  "context": {
+    "anomalies": [
+      "frontend: http_5xx_rate (http_5xx_rate=0.21 > 0.05)",
+      "checkout: http_5xx_rate (http_5xx_rate=0.44 > 0.05)",
+      "cart: http_5xx_rate (http_5xx_rate=0.90 > 0.05)",
+      "cart: log_error (CART_ADDR environment variable not set)",
+      "checkout: log_error (rpc error: code = Unavailable desc = cart)",
+      "frontend: log_error (rpc error: code = Internal desc = checkout)"
+    ],
+    "services": ["frontend", "checkout", "cart", "redis-cart", "product-catalog"],
+    "dependencies": [
+      ["frontend", "checkout"],
+      ["checkout", "cart"],
+      ["cart", "redis-cart"],
+      ["frontend", "product-catalog"]
+    ],
+    "notes": "",
+    "symptoms": ["frontend POST /checkout failed (HTTP 500)"],
+    "kept_signals": [
+      {"service": "frontend", "source": "metric", "name": "http_5xx_rate", "value": 0.21,
+       "timestamp": "2026-10-10T10:04:30Z", "evidence": "http_5xx_rate=0.21 > 0.05"},
+      {"service": "checkout", "source": "metric", "name": "http_5xx_rate", "value": 0.44,
+       "timestamp": "2026-10-10T10:04:30Z", "evidence": "http_5xx_rate=0.44 > 0.05"},
+      {"service": "cart", "source": "metric", "name": "http_5xx_rate", "value": 0.90,
+       "timestamp": "2026-10-10T10:04:30Z", "evidence": "http_5xx_rate=0.90 > 0.05"},
+      {"service": "cart", "source": "log", "name": "log_error", "value": null,
+       "timestamp": "2026-10-10T10:04:40Z", "evidence": "CART_ADDR environment variable not set"},
+      {"service": "checkout", "source": "log", "name": "log_error", "value": null,
+       "timestamp": "2026-10-10T10:04:41Z", "evidence": "rpc error: code = Unavailable desc = cart"},
+      {"service": "frontend", "source": "log", "name": "log_error", "value": null,
+       "timestamp": "2026-10-10T10:04:42Z", "evidence": "rpc error: code = Internal desc = checkout"}
+    ],
+    "nodes": [],
+    "failing_services": ["frontend", "checkout", "cart"],
+    "entry_point": "frontend",
+    "fallback_used": false,
+    "strategy": "failing_path"
+  }
+}

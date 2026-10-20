@@ -1,8 +1,15 @@
 """M2 settings: loop budgets, mechanism flags and the ablation presets (A1-A5)."""
 
 from dataclasses import dataclass, field, replace
+from typing import Literal
 
 from argus.diagnosis.core.belief import Params
+
+# How the graph prior g(component) is set:
+#   off     - not used: every component counts 1.0 in the prior (candidate order is still by weight)
+#   almanac - the Almanac's three levels: deepest failing 1.5, rest of the failing path 1.0, others 0.5
+#   hop     - graded by hops from the deepest failing service, plus quiet dependencies (context_adapter)
+GraphPriors = Literal["off", "almanac", "hop"]
 
 
 @dataclass(frozen=True)
@@ -20,17 +27,30 @@ class DiagnosisConfig:
     use_h0: bool = True
     use_eig: bool = True
     backtracking: bool = True
-    graph_priors: bool = True
+    graph_priors: GraphPriors = "almanac"
+    # At most this many hypotheses per component in a round (None: no limit). Spreading tests rival
+    # services earlier, but costs a read when the origin really is the cause; Step 10 measures it.
+    per_component: int | None = None
     params: Params = field(default_factory=Params)
+
+    def __post_init__(self) -> None:
+        # Older callers pass True/False: True meant the Almanac's prior, False meant none.
+        if self.graph_priors is True:
+            object.__setattr__(self, "graph_priors", "almanac")
+        elif self.graph_priors is False:
+            object.__setattr__(self, "graph_priors", "off")
+        if self.graph_priors not in ("off", "almanac", "hop"):
+            raise ValueError(f"graph_priors must be off, almanac or hop, not {self.graph_priors!r}")
 
 
 # Each preset only lists what differs from the full method.
 PRESETS: dict[str, dict] = {
-    "greedy": {"k": 1, "use_h0": False, "use_eig": False, "backtracking": False, "graph_priors": False},
-    "A2": {"use_eig": False, "backtracking": False, "graph_priors": False},
-    "A3": {"backtracking": False, "graph_priors": False},
-    "A4": {"graph_priors": False},
-    "ach_rca": {},  # A5: everything on
+    "greedy": {"k": 1, "use_h0": False, "use_eig": False, "backtracking": False, "graph_priors": "off"},
+    "A2": {"use_eig": False, "backtracking": False, "graph_priors": "off"},
+    "A3": {"backtracking": False, "graph_priors": "off"},
+    "A4": {"graph_priors": "off"},
+    "ach_rca": {},  # A5: everything on, with the Almanac's graph prior
+    "A5-hop": {"graph_priors": "hop"},  # A5 with the hop-graded graph prior
 }
 
 

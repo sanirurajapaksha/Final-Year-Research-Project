@@ -39,6 +39,7 @@ def to_events(result: LoopResult, controller: Controller, run: str, elapsed_ms: 
                 "use_eig": cfg.use_eig,
                 "backtracking": cfg.backtracking,
                 "graph_priors": cfg.graph_priors,
+                "per_component": cfg.per_component,
             },
         }
     ]

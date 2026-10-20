@@ -49,7 +49,7 @@ def test_the_summary_shows_the_top_hypothesis():
 def test_every_read_has_an_expander():
     app = run_page()
     labels = [expander.label for expander in app.expander]
-    assert labels == ["E1 · H1 · ok", "E2 · H2 · ok", "E3 · H3 · ok"]
+    assert labels == ["E1 · H1 · ok"]  # the clues put cart/config first and one read settles it
 
 
 def test_the_write_is_labelled_and_sent_to_m3():

@@ -84,7 +84,7 @@ def _run(
     reads: ReadExecutor | None,
 ) -> tuple[DiagContext, LoopResult]:
     cfg = config or DiagnosisConfig()
-    ctx = adapt(context, cfg.namespace)
+    ctx = adapt(context, cfg.namespace, scheme="hop" if cfg.graph_priors == "hop" else "almanac")
     if llm is None:  # M4's plain diagnose(context): the team's model when a key is set, else rules
         llm = llm_from_env(load_settings().llm_model)
     controller = Controller(cfg, llm=llm, reads=reads, scorer=RuleScorer())

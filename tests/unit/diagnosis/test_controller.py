@@ -1,7 +1,9 @@
 import json
 
+import pytest
+
 from argus.diagnosis.core.config import DiagnosisConfig
-from argus.diagnosis.core.models import Candidate, DiagContext
+from argus.diagnosis.core.models import Candidate, DiagContext, HypothesisSpec
 from argus.diagnosis.core.readonly import is_read_only
 from argus.diagnosis.loop.controller import Controller
 from argus.diagnosis.loop.scorer import RuleScorer
@@ -132,3 +134,55 @@ def test_without_a_scorer_no_llm_stays_neutral():
     reads = FakeReadExecutor({FRONTEND_DEPLOYMENT: "image: otel/demo:frontend"})
     result = Controller(reads=reads).run(CTX)
     assert all(s.get("verdicts", {}) == {} for s in result.belief.history)
+
+
+class ScriptedGenerator:
+    """Round 1: one guess on `a`. Round 2: one guess on the origin and one on an off-path service."""
+
+    def __init__(self):
+        self.rounds = [
+            [HypothesisSpec(component="a", layer="x", fault="f1", test="kubectl get pods -n demo")],
+            [
+                HypothesisSpec(component="origin", layer="x", fault="f2", test="kubectl get svc -n demo"),
+                HypothesisSpec(component="other", layer="x", fault="f3", test="kubectl get ep -n demo"),
+            ],
+        ]
+
+    def draft(self, ctx, k, refuted=frozenset(), next_id=1):
+        specs = self.rounds.pop(0) if self.rounds else []
+        return [s.model_copy(update={"id": f"H{next_id + i}"}) for i, s in enumerate(specs)]
+
+
+def test_backtracking_shares_h0_by_graph_weight():
+    ctx = DiagContext(
+        namespace="demo",
+        candidates=[
+            Candidate(service="a", weight=1.0),
+            Candidate(service="origin", weight=1.5),
+            Candidate(service="other", weight=0.5),
+        ],
+    )
+    llm = FakeLLM({"score": [{"verdicts": {"H1": "strong-refute"}}]})
+    reads = FakeReadExecutor({"kubectl get pods -n demo": "pods look fine"})
+    result = Controller(llm=llm, reads=reads, generator=ScriptedGenerator()).run(ctx)
+
+    added = next(e for e in result.belief.history if e["event"] == "rehypothesize")["belief"]
+    assert added["H2"] == pytest.approx(3 * added["H3"])  # 1.5 vs 0.5: the graph prior survives backtracking
+
+
+def test_backtracking_shares_h0_equally_when_graph_priors_are_off():
+    ctx = DiagContext(
+        namespace="demo",
+        candidates=[
+            Candidate(service="a"),
+            Candidate(service="origin", weight=1.5),
+            Candidate(service="other"),
+        ],
+    )
+    llm = FakeLLM({"score": [{"verdicts": {"H1": "strong-refute"}}]})
+    cfg = DiagnosisConfig(graph_priors="off")
+    reads = FakeReadExecutor({"kubectl get pods -n demo": "pods look fine"})
+    result = Controller(cfg, llm=llm, reads=reads, generator=ScriptedGenerator()).run(ctx)
+
+    added = next(e for e in result.belief.history if e["event"] == "rehypothesize")["belief"]
+    assert added["H2"] == pytest.approx(added["H3"])

@@ -1,0 +1,38 @@
+{
+  "provenance": "SYNTHETIC: M1 F2 output for scenario_01 as pasted by Kaveen on 20 Oct 2026; scenario_01 is itself hand-written, not recorded from a cluster.",
+  "truth": {"component": "cart", "layer": "app-config", "fault": "CART_ADDR environment variable missing"},
+  "context": {
+    "anomalies": [
+      "frontend: http_5xx_rate (http_5xx_rate=0.38 > 0.05)",
+      "cart: http_5xx_rate (http_5xx_rate=0.92 > 0.05)",
+      "cart: log_error (failed to connect to redis: CART_ADDR environment variable not set)",
+      "cart: log_error (GetCart failed: cart store unavailable)",
+      "frontend: log_error (rpc error: code = Unavailable desc = cart)"
+    ],
+    "services": ["cart", "frontend"],
+    "dependencies": [["frontend", "cart"]],
+    "notes": "Stage 2 kept 5 of 8 Stage 1 anomalies (27 records, 6 spans in the window).",
+    "symptoms": ["frontend GET /cart failed (HTTP 500)"],
+    "kept_signals": [
+      {"service": "frontend", "source": "metric", "name": "http_5xx_rate", "value": 0.38,
+       "timestamp": "2026-10-10T10:04:30Z", "evidence": "http_5xx_rate=0.38 > 0.05"},
+      {"service": "cart", "source": "metric", "name": "http_5xx_rate", "value": 0.92,
+       "timestamp": "2026-10-10T10:04:30Z", "evidence": "http_5xx_rate=0.92 > 0.05"},
+      {"service": "cart", "source": "log", "name": "log_error", "value": null,
+       "timestamp": "2026-10-10T10:04:41Z",
+       "evidence": "failed to connect to redis: CART_ADDR environment variable not set"},
+      {"service": "cart", "source": "log", "name": "log_error", "value": null,
+       "timestamp": "2026-10-10T10:04:42Z", "evidence": "GetCart failed: cart store unavailable"},
+      {"service": "frontend", "source": "log", "name": "log_error", "value": null,
+       "timestamp": "2026-10-10T10:04:42Z", "evidence": "rpc error: code = Unavailable desc = cart"}
+    ],
+    "nodes": [
+      {"name": "cart", "k8s_status": "Running", "replicas": null},
+      {"name": "frontend", "k8s_status": "Available", "replicas": 1}
+    ],
+    "failing_services": ["cart", "frontend"],
+    "entry_point": "frontend",
+    "fallback_used": false,
+    "strategy": "failing_path"
+  }
+}
