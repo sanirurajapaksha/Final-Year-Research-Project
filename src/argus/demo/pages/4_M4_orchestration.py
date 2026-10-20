@@ -10,6 +10,8 @@ from argus.orchestration.report import OUTCOMES, build_report, load_scenario, ro
 st.title("M4: orchestration")
 record = the_run()
 report = build_report(load_scenario(), record)
+# Keep this member's demo and download focused on compression and routing.
+compression_report = {key: value for key, value in report.items() if key != "actions"}
 
 st.subheader("Compression: scenario_01 input")
 st.caption("Recomputed from the same synthetic telemetry fixture as the incident run.")
@@ -52,14 +54,7 @@ with st.expander("Routing request and fallback policy"):
     st.json({"request": replay["request"], "policy": replay["policy"]})
 st.download_button(
     "Download M4 report",
-    json.dumps({"compression_and_actions": report, "routing_replay": replay}, ensure_ascii=False, indent=2),
+    json.dumps({"compression": compression_report, "routing_replay": replay}, ensure_ascii=False, indent=2),
     "m4-report.json",
     "application/json",
-)
-
-st.subheader("Safety and executor handoffs: saved incident run")
-st.table(report["actions"])
-st.caption(
-    "Reads bypass M3; writes require APPROVE. The PP1 executor is a stub: nothing runs on any cluster. "
-    "The rows include the demo's explicitly handled feedback round."
 )
