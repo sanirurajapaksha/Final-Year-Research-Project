@@ -66,3 +66,42 @@ def test_without_clues_every_guess_is_half(m2_context):
     context, _ = m2_context("cart_addr")
     hyps = RuleGenerator(use_clues=False).draft(adapt(context, "ns"), k=3)
     assert [h.confidence for h in hyps] == [0.5, 0.5, 0.5]
+
+
+# ---------- review #40: whole words, and fixtures the table wasn't written from ----------
+
+
+def test_access_log_address_fields_are_not_a_config_clue():
+    # remote_addr / peer_addr are ordinary access-log fields, not a missing env var.
+    line = "cart: log_error (request failed remote_addr=10.0.0.4 peer_addr=10.0.0.9)"
+    assert layer_score("cart", "app-config", ctx(line)) == NONE
+
+
+def test_an_upper_case_address_variable_is_a_strong_config_clue():
+    for var in ("PAYMENT_ADDR", "DB_HOST", "AUTH_URL"):
+        assert layer_score("cart", "app-config", ctx(f"cart: log_error ({var} is empty)")) == STRONG, var
+
+
+def test_phrases_match_whole_words_only():
+    assert layer_score("cart", "app-config", ctx("cart: log_error (envoy upstream reset)")) == NONE
+    assert layer_score("cart", "app-config", ctx("cart: log_error (configmap reloaded)")) == NONE
+    assert layer_score("cart", "app-config", ctx("cart: log_error (bad config value)")) == WEAK
+    assert layer_score("cart", "k8s-network", ctx("cart: log_error (timeout: 5s)")) == WEAK
+
+
+@pytest.mark.parametrize(
+    "name, service, expected",
+    [
+        # redis_down: the error is a refused connection, not a setting
+        ("redis_down", "cart", {"app-config": NONE, "k8s-network": STRONG, "resources": LOWEST}),
+        # chain4: cart names its own env var; checkout only reports that cart is unavailable
+        ("chain4", "cart", {"app-config": STRONG, "k8s-network": NONE, "resources": NONE}),
+        ("chain4", "checkout", {"app-config": NONE, "k8s-network": WEAK, "resources": NONE}),
+        # misleading: the log blames a setting, the pod status says crash loop; the reads must decide
+        ("misleading", "cart", {"app-config": STRONG, "k8s-network": NONE, "resources": STRONG}),
+    ],
+)
+def test_clues_on_the_other_fixtures(m2_context, name, service, expected):
+    context, _ = m2_context(name)
+    diag = adapt(context, "ns")
+    assert {layer: layer_score(service, layer, diag) for layer in expected} == expected
