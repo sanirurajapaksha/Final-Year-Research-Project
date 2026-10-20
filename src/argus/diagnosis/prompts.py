@@ -130,7 +130,87 @@ def render_score(command: str, output: str, hypotheses: dict[str, str]) -> str:
     )
 
 
+# ---------- draft: rival hypotheses for the components M2 suspects ----------
+
+DRAFT_VERSION = "draft-v1"
+LAYERS = ("app-config", "k8s-network", "resources", "dependency", "code")
+
+# role -> how the candidate list explains it. The weight itself is never shown: position is weighted
+# in code (the graph prior), so the LLM must not count it a second time.
+ROLE_TEXT = {
+    "origin": "origin: the deepest failing service, where the errors start",
+    "upstream": "upstream caller on the failing path, {hops} above the origin: often only a victim",
+    "quiet-dependency": "quiet dependency, 1 hop below the origin: reports no signals itself",
+    "top-signals": "has the most anomaly signals (no call graph available)",
+    "has-signals": "has anomaly signals (no call graph available)",
+    "other": "known service, not on the failing path",
+}
+
+
+def _role_line(candidate: dict) -> str:
+    hops = candidate.get("hops")
+    hop_text = "position unknown" if hops is None else f"{hops} hop" + ("s" if hops != 1 else "")
+    return f"{candidate['service']}: " + ROLE_TEXT.get(candidate.get("role", "other"), "").format(
+        hops=hop_text
+    )
+
+
+def _path_text(failing_path: list[str]) -> str:
+    if not failing_path:
+        return "(no call graph)"
+    return "failing path, callers before callees: " + ", ".join(failing_path)
+
+
+def render_draft(
+    candidates: list[dict],
+    failing_path: list[str],
+    signals: list[str],
+    pod_status: dict[str, str],
+    refuted: list[str],
+    k: int,
+    namespace: str,
+) -> str:
+    """The controller's DRAFT step: up to k rival hypotheses, each with one read-only check."""
+    status = [f"{svc} pod status: {s}" for svc, s in pod_status.items()]
+    return "\n".join(
+        [
+            "You diagnose a Kubernetes microservice failure. Propose up to "
+            f"{k} rival root-cause hypotheses, best first.",
+            "",
+            "Each hypothesis has:",
+            "- component: ONE service from <candidates>, or a service named in <signals>, spelled exactly.",
+            "- layer: one of " + ", ".join(LAYERS) + ". Use dependency when a service the component",
+            "  calls is down; use code for a bug in the service's own code.",
+            "- fault: a short, specific claim, e.g. 'CART_ADDR env var missing'.",
+            f"- test: ONE read-only kubectl command (get, describe, logs, top or events) with -n {namespace}",
+            "  that would confirm or refute this hypothesis. No pipes, no other commands, no changes.",
+            "- expected: what that command's output shows if the hypothesis is true.",
+            "- confidence: high, medium or low.",
+            "",
+            "Rules:",
+            "- Grade confidence ONLY by how directly the evidence in <signals> shows this fault in this",
+            "  component: an error naming the component's own setting or state is high; an error that only",
+            "  shows it cannot reach something is medium; a component that only reports another service's",
+            "  failure is low. Do NOT lower confidence because of where the component sits in the call",
+            "  chain: position is weighted separately.",
+            "- A service whose errors only name another service is usually a victim, not the cause.",
+            "- Make the hypotheses rivals: different explanations whose tests would come out differently.",
+            "- Do not repeat anything in <refuted>; those were already tested and ruled out.",
+            "",
+            wrap("candidates", "\n".join(_role_line(c) for c in candidates), cap=3000),
+            wrap("call_graph", _path_text(failing_path), cap=1000),
+            wrap("signals", "\n".join([*signals, *status]) or "(no signals)", cap=6000),
+            wrap("refuted", "\n".join(refuted) or "(none yet)", cap=2000),
+            "",
+            untrusted_note("candidates", "call_graph", "signals", "refuted"),
+            'Answer with JSON only: {"hypotheses": [{"component": ..., "layer": ..., "fault": ...,',
+            '"test": ..., "expected": ..., "confidence": ...}]}',
+        ]
+    )
+
+
 # task name -> template. A task with no template means "no LLM for this, use rules".
 PROMPTS: dict[str, Template] = {
     "score": Template("score", SCORE_VERSION, render_score),
+    "draft": Template("draft", DRAFT_VERSION, render_draft),
 }

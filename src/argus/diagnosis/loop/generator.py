@@ -1,8 +1,10 @@
 """DRAFT step: rival hypotheses for the loop to test.
 
 RuleGenerator is the no-LLM fallback: it pairs the top candidates with a small table of common
-faults. `validate` holds the rules every generator must obey, so LLMGenerator (step 7) reuses it.
+faults. `validate` holds the rules every generator must obey, so LLMGenerator reuses it.
 """
+
+import re
 
 from argus.diagnosis.core.models import DiagContext, HypothesisSpec
 from argus.diagnosis.core.readonly import is_read_only
@@ -46,15 +48,22 @@ def validate(
     components (when all k sit on one component they share one graph weight, which then cancels out
     of the prior). Held-back specs only fill a round that would otherwise have fewer than k.
     None keeps the specs' own order: usually every guess lands on the top candidate.
+
+    `refuted` holds (component, fault) and (component, layer) pairs already tried. Matching on the
+    layer too stops a reworded repeat: the LLM's "CART_ADDR env var missing" and the rules' "missing
+    or wrong dependency address env var" are the same idea, and their read was already judged.
+
+    A component is known when it is a candidate or is named, as a whole word, in M1's symptom lines:
+    "failed to connect to redis" makes `redis` testable even when M1 never listed it as a service.
     """
-    known = {c.service for c in ctx.candidates}
+    known = {c.service for c in ctx.candidates} | _named_in(ctx.symptoms, {s.component for s in specs})
     seen = set(refuted)
     usable: list[HypothesisSpec] = []
     for spec in specs:
-        key = (spec.component, spec.fault)
-        if spec.component not in known or not is_read_only(spec.test) or key in seen:
+        keys = {(spec.component, spec.fault), (spec.component, spec.layer)}
+        if spec.component not in known or not is_read_only(spec.test) or keys & seen:
             continue
-        seen.add(key)
+        seen |= keys
         usable.append(spec)
 
     if per_component is not None:
@@ -66,6 +75,19 @@ def validate(
             (first if count[spec.component] <= per_component else held).append(spec)
         usable = first + held
     return [spec.model_copy(update={"id": f"H{next_id + i}"}) for i, spec in enumerate(usable[:k])]
+
+
+SERVICE_NAME = re.compile(r"[a-z0-9]([a-z0-9-]*[a-z0-9])?")  # a Kubernetes object name
+
+
+def _named_in(symptoms: list[str], names: set[str]) -> set[str]:
+    """The names that appear as a whole word in the symptom lines (and look like Kubernetes names)."""
+    text = "\n".join(symptoms)
+    return {
+        n
+        for n in names
+        if SERVICE_NAME.fullmatch(n) and re.search(rf"(?<![\w-]){re.escape(n)}(?![\w-])", text)
+    }
 
 
 class RuleGenerator:

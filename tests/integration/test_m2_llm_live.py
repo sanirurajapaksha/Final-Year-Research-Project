@@ -72,3 +72,23 @@ def test_real_model_scores_the_scenario_01_reads_like_the_rules_do():
             "score", ScoreAnswer, command=command, output=reads[command], hypotheses=hypotheses
         )
         assert answer.by_id().get(hyp) == verdict, (command, answer.by_id())
+
+
+def test_real_model_drafts_the_cart_config_hypothesis_from_your_m1_log():
+    """Step 6: on the cart_addr fixture the model should propose cart/app-config with a usable read."""
+    import json
+    from pathlib import Path
+
+    from argus.contracts import SemanticContext
+    from argus.diagnosis.loop.context_adapter import adapt
+    from argus.diagnosis.loop.llm_generator import LLMGenerator
+
+    fixture = Path(__file__).resolve().parents[2] / "data/fixtures/m2/contexts/cart_addr.json"
+    context = SemanticContext.model_validate(json.loads(fixture.read_text(encoding="utf-8"))["context"])
+    llm = OpenRouterLLM(os.environ["ARGUS_LLM_MODEL"])
+
+    hyps = LLMGenerator(llm).draft(adapt(context, "default", scheme="hop"), k=3)
+
+    from_llm = [h for h in hyps if h.source == "llm"]
+    assert from_llm, llm.calls[-1]["reply"]  # at least one usable LLM hypothesis
+    assert ("cart", "app-config") in {(h.component, h.layer) for h in from_llm}

@@ -12,6 +12,7 @@ from argus.diagnosis.core.belief import H0, BeliefState
 from argus.diagnosis.core.config import DiagnosisConfig
 from argus.diagnosis.core.models import DiagContext, DiagnosisReport, Evidence, HypothesisSpec, Verdict
 from argus.diagnosis.loop.generator import RuleGenerator
+from argus.diagnosis.loop.llm_generator import LLMGenerator
 from argus.diagnosis.ports.base import LLMClient, LLMUnavailable, ReadExecutor, guarded_run
 from argus.diagnosis.ports.fakes import NoLLM, NullReadExecutor
 
@@ -68,7 +69,13 @@ class Controller:
         self.cfg = config or DiagnosisConfig()
         self.llm = llm or NoLLM()
         self.reads = reads or NullReadExecutor()
-        self.generator = generator or RuleGenerator(per_component=self.cfg.per_component)
+        rules = RuleGenerator(per_component=self.cfg.per_component)
+        if generator is not None:
+            self.generator = generator
+        elif self.cfg.generator == "llm":  # with NoLLM every draft falls straight back to the rules
+            self.generator = LLMGenerator(self.llm, fallback=rules, per_component=self.cfg.per_component)
+        else:
+            self.generator = rules
         self.scorer = scorer  # RuleScorer or None: what scores a read when the LLM can't
 
     def run(self, ctx: DiagContext) -> LoopResult:
@@ -127,7 +134,9 @@ class Controller:
 
     def _draft(self, ctx: DiagContext, hyps: dict[str, HypothesisSpec]) -> list[HypothesisSpec]:
         """New hypotheses that repeat nothing already tried; ids carry on from the last round."""
-        tried = {(h.component, h.fault) for h in hyps.values()}
+        tried = {(h.component, h.fault) for h in hyps.values()} | {
+            (h.component, h.layer) for h in hyps.values()
+        }
         new = self.generator.draft(ctx, self.cfg.k, tried, next_id=len(hyps) + 1)
         hyps.update({h.id: h for h in new})
         return new

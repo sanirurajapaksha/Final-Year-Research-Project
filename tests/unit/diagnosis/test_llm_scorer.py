@@ -2,6 +2,7 @@
 
 import json
 
+from argus.diagnosis.core.config import DiagnosisConfig
 from argus.diagnosis.core.models import Candidate, DiagContext
 from argus.diagnosis.loop.controller import Controller, ScoreAnswer
 from argus.diagnosis.loop.scorer import RuleScorer
@@ -16,6 +17,7 @@ CTX = DiagContext(
     candidates=[Candidate(service="cart", weight=1.5)],
     symptoms=["cart: log_error (failed to connect to redis: CART_ADDR environment variable not set)"],
 )
+RULES = DiagnosisConfig(generator="rules")  # these tests are about scoring, so the rules draft
 CART_DEPLOYMENT = "kubectl get deployment cart -n default -o json"
 DEPLOYMENT_JSON = json.dumps(
     {"kind": "Deployment", "spec": {"template": {"spec": {"containers": [{"name": "cart", "env": []}]}}}}
@@ -85,7 +87,7 @@ def test_llm_verdict_moves_the_beliefs(monkeypatch):
     llm = OpenRouterLLM("test/model")
     reads = FakeReadExecutor({CART_DEPLOYMENT: DEPLOYMENT_JSON})
 
-    result = Controller(llm=llm, reads=reads, scorer=RuleScorer()).run(CTX)
+    result = Controller(RULES, llm=llm, reads=reads, scorer=RuleScorer()).run(CTX)
 
     assert result.report.stop_reason == "confident" and result.belief.ranked()[0][0] == "H1"
     assert llm.usage["calls"] == 1 and llm.calls[0]["prompt_version"] == SCORE_VERSION
@@ -97,7 +99,7 @@ def test_invented_ids_are_ignored(monkeypatch):
         openrouter, "complete_json", scripted(verdicts(H9="strong-support"), *[verdicts()] * 5)
     )
     reads = FakeReadExecutor({CART_DEPLOYMENT: DEPLOYMENT_JSON})
-    result = Controller(llm=OpenRouterLLM("m"), reads=reads).run(CTX)
+    result = Controller(RULES, llm=OpenRouterLLM("m"), reads=reads).run(CTX)
 
     assert "H9" not in result.belief.belief
     first_update = next(e for e in result.belief.history if e["event"] == "update")
@@ -109,7 +111,7 @@ def test_llm_failure_falls_back_to_the_rule_scorer(monkeypatch):
     llm = OpenRouterLLM("m")
     reads = FakeReadExecutor({CART_DEPLOYMENT: DEPLOYMENT_JSON})
 
-    result = Controller(llm=llm, reads=reads, scorer=RuleScorer()).run(CTX)
+    result = Controller(RULES, llm=llm, reads=reads, scorer=RuleScorer()).run(CTX)
 
     first_update = next(e for e in result.belief.history if e["event"] == "update")
     assert first_update["verdicts"] == {"H1": "strong-support"}  # RuleScorer read the env: no CART_ADDR
@@ -119,7 +121,7 @@ def test_llm_failure_falls_back_to_the_rule_scorer(monkeypatch):
 def test_garbage_reply_falls_back_to_the_rule_scorer(monkeypatch):
     monkeypatch.setattr(openrouter, "complete_json", scripted(*['{"verdicts": "yes"}'] * 5))
     reads = FakeReadExecutor({CART_DEPLOYMENT: DEPLOYMENT_JSON})
-    result = Controller(llm=OpenRouterLLM("m"), reads=reads, scorer=RuleScorer()).run(CTX)
+    result = Controller(RULES, llm=OpenRouterLLM("m"), reads=reads, scorer=RuleScorer()).run(CTX)
 
     first_update = next(e for e in result.belief.history if e["event"] == "update")
     assert first_update["verdicts"] == {"H1": "strong-support"}

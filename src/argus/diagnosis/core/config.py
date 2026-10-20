@@ -31,6 +31,9 @@ class DiagnosisConfig:
     # At most this many hypotheses per component in a round (None: no limit). Spreading tests rival
     # services earlier, but costs a read when the origin really is the cause; Step 10 measures it.
     per_component: int | None = None
+    # Who drafts hypotheses: "llm" uses the LLM when one is configured and falls back to the rules
+    # (so with no key it behaves exactly like "rules"); "rules" never asks the LLM, for the R-* baselines.
+    generator: Literal["llm", "rules"] = "llm"
     params: Params = field(default_factory=Params)
 
     def __post_init__(self) -> None:
@@ -39,6 +42,8 @@ class DiagnosisConfig:
             object.__setattr__(self, "graph_priors", "almanac")
         elif self.graph_priors is False:
             object.__setattr__(self, "graph_priors", "off")
+        if self.generator not in ("llm", "rules"):
+            raise ValueError(f"generator must be llm or rules, not {self.generator!r}")
         if self.graph_priors not in ("off", "almanac", "hop"):
             raise ValueError(f"graph_priors must be off, almanac or hop, not {self.graph_priors!r}")
 

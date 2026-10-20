@@ -47,6 +47,7 @@ class HypothesisSpec(BaseModel):
     confidence: float = Field(default=0.5, ge=0.0, le=1.0)
     test: str  # one kubectl read; must pass is_read_only
     expected: str = ""  # what the test shows if this hypothesis is true
+    source: Literal["rules", "llm"] = "rules"  # who drafted it, for the report and the experiments
 
     def label(self) -> str:
         return f"{self.component} [{self.layer}] {self.fault}"

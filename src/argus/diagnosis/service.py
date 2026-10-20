@@ -193,6 +193,7 @@ def _hypothesis_rows(result: LoopResult) -> list[dict]:
                 "status": result.belief.status.get(h, "active"),
                 "test": spec.test,
                 "expected": spec.expected,
+                "source": spec.source,
             }
         )
     return rows
