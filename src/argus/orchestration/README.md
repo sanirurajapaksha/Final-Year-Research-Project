@@ -94,12 +94,12 @@ Use the team's single Streamlit app:
 python -m streamlit run src/argus/demo/app.py
 ```
 
-Run the incident on the first page, then open **M4 orchestration**. The page
-reads the saved incident from `st.session_state["record"]`. Compression is
-recomputed from the same synthetic `scenario_01` fixture. The M4 page and its
-download focus on compression and offline routing. Safety verdicts and executor
-handoffs remain on the shared incident page. The executor remains a labelled stub.
-There is no second app or extra
+The app is one pipeline page. M4 appears as two stages: **M4 · Compress** (the
+incident's telemetry through `service.compress`, with the byte sizes) and
+**M4 · Execute** (what `execution.handle_action` did with each action; the
+executor remains a labelled stub). The offline routing replay is a separate
+section under the pipeline, labelled as not part of the run, and calls
+`report.routing_replay` on the run's diagnosis. There is no second app or extra
 dependency to install beyond the existing `demo` extra.
 
 `report.build_report(batch, record)` returns JSON-ready compression measurements
