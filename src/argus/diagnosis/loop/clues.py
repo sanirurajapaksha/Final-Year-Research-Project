@@ -7,7 +7,17 @@ Only the strongest match per layer counts, never how many times it matches: a mi
 log the same line 500 times, and a gateway logs an error for every request that fails below it, so
 counting would reward repetition and victims rather than causes.
 The score is capped between 0.1 and 0.9, so log text alone can never decide: a read still has to agree.
+
+Phrases match whole words only ("env" is not in "envoy"), and an address variable must look like one:
+an upper-case env var name ending in _ADDR, _HOST or _URL (CART_ADDR), not an access-log field such
+as remote_addr or peer_addr.
+
+Caveat: the phrase table was written with scenario_01's CART_ADDR line in view, so how well rule mode
+does on scenario_01 mostly shows that the table fits it. Results on other cases (the fixtures in
+data/fixtures/m2/contexts/ and, later, SREGym) are the evidence; scenario_01 alone is not.
 """
+
+import re
 
 from argus.diagnosis.core.models import DiagContext
 
@@ -16,10 +26,10 @@ WEAK = 0.4
 NONE = 0.2
 LOWEST = 0.1  # e.g. resources when the pod is plainly running
 
-# layer -> (strong phrases, weak phrases), matched lower-case.
+# layer -> (strong phrases, weak phrases), matched lower-case as whole words.
 CLUES: dict[str, tuple[list[str], list[str]]] = {
     "app-config": (
-        ["not set", "environment variable", "missing env", "invalid config", "_addr"],
+        ["not set", "environment variable", "missing env", "invalid config"],
         ["config", "env"],
     ),
     "k8s-network": (
@@ -31,6 +41,8 @@ CLUES: dict[str, tuple[list[str], list[str]]] = {
         ["restart", "evicted", "memory"],
     ),
 }
+# A strong app-config clue on the original (not lower-cased) text: an env var naming an address.
+ADDRESS_VAR = re.compile(r"(?<![\w-])[A-Z][A-Z0-9_]*_(?:ADDR|HOST|URL)(?![\w-])")
 HEALTHY = {"running", "available"}
 
 
@@ -39,15 +51,21 @@ def layer_score(service: str, layer: str, ctx: DiagContext) -> float:
     if layer not in CLUES:
         return 0.5
     strong, weak = CLUES[layer]
-    status = ctx.node_status.get(service, "").lower()
-    text = " ".join([*_own_lines(service, ctx.symptoms), status]).lower()
-    if any(p in text for p in strong):
+    status = ctx.node_status.get(service, "")
+    text = " ".join([*_own_lines(service, ctx.symptoms), status])
+    lowered = text.lower()
+    if any(_has(p, lowered) for p in strong) or (layer == "app-config" and ADDRESS_VAR.search(text)):
         return STRONG
-    if layer == "resources" and status in HEALTHY:
+    if layer == "resources" and status.lower() in HEALTHY:
         return LOWEST  # the pod is up and nothing says otherwise
-    if any(p in text for p in weak):
+    if any(_has(p, lowered) for p in weak):
         return WEAK
     return NONE
+
+
+def _has(phrase: str, text: str) -> bool:
+    """`phrase` occurs in `text` as whole words: "env" matches "env var" but not "envoy"."""
+    return re.search(rf"(?<![\w-]){re.escape(phrase)}(?![\w-])", text) is not None
 
 
 def _own_lines(service: str, symptoms: list[str]) -> list[str]:
