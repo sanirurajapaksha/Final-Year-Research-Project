@@ -3,13 +3,17 @@
 Shows M2's REAL diagnose() loop on scenario_01: the hypotheses, the belief after every read, the
 reads and their results, and the actions M2 proposes. The reads are FAKE: there is no cluster for
 PP1, so every kubectl read is answered from canned scenario_01 output
-(data/fixtures/m2/scenario_01/reads.json). Nothing is executed. Scoring is rule-based (no LLM).
+(data/fixtures/m2/scenario_01/reads.json). Nothing is executed. By default M2 runs on rules (no LLM);
+a toggle lets it use the team's model (ARGUS_LLM_API_KEY / ARGUS_LLM_MODEL), and the page then says
+which model ran, which steps it did, and what it cost.
 
 It also shows M2's answer when M3 blocks its fix: the BLOCK from page 1's run if there is one,
 otherwise a hand-made BLOCK labelled SIMULATED. A toggle re-runs M2 with no reads at all.
 
 The page only displays: the data comes from argus.diagnosis.demo (demo_report() and its helpers).
 """
+
+import os
 
 import pandas as pd
 import streamlit as st
@@ -39,21 +43,23 @@ def scenario_context(telemetry_path: str) -> SemanticContext:
 
 
 @st.cache_data
-def m2_report(telemetry_path: str, no_cluster: bool, reads_changed_at: float) -> dict:
+def m2_report(telemetry_path: str, no_cluster: bool, reads_changed_at: float, use_llm: bool) -> dict:
     """M2's first answer on that context. Cached, so switching pages doesn't recompute it.
 
     reads_changed_at (when reads.json was last saved) is only part of the cache key: editing the
     canned reads re-runs M2 instead of showing the old answer.
     """
-    return feedback_report(telemetry_path, [], no_cluster)
+    return feedback_report(telemetry_path, [], no_cluster, use_llm)
 
 
-def feedback_report(telemetry_path: str, feedback: list[SafetyVerdict], no_cluster: bool) -> dict:
+def feedback_report(
+    telemetry_path: str, feedback: list[SafetyVerdict], no_cluster: bool, use_llm: bool = False
+) -> dict:
     """M2's answer given M3's BLOCK verdicts (none on the first call). With no_cluster, no reads at all."""
     context = scenario_context(telemetry_path)
     if no_cluster:
-        return no_cluster_report(context, feedback)
-    return demo_report(context, feedback)
+        return no_cluster_report(context, feedback, use_llm)
+    return demo_report(context, feedback, use_llm)
 
 
 st.title("M2: diagnosis")
@@ -67,18 +73,34 @@ no_cluster = st.toggle(
     "No cluster at all: run M2 with no reads, not even the canned ones",
     help="Shows what M2 does when every read fails: it should stop and say it is unsure.",
 )
-report = m2_report(str(TELEMETRY), no_cluster, SCENARIO_READS.stat().st_mtime)
-
-st.warning(
-    f"{report['reads_source']}. There is no cluster in PP1 and nothing is executed. "
-    "Scoring is rule-based (no LLM)."
+has_key = bool(os.environ.get("ARGUS_LLM_API_KEY") and os.environ.get("ARGUS_LLM_MODEL"))
+use_llm = st.toggle(
+    "Use the team's LLM (draft, score, fix and report; a few short paid calls)",
+    disabled=not has_key,
+    help="Needs ARGUS_LLM_API_KEY and ARGUS_LLM_MODEL in .env. Off: every step runs on M2's rules.",
 )
+report = m2_report(str(TELEMETRY), no_cluster, SCENARIO_READS.stat().st_mtime, use_llm)
+llm = report["llm"]
+
+if llm["model"] is None:
+    llm_text = "Every step ran on M2's rules (no LLM)."
+else:
+    used = sorted({c["task"] for c in llm["calls"] if c["status"] == "ok"})
+    fell_back = sorted({c["task"] for c in llm["calls"] if c["status"] != "ok"})
+    llm_text = f"LLM: {llm['model']}; it did {', '.join(used) or 'no step'}"
+    if fell_back:
+        llm_text += f"; fell back to rules on {', '.join(fell_back)}"
+    llm_text += "."
+st.warning(f"{report['reads_source']}. There is no cluster in PP1 and nothing is executed. {llm_text}")
 
 st.subheader("Input from M1")
 st.markdown(f"Namespace: `{report['namespace']}`. Candidate services and their prior weight:")
 st.dataframe(report["candidates"], hide_index=True)
 st.caption(
-    "Weight 1.5 = deepest failing service, 1.0 = on the failing path, 0.5 = any other known service. "
+    "role says why a service is suspected: origin = the deepest failing service (errors start there), "
+    "upstream = a caller on the failing path (hops above the origin), quiet-dependency = something the "
+    "origin calls or names in its errors that reports nothing itself. The weight is the graph prior: "
+    "the Almanac scheme gives 1.5 / 1.0 / 0.5; the hop scheme (preset A5-hop) grades it by hops. "
     "M2 makes hypotheses about these services, the heaviest first."
 )
 
@@ -97,6 +119,21 @@ last.metric("Reads run", len(report["reads"]))
 if report["low_confidence"]:
     st.warning("Low confidence: M2 stopped without a clear winner. Treat the top hypothesis as a guess.")
 
+st.subheader("M2's note")
+st.markdown("> " + (report["report_text"] or "No note: M2 had no hypothesis to report on."))
+st.caption(
+    f"Written by: {report['report_source'] or '-'}. An LLM note is kept only if it cites reads that "
+    "happened, names the service, fits 120 words, and says 'unconfirmed' when it is; otherwise M2 "
+    "uses a template sentence built from the same facts. The note never changes the diagnosis."
+)
+if llm["model"] is not None:
+    usage = llm["usage"]
+    a, b, c = st.columns(3)
+    a.metric("LLM calls", usage.get("calls", 0))
+    b.metric("Fell back to rules", usage.get("failed", 0))
+    c.metric("Tokens (in / out)", f"{usage.get('prompt_tokens', 0)} / {usage.get('completion_tokens', 0)}")
+    st.dataframe(llm["calls"], hide_index=True)
+
 st.subheader("Hypotheses, best first")
 priors = prior_beliefs(report)
 rows = []
@@ -111,6 +148,7 @@ for hypothesis in hypotheses:
             "component": hypothesis["component"],
             "layer": hypothesis["layer"],
             "fault": hypothesis["fault"],
+            "drafted by": hypothesis.get("source", "-"),
             "prior → final": f"{prior:.0%} → {hypothesis['probability']:.0%}",
             "probability": f"{hypothesis['probability']:.1%}",
             "status": status,
@@ -172,8 +210,10 @@ for action in report["diagnosis"]["actions"]:
     st.code(action["command"], language="bash")
 if report["diagnosis"]["hypotheses"]:
     for line in report["diagnosis"]["hypotheses"][0]["evidence"]:
-        if line.startswith("No write:"):
+        if line.startswith(("No write:", "human_pr_required")):
             st.markdown(line)
+        elif line.startswith("L1 "):  # the extra read the fix step ran, e.g. the service list
+            st.markdown(f"Read for the fix: `{line.split(' -> ')[0]}`")
 
 st.subheader("When M3 blocks M2's fix")
 fix = None
@@ -196,7 +236,7 @@ else:
             "SIMULATED BLOCK: page 1's run did not block this exact command, so a hand-made BLOCK "
             "is used here to show what M2 does when M3 says no. It is not a real M3 verdict."
         )
-    revised = feedback_report(str(TELEMETRY), feedback, no_cluster)
+    revised = feedback_report(str(TELEMETRY), feedback, no_cluster, use_llm)
     st.markdown("M2's revised actions (it never proposes a blocked command again):")
     for action in revised["diagnosis"]["actions"]:
         kind = "WRITE" if action["is_write"] else "READ"

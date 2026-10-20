@@ -63,7 +63,9 @@ def diagnose_report(
     diagnosis = to_result(result, ctx, blocked_verdicts(feedback), fixer)
     return {
         "namespace": ctx.namespace,
-        "candidates": [{"service": c.service, "weight": c.weight} for c in ctx.candidates],
+        "candidates": [
+            {"service": c.service, "weight": c.weight, "role": c.role, "hops": c.hops} for c in ctx.candidates
+        ],
         "hypotheses": _hypothesis_rows(result),
         "reads": [
             {"id": e.id, "hypothesis": e.hyp_id, "command": e.command, "ok": e.ok, "output": e.output}
@@ -74,6 +76,7 @@ def diagnose_report(
         "low_confidence": result.report.low_confidence,
         "report_text": result.report.report_text,
         "report_source": result.report.report_source,
+        "llm": _llm_summary(fixer.llm),
         "diagnosis": diagnosis.model_dump(),
     }
 
@@ -217,6 +220,18 @@ def _hypothesis_rows(result: LoopResult) -> list[dict]:
             }
         )
     return rows
+
+
+def _llm_summary(llm) -> dict:
+    """Which model ran (None: no LLM, all rules), what it cost, and each call's task and outcome."""
+    calls = getattr(llm, "calls", [])
+    return {
+        "model": getattr(llm, "model", None),
+        "usage": dict(getattr(llm, "usage", {})),
+        "calls": [
+            {"task": c["task"], "prompt_version": c["prompt_version"], "status": c["status"]} for c in calls
+        ],
+    }
 
 
 def _belief_rounds(result: LoopResult) -> list[dict]:

@@ -103,3 +103,18 @@ def test_report_reaches_the_dashboard_data_and_the_top_hypothesis(m2_context):
     report = diagnose_report(context, llm=reply(GOOD), reads=scenario_reads())
     assert report["report_source"] == "llm" and report["report_text"] == GOOD
     assert report["diagnosis"]["hypotheses"][0]["evidence"][0] == f"Report (llm): {GOOD}"
+
+
+def test_a_failed_read_is_never_citable():
+    # deepseek-v4-flash's first end-to-end note cited a failed read as "redis endpoints unavailable".
+    failed = Evidence(
+        id="E2", hyp_id="H2", command="kubectl get endpoints redis -n default", output="", ok=False
+    )
+    llm = reply(GOOD.replace("[E1] [S1]", "[E1] [E2]"))
+    text, source = ReportWriter(llm).write(
+        TOP, 0.85, True, "confident", [E1, failed], {"E1": "strong-support"}, FIX, "", CTX
+    )
+    assert source == "template"
+    sent = llm.prompts[0][1]
+    assert [e["id"] for e in sent["evidence"]] == ["E1"]
+    assert any("E2" in line and "not evidence" in line for line in sent["facts"])

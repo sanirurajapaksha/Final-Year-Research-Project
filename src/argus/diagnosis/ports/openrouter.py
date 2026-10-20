@@ -10,6 +10,7 @@ Each call is also kept in `calls` (task, prompt version, model, tokens, raw repl
 """
 
 import copy
+import hashlib
 import os
 
 from pydantic import BaseModel
@@ -85,23 +86,37 @@ class OpenRouterLLM:
             )
         except LLMError as exc:
             self.usage["failed"] += 1
-            self._keep(task, template.version, {}, f"error: {exc}")
+            self._keep(task, template.version, prompt, {}, f"error: {exc}", "error")
             raise LLMUnavailable(f"{task}: {exc}") from exc
         self.usage["prompt_tokens"] += int(usage.get("prompt_tokens", 0) or 0)
         self.usage["completion_tokens"] += int(usage.get("completion_tokens", 0) or 0)
-        self._keep(task, template.version, usage, text)
         if not text:  # a reasoning model that thought until max_tokens ran out sends no answer at all
             self.usage["failed"] += 1
+            self._keep(task, template.version, prompt, usage, text, "empty")
             raise LLMUnavailable(f"{task}: empty reply, the token budget ran out before the answer")
         try:
-            return schema.model_validate_json(text)
+            answer = schema.model_validate_json(text)
         except ValueError:  # pydantic's ValidationError: the controller falls back to rules
             self.usage["failed"] += 1
+            self._keep(task, template.version, prompt, usage, text, "invalid")
             raise
+        self._keep(task, template.version, prompt, usage, text, "ok")
+        return answer
 
-    def _keep(self, task: str, version: str, usage: dict, reply: str) -> None:
+    def _keep(self, task: str, version: str, prompt: str, usage: dict, reply, status: str) -> None:
+        """One call for the trajectory log. The prompt is kept as a hash and a length (it repeats the
+        cluster's text, which the log doesn't need twice); the reply is kept whole, as evidence."""
         self.calls.append(
-            {"task": task, "prompt_version": version, "model": self.model, "usage": usage, "reply": reply}
+            {
+                "task": task,
+                "prompt_version": version,
+                "model": self.model,
+                "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest()[:16],
+                "prompt_chars": len(prompt),
+                "status": status,  # ok | error | empty | invalid: anything but ok fell back to rules
+                "usage": {k: usage[k] for k in ("prompt_tokens", "completion_tokens") if k in usage},
+                "reply": reply,
+            }
         )
 
 

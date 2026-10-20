@@ -4,7 +4,8 @@ The answer is already decided (belief maths) and so is the fix (fix step); the L
 plain words. So it gets the facts and may add nothing:
   - at most 120 words: where the fault is, what it is, what it affects, and what M2 proposes;
   - every claim cites the evidence ids it rests on (E1, L1, ...), and code checks that each id the
-    text mentions exists, so the text can't point at a read that never happened;
+    text mentions is a read that succeeded, so the text can't point at a read that never happened
+    or present a failed read ("no data") as a finding ("the service is down");
   - when the loop did not confirm the top hypothesis, the text must say it is unconfirmed.
 If the LLM is unavailable or its text fails a check, a fixed template sentence is used, built from the
 same facts. Either way the report never changes the diagnosis or the actions.
@@ -53,12 +54,17 @@ class ReportWriter:
                     "report",
                     ReportAnswer,
                     facts=facts,
-                    evidence=[{"id": e.id, "command": e.command, "output": e.output} for e in evidence],
+                    # Only reads that returned something: a failed read is "no data", never "the service
+                    # is down" (deepseek-v4-flash cited one that way on its first end-to-end run).
+                    evidence=[
+                        {"id": e.id, "command": e.command, "output": e.output} for e in evidence if e.ok
+                    ],
                     signals=list(ctx.symptoms),
                     confirmed=confirmed,
                 )
                 text = " ".join(answer.text.split())
-                if _usable(text, answer.cited, {e.id for e in evidence} | {"S1"}, top, confirmed):
+                citable = {e.id for e in evidence if e.ok} | {"S1"}
+                if _usable(text, answer.cited, citable, top, confirmed):
                     return text, "llm"
             except (LLMUnavailable, ValueError):
                 pass
@@ -82,7 +88,12 @@ def _facts(top, probability, confirmed, stop_reason, evidence, verdicts, fix, no
     ]
     for e in evidence:
         judged = f" -> {verdicts[e.id]} for this diagnosis" if e.id in verdicts else ""
-        lines.append(f"{e.id}: {e.command} ({'ok' if e.ok else 'failed'}){judged}")
+        if e.ok:
+            lines.append(f"{e.id}: {e.command} (ok){judged}")
+        else:
+            lines.append(
+                f"{e.id}: {e.command} (FAILED: it returned nothing, so it is not evidence; do not cite it)"
+            )
     if fix is not None:
         lines.append(f"Proposed fix (M3 checks it before anything runs): {fix.command}")
     elif note:
