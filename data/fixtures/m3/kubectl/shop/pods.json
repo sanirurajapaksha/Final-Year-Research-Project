@@ -1,0 +1,12 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "frontend-8d4e1", "namespace": "shop", "labels": {"app": "frontend"}}, "spec": {"containers": [{"name": "frontend"}]}},
+    {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "checkout-2b6f3", "namespace": "shop", "labels": {"app": "checkout"}}, "spec": {"containers": [{"name": "checkout"}]}},
+    {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "cart-9c1d7-k2x8p", "namespace": "shop", "labels": {"app": "cart"}}, "spec": {"containers": [{"name": "cart"}]}},
+    {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "cart-9c1d7-m9q3r", "namespace": "shop", "labels": {"app": "cart"}}, "spec": {"containers": [{"name": "cart"}]}},
+    {"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "redis-cart-5a3e8", "namespace": "shop", "labels": {"app": "redis-cart"}}, "spec": {"containers": [{"name": "redis"}]}}
+  ],
+  "metadata": {"resourceVersion": ""}
+}

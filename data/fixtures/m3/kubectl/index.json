@@ -11,5 +11,9 @@
   "kubectl get deployments -n default -o json": "default/deployments.json",
   "kubectl get pdb -n default -o json": "default/pdb.json",
   "kubectl get pods -n default -o json": "default/pods.json",
-  "kubectl get pvc -n default -o json": "default/pvc.json"
+  "kubectl get pvc -n default -o json": "default/pvc.json",
+  "kubectl get deployments -n shop -o json": "shop/deployments.json",
+  "kubectl get pdb -n shop -o json": "shop/pdb.json",
+  "kubectl get pods -n shop -o json": "shop/pods.json",
+  "kubectl get pvc -n shop -o json": "shop/pvc.json"
 }
