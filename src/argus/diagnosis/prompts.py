@@ -99,7 +99,7 @@ class Template:
     render: Callable[..., str]
     max_tokens: int | None = None
     timeout_s: float | None = None
-    # Passed to OpenRouter's `reasoning`. Measured on deepseek-v4-flash, 21 Oct 2026: with no limit the
+    # Passed to OpenRouter's `reasoning`. Measured on deepseek-v4-flash, 20 Oct 2026: with no limit the
     # model spent the whole token budget thinking and returned no answer on both tasks. score needs some
     # thinking (with it off, it missed the absent CART_ADDR); draft only answers with thinking off.
     reasoning: dict | None = None
@@ -320,7 +320,7 @@ PROMPTS: dict[str, Template] = {
     ),
     "draft": Template("draft", DRAFT_VERSION, render_draft, max_tokens=1500, reasoning={"enabled": False}),
     # fix: with thinking "low" it used all 3000 tokens and sent nothing; off answers in seconds, and the
-    # code checks plus the revise loop catch a wrong value (measured on deepseek-v4-flash, 21 Oct 2026).
+    # code checks plus the revise loop catch a wrong value (measured on deepseek-v4-flash, 20 Oct 2026).
     "fix": Template("fix", FIX_VERSION, render_fix, max_tokens=1500, reasoning={"enabled": False}),
     "report": Template("report", REPORT_VERSION, render_report, max_tokens=800, reasoning={"enabled": False}),
 }
