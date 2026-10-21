@@ -317,3 +317,10 @@ def test_metadata_patch_in_kube_system_is_sat():
     result = solve(metadata_request("kube-system"))
     assert result["z3_result"] == "sat"
     assert result["violated_invariants"] == ["protected_namespace"]
+
+
+def test_the_result_carries_the_formula_z3_was_asked_as_text():
+    formula = solve(scale_request(1, HEALTHY))["formula"]
+    assert "replicas_before == 3" in formula["facts"]
+    assert formula["transition"] == ["replicas_after == 1"]
+    assert formula["invariants"]["min_replicas"] == "replicas_after >= min_replicas"

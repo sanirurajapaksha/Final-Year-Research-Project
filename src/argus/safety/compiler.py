@@ -152,6 +152,7 @@ def _solve_scale(action: dict[str, Any], facts: dict[str, Any], timeout_ms: int)
     # I2: in a protected namespace the deployment must stay as it was.
     invariants_after["protected_namespace"] = z3.Implies(in_protected, replicas_after == replicas_before)
     checked = list(invariants_after)
+    formula = _formula(state_facts, transition, invariants_after)
     missing = [
         key for key, value in (("replicas", known_replicas), ("min_replicas", known_min)) if value is None
     ]
@@ -159,7 +160,7 @@ def _solve_scale(action: dict[str, Any], facts: dict[str, Any], timeout_ms: int)
     started = time.perf_counter()
     answer, model, error = _check(state_facts, transition, invariants_after, timeout_ms)
     if error:
-        return _result(None, started, missing, checked, error=error)
+        return _result(None, started, missing, checked, error=error, formula=formula)
 
     pre_state_violations: list[str] = []
     if known_replicas is not None and known_min is not None:
@@ -176,9 +177,13 @@ def _solve_scale(action: dict[str, Any], facts: dict[str, Any], timeout_ms: int)
             "missing_facts_chosen_by_solver": missing,
         }
         violated = _violated(model, invariants_after)
-        return _result("sat", started, missing, checked, violated, counterexample, pre_state_violations)
+        return _result(
+            "sat", started, missing, checked, violated, counterexample, pre_state_violations, formula=formula
+        )
 
-    return _result(str(answer), started, missing, checked, pre_state_violations=pre_state_violations)
+    return _result(
+        str(answer), started, missing, checked, pre_state_violations=pre_state_violations, formula=formula
+    )
 
 
 def _solve_delete(action: dict[str, Any], facts: dict[str, Any], timeout_ms: int) -> dict[str, Any]:
@@ -209,11 +214,12 @@ def _solve_delete(action: dict[str, Any], facts: dict[str, Any], timeout_ms: int
     if is_pvc:
         invariants_after["pvc_in_use"] = z3.Implies(in_use, exists_after)
     checked = list(invariants_after)
+    formula = _formula(state_facts, transition, invariants_after)
 
     started = time.perf_counter()
     answer, model, error = _check(state_facts, transition, invariants_after, timeout_ms)
     if error:
-        return _result(None, started, missing, checked, error=error)
+        return _result(None, started, missing, checked, error=error, formula=formula)
 
     if answer == z3.sat:
         before = {"exists": True, "in_protected_namespace": protected}
@@ -225,9 +231,9 @@ def _solve_delete(action: dict[str, Any], facts: dict[str, Any], timeout_ms: int
             "missing_facts_chosen_by_solver": missing,
         }
         violated = _violated(model, invariants_after)
-        return _result("sat", started, missing, checked, violated, counterexample)
+        return _result("sat", started, missing, checked, violated, counterexample, formula=formula)
 
-    return _result(str(answer), started, missing, checked)
+    return _result(str(answer), started, missing, checked, formula=formula)
 
 
 def _solve_rollout_restart(action: dict[str, Any], facts: dict[str, Any], timeout_ms: int) -> dict[str, Any]:
@@ -287,11 +293,12 @@ def _solve_rollout_restart(action: dict[str, Any], facts: dict[str, Any], timeou
         "protected_namespace": z3.Implies(in_protected, pods_unchanged),
     }
     checked = list(invariants_during)
+    formula = _formula(state_facts, transition, invariants_during)
 
     started = time.perf_counter()
     answer, model, error = _check(state_facts, transition, invariants_during, timeout_ms)
     if error:
-        return _result(None, started, missing, checked, error=error)
+        return _result(None, started, missing, checked, error=error, formula=formula)
 
     pre_state_violations = []
     if known_replicas is not None and known_min is not None and known_replicas < known_min:
@@ -310,9 +317,13 @@ def _solve_rollout_restart(action: dict[str, Any], facts: dict[str, Any], timeou
             "missing_facts_chosen_by_solver": missing,
         }
         violated = _violated(model, invariants_during)
-        return _result("sat", started, missing, checked, violated, counterexample, pre_state_violations)
+        return _result(
+            "sat", started, missing, checked, violated, counterexample, pre_state_violations, formula=formula
+        )
 
-    return _result(str(answer), started, missing, checked, pre_state_violations=pre_state_violations)
+    return _result(
+        str(answer), started, missing, checked, pre_state_violations=pre_state_violations, formula=formula
+    )
 
 
 def _solve_metadata_change(action: dict[str, Any], timeout_ms: int) -> dict[str, Any]:
@@ -326,15 +337,35 @@ def _solve_metadata_change(action: dict[str, Any], timeout_ms: int) -> dict[str,
     # I2: an object in a protected namespace is unchanged.
     invariants_after = {"protected_namespace": z3.Implies(in_protected, unchanged_after)}
     checked = list(invariants_after)
+    formula = _formula(state_facts, transition, invariants_after)
 
     started = time.perf_counter()
     answer, model, error = _check(state_facts, transition, invariants_after, timeout_ms)
     if error:
-        return _result(None, started, [], checked, error=error)
+        return _result(None, started, [], checked, error=error, formula=formula)
     if answer == z3.sat:
         counterexample = {"before": {"in_protected_namespace": True}, "after": {"changed": True}}
-        return _result("sat", started, [], checked, _violated(model, invariants_after), counterexample)
-    return _result(str(answer), started, [], checked)
+        return _result(
+            "sat", started, [], checked, _violated(model, invariants_after), counterexample, formula=formula
+        )
+    return _result(str(answer), started, [], checked, formula=formula)
+
+
+def _formula(state_facts: list, transition: list, invariants: dict[str, z3.BoolRef]) -> dict[str, Any]:
+    """What Z3 is asked, as readable text (for the dashboard): Facts and T and not (all invariants)."""
+    rules = {}
+    for name, rule in invariants.items():
+        rules[name] = _one_line(rule)
+    return {
+        "facts": [_one_line(fact) for fact in state_facts],
+        "transition": [_one_line(step) for step in transition],
+        "invariants": rules,
+    }
+
+
+def _one_line(expression: z3.ExprRef) -> str:
+    """Z3's text for an expression, without the line breaks it adds to long ones."""
+    return " ".join(str(expression).split())
 
 
 def _check(
@@ -378,6 +409,7 @@ def _result(
     counterexample: dict[str, Any] | None = None,
     pre_state_violations: list[str] | None = None,
     error: str | None = None,
+    formula: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
         "z3_result": z3_result,
@@ -388,4 +420,5 @@ def _result(
         "missing_facts": missing,
         "solver_ms": (time.perf_counter() - started) * 1000.0,
         "error": error,
+        "formula": formula,
     }
