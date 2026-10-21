@@ -22,6 +22,7 @@ from argus.diagnosis.core.config import DiagnosisConfig
 from argus.diagnosis.ports.fakes import FakeReadExecutor
 from argus.diagnosis.service import diagnose_report
 from argus.orchestration.execution import handle_action
+from argus.orchestration.report import compression_report
 from argus.orchestration.service import compress
 from argus.safety import extractor
 from argus.safety.gate import check
@@ -121,6 +122,7 @@ def run_flow(batch: TelemetryBatch, settings: Settings) -> Iterator[dict]:
     compressed = compress(batch)
     saved = 100 * (1 - compressed.compressed_size / compressed.original_size)
     details = {
+        **compression_report(batch, compressed),
         "original_bytes": compressed.original_size,
         "compressed_bytes": compressed.compressed_size,
         "saved_percent": saved,

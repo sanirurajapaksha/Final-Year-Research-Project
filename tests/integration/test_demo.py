@@ -8,6 +8,7 @@ from argus.config import Settings
 from argus.demo.__main__ import main
 from argus.demo.flow import SCENARIOS, STAGES, load_telemetry, namespace_of, outcome, run_flow
 from argus.demo.run import KUBECTL_OUTPUT, verdict_line
+from argus.orchestration.report import compression_report
 from argus.safety import formulation
 
 CART_ADDR, OUT_OF_MEMORY = list(SCENARIOS)
@@ -49,6 +50,20 @@ def test_stages_come_in_pipeline_order(fake_llm, tmp_path):
     text = SCENARIOS[CART_ADDR]["telemetry"].read_text(encoding="utf-8")
     names = [stage["name"] for stage in run_flow(load_telemetry(text), demo_settings(tmp_path))]
     assert names == STAGES
+
+
+@pytest.mark.parametrize("sample", list(SCENARIOS))
+def test_m4_compression_report_uses_the_incident_payload(sample, tmp_path):
+    batch = load_telemetry(SCENARIOS[sample]["telemetry"].read_text(encoding="utf-8"))
+    # An edited upload must be measured instead of silently reporting scenario_01.
+    batch.records.append({"kind": "log", "service": "uploaded", "message": "custom telemetry"})
+    flow = run_flow(batch, demo_settings(tmp_path))
+    next(flow)  # telemetry
+    details = next(flow)["details"]
+    expected = compression_report(batch)
+    assert {key: details[key] for key in expected} == expected
+    assert details["round_trip_exact"]
+    assert details["alert_time_preserved"]
 
 
 def test_missing_cart_addr_is_diagnosed_and_the_fix_is_approved(fake_llm, tmp_path):

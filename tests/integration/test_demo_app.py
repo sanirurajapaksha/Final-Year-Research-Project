@@ -53,3 +53,41 @@ def test_the_out_of_memory_incident_ends_with_a_block_and_a_human(page):
     app = run_sample(page, OUT_OF_MEMORY)
     assert any("M3 blocked the fix" in error.value for error in app.error)
     assert any("M3: BLOCK (z3: sat)" in error.value for error in app.error)
+
+
+def table_with_columns(app, *columns):
+    matches = [table.value for table in app.table if set(columns) == set(table.value.columns)]
+    assert len(matches) == 1
+    return matches[0]
+
+
+def test_m4_compression_and_routing_controls(page):
+    app = run_sample(page, OUT_OF_MEMORY)
+    checks = table_with_columns(app, "check", "passed")
+    assert checks["passed"].all()
+    compression = app.session_state["stages"][1]["details"]
+    assert any(compression["tsv"].strip() == code.value.strip() for code in app.code)
+    assert any(button.label == "Download M4 report" for button in app.get("download_button"))
+    assignments = table_with_columns(app, "task_id", "model_id", "estimated_cost_units", "quality", "layer")
+    assert assignments.iloc[0]["model_id"] == "fake-primary"
+    attempts = table_with_columns(app, "task_id", "model_id", "status", "charged_estimated_units", "reason")
+    assert list(attempts["status"]) == ["timeout", "success"]
+
+    app.slider[0].set_value(4).run(timeout=60)
+    assert not app.exception
+    tasks = table_with_columns(app, "task_id", "status", "reason")
+    assert tasks.iloc[0]["status"] == "budget_exhausted"
+
+    app.slider[0].set_value(1).run(timeout=60)
+    assert not app.exception
+    assert any("infeasible" in text.value for text in app.markdown)
+    assert app.warning
+
+
+@pytest.mark.parametrize("model_outcome", ["Success", "Invalid output", "Model error"])
+def test_m4_replay_other_primary_outcomes(page, model_outcome):
+    app = run_sample(page, OUT_OF_MEMORY)
+    app.selectbox[0].set_value(model_outcome).run(timeout=60)
+    assert not app.exception
+    tasks = table_with_columns(app, "task_id", "status", "reason")
+    assert tasks.iloc[0]["status"] == "succeeded"

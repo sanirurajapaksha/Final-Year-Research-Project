@@ -8,6 +8,7 @@ itself is in flow.py and the modules; this page only draws it.
 """
 
 import html
+import json
 import os
 import time
 
@@ -119,8 +120,16 @@ def show_compress(details: dict) -> None:
     left.metric("Original JSON", f"{details['original_bytes']} B")
     middle.metric("Compressed TSV", f"{details['compressed_bytes']} B")
     right.metric("Smaller by", f"{details['saved_percent']:.0f}%")
-    st.caption("M4 sends M1 one table per record type (TSV) instead of JSON. First lines:")
-    st.code("\n".join(details["tsv"].splitlines()[:8]), language="text")
+    st.write(f"{details['records']} records; compact JSON baseline: {details['compact_json_bytes']} bytes.")
+    st.caption("UTF-8 payload sizes; these are byte measurements, not token counts or API cost savings.")
+    st.table(
+        [
+            {"check": "Exact round trip: values, types and order", "passed": details["round_trip_exact"]},
+            {"check": "Alert time preserved", "passed": details["alert_time_preserved"]},
+        ]
+    )
+    with st.expander("Compressed input passed to M1"):
+        st.code(details["tsv"], language="text")
 
 
 def show_context(details: dict) -> None:
@@ -352,5 +361,23 @@ with st.expander("M4 model routing: offline replay of this run's diagnosis (not 
     model_outcome = right.selectbox("Primary model", OUTCOMES, index=1)
     replay = routing_replay(routing_record(stages), budget=budget, outcome=model_outcome)
     st.write(f"Routing plan: {replay['plan']['status']}")
-    st.dataframe(replay["attempts"], hide_index=True)
+    if replay["plan"]["status"] == "optimal":
+        st.table(replay["plan"]["assignments"])
+    else:
+        st.warning(replay["plan"]["reason"])
+    st.write("Fallback attempts")
+    st.table(replay["attempts"])
+    st.write("Task outcomes")
+    st.table(replay["tasks"])
+    st.write("Budget accounting (synthetic credits)")
+    st.json(replay["budget"])
     st.caption("Primary costs 2 credits, fallback 3; a failed attempt still spends its estimate.")
+    with st.expander("Routing request and fallback policy"):
+        st.json({"request": replay["request"], "policy": replay["policy"]})
+    compression = stages[STAGES.index("M4 · Compress")]["details"]
+    st.download_button(
+        "Download M4 report",
+        json.dumps({"compression": compression, "routing_replay": replay}, ensure_ascii=False, indent=2),
+        "m4-report.json",
+        "application/json",
+    )
