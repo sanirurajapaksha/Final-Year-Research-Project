@@ -7,7 +7,6 @@ its module finishes; open a stage under the pipeline to see how that module deci
 itself is in flow.py and the modules; this page only draws it.
 """
 
-import html
 import json
 import os
 import time
@@ -20,7 +19,7 @@ from argus.context.report import graph_dot
 from argus.contracts import ProposedAction
 from argus.demo.flow import SCENARIOS, STAGES, load_telemetry, outcome, routing_record, run_flow
 from argus.demo.run import demo_settings
-from argus.demo.views import show_verdict
+from argus.demo.views import LABELS, STYLE, card, show_m3_steps, show_verdict
 from argus.diagnosis.core.belief import H0
 from argus.diagnosis.demo import prior_beliefs
 from argus.orchestration.report import OUTCOMES, routing_replay
@@ -30,41 +29,22 @@ from argus.safety.gate import check
 load_dotenv(".env")
 
 PACE_S = 0.8  # pause after each stage when presenting, so the audience can follow; not in the timings
-LABELS = {
-    "waiting": "Waiting",
-    "running": "Running…",
-    "passed": "Passed",
-    "blocked": "Blocked",
-    "attention": "Needs a human",
-    "skipped": "Skipped",
-    "failed": "Failed",
+M3_PACE_S = 0.5  # the same, between M3's own steps
+
+# Commands for the "Inside M3" section: each shows a different part of M3 at work.
+FIX_PATCH = (
+    "kubectl patch deployment cart -n default -p "
+    '\'{"spec":{"template":{"spec":{"containers":[{"name":"cart","env":'
+    '[{"name":"CART_ADDR","value":"redis-cart:6379"}]}]}}}}\''
+)
+M3_EXAMPLES = {
+    "Scale cart to 0": "kubectl scale deployment cart --replicas=0 -n default",
+    "Scale cart to 2": "kubectl scale deployment cart --replicas=2 -n default",
+    "Restart cart (shop)": "kubectl rollout restart deployment/cart -n shop",
+    "kube-system pod": "kubectl delete pod coredns-7db6d8ff4d-k2l3m -n kube-system",
+    "Shell trick": "kubectl get pods -n default | grep cart",
+    "Patch (LLM)": FIX_PATCH,
 }
-STYLE = """<style>
-.stage {border: 1px solid; border-radius: 10px; padding: 10px 12px; min-height: 150px;}
-.stage .name {font-size: 0.8rem; font-weight: 600; opacity: 0.85;}
-.stage .state {font-size: 1.05rem; font-weight: 700; margin: 4px 0 6px;}
-.stage .line {font-size: 0.8rem; line-height: 1.3;}
-.stage .ms {font-size: 0.75rem; opacity: 0.7; margin-top: 6px;}
-.waiting, .skipped {border-color: #c9c9c9; background: #f4f4f4; color: #6b6b6b;}
-.running {border-color: #2563eb; background: #eff6ff; color: #1e3a8a;}
-.passed {border-color: #16a34a; background: #f0fdf4; color: #14532d;}
-.blocked, .failed {border-color: #dc2626; background: #fef2f2; color: #7f1d1d;}
-.attention {border-color: #d97706; background: #fffbeb; color: #78350f;}
-</style>"""
-
-
-def card(name: str, status: str, line: str, ms: float | None) -> str:
-    """One stage card in the pipeline strip (HTML)."""
-    if len(line) > 90:
-        line = line[:87] + "…"
-    timing = ""
-    if ms is not None:
-        timing = f"{ms:.0f} ms"
-    return (
-        f'<div class="stage {status}"><div class="name">{html.escape(name)}</div>'
-        f'<div class="state">{LABELS[status]}</div><div class="line">{html.escape(line)}</div>'
-        f'<div class="ms">{timing}</div></div>'
-    )
 
 
 def run_live(text: str, placeholders: list, present: bool) -> list[dict] | None:
@@ -211,7 +191,12 @@ def show_checks(checks: list[dict]) -> None:
         st.caption("No write was proposed, so there was nothing for M3 to check.")
     for row in writes:
         st.code(row["command"], language="bash")
-        show_verdict(row["verdict"])
+        if row.get("trace"):
+            st.caption("Inside M3, step by step (open a step to see its data):")
+            show_m3_steps(row["trace"], row["verdict"])
+            show_verdict(row["verdict"], with_counterexample=False)
+        else:
+            show_verdict(row["verdict"])
 
 
 def show_verify(details: dict) -> None:
@@ -254,6 +239,52 @@ def show_execute(details: dict) -> None:
     st.caption(
         "Reads skip M3; a write reaches the executor only with APPROVE. The executor is a stub in PP1."
     )
+
+
+def use_example(command: str) -> None:
+    """An example button: put its command in the box and verify it."""
+    st.session_state["m3_command"] = command
+    st.session_state["m3_verify"] = True
+
+
+def verify_typed() -> None:
+    st.session_state["m3_verify"] = True
+
+
+def inside_m3(present: bool) -> None:
+    """Verify one command with M3 and draw M3's own steps, in order, as they were taken."""
+    st.subheader("Inside M3: how one command is verified")
+    st.caption(
+        "Pick an example or type any kubectl write command. M3 checks it step by step: "
+        "pre-filter → parse (or the LLM for a patch) → cluster facts → logic compiler and Z3 → decision. "
+        "A red step is where M3 stopped; anything it can't check is blocked (fail-closed)."
+    )
+    columns = st.columns(len(M3_EXAMPLES))
+    for column, (name, command) in zip(columns, M3_EXAMPLES.items(), strict=True):
+        column.button(name, on_click=use_example, args=(command,))
+    if "m3_command" not in st.session_state:
+        st.session_state["m3_command"] = M3_EXAMPLES["Scale cart to 0"]
+    st.text_input("Command", key="m3_command")
+    st.button("Verify with M3", type="primary", on_click=verify_typed)
+    st.caption(
+        "Saved cluster facts exist for the namespaces default, shop, hotel-reservation and kube-system. "
+        "A patch costs one LLM call (team budget)."
+    )
+
+    fresh = st.session_state.pop("m3_verify", False)
+    if fresh:
+        trace = []
+        action = ProposedAction(command=st.session_state["m3_command"], is_write=True)
+        verdict = check(action, settings=demo_settings(), trace=trace)
+        st.session_state["m3_result"] = {"verdict": verdict.model_dump(mode="json"), "trace": trace}
+    result = st.session_state.get("m3_result")
+    if result is None:
+        return
+    pace = 0.0
+    if fresh and present:
+        pace = M3_PACE_S
+    show_m3_steps(result["trace"], result["verdict"], pace)
+    show_verdict(result["verdict"], with_counterexample=False)
 
 
 RENDERERS = {
@@ -323,34 +354,26 @@ if not stages:
     for index, name in enumerate(STAGES):
         placeholders[index].markdown(card(name, "waiting", "", None), unsafe_allow_html=True)
     st.info("Choose an incident in the sidebar and press **Run the incident**.")
+else:
+    for index, stage in enumerate(stages):
+        placeholders[index].markdown(
+            card(stage["name"], stage["status"], stage["headline"], stage["ms"]), unsafe_allow_html=True
+        )
+    if not run:
+        st.caption(f"Showing the last run: {st.session_state.get('incident')}")
+    show_outcome(stages)
+
+    st.subheader("How each module decided")
+    for stage in stages:
+        with st.expander(f"{stage['name']} · {LABELS[stage['status']]} · {stage['headline']}"):
+            RENDERERS[stage["name"]](stage["details"])
+
+st.divider()
+inside_m3(present)
+
+if not stages:
     st.stop()
-
-for index, stage in enumerate(stages):
-    placeholders[index].markdown(
-        card(stage["name"], stage["status"], stage["headline"], stage["ms"]), unsafe_allow_html=True
-    )
-if not run:
-    st.caption(f"Showing the last run: {st.session_state.get('incident')}")
-show_outcome(stages)
-
-st.subheader("How each module decided")
-for stage in stages:
-    with st.expander(f"{stage['name']} · {LABELS[stage['status']]} · {stage['headline']}"):
-        RENDERERS[stage["name"]](stage["details"])
-
-st.subheader("Try it yourself")
-with st.expander("Check any command against M3"):
-    command = st.text_input(
-        "A kubectl write command", value="kubectl scale deployment cart --replicas=0 -n default"
-    )
-    st.caption(
-        "Saved cluster facts exist for the namespaces default, shop, hotel-reservation and kube-system. "
-        "A patch costs one LLM call (team budget)."
-    )
-    if st.button("Check with M3"):
-        verdict = check(ProposedAction(command=command, is_write=True), settings=demo_settings())
-        show_verdict(verdict.model_dump(mode="json"))
-
+st.divider()
 with st.expander("M4 model routing: offline replay of this run's diagnosis (not part of the run)"):
     st.caption(
         "The run calls M2 directly. This replays M2's diagnosis through M4's real router and fallback "

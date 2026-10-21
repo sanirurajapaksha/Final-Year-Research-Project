@@ -8,6 +8,17 @@ Telemetry → M4 Compress → M1 Context → M2 Diagnose → M3 Verify → M2 Fe
 
 Under the pipeline, each stage opens to show how that module decided: M1's service graph and pruned signals, M2's hypotheses and belief after every read, M3's verdict, counterexample and the cluster facts it read, and what M4 did with each action.
 
+**Inside M3** (a section of its own, available before any run) verifies one command and draws M3's own steps in order:
+
+```
+Pre-filter → Parse (or LLM formulation for a patch) → Cluster facts → Logic compiler + Z3 → Decision
+```
+
+- A red step is where M3 stopped (fail-closed).
+- Each step opens to show its real data: the command's words, the parsed action, the facts read, the exact formula Z3 was asked (facts, what the command does, the rules) with Z3's answer, and the counterexample.
+- Example buttons cover the main cases: a scale below the minimum, a safe scale, a restart Z3 has to search, a protected namespace, a shell trick, and a patch read by the LLM.
+- The steps come from `gate.check(..., trace=[])`; the verdict is the same with or without a trace.
+
 ## Run it
 
 From the repo root, after `pip install -e ".[dev,eval,demo]"`:

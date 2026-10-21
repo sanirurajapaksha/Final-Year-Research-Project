@@ -91,3 +91,25 @@ def test_m4_replay_other_primary_outcomes(page, model_outcome):
     assert not app.exception
     tasks = table_with_columns(app, "task_id", "status", "reason")
     assert tasks.iloc[0]["status"] == "succeeded"
+
+
+def click(app, label: str):
+    for button in app.button:
+        if button.label == label:
+            return button.click().run(timeout=120)
+    raise AssertionError(f"no button {label!r}")
+
+
+def test_inside_m3_draws_its_steps_for_an_example(page):
+    app = click(page, "Shell trick")
+    assert not app.exception
+    assert any("Stopped here" in text.value for text in app.markdown)  # the pre-filter step card
+    assert any("pre-filter" in error.value for error in app.error)
+
+
+def test_inside_m3_verifies_a_typed_command_and_shows_the_formula(page):
+    page.text_input[0].set_value("kubectl scale deployment cart --replicas=2 -n default")
+    app = click(page, "Verify with M3")
+    assert not app.exception
+    assert any("M3: APPROVE (z3: unsat)" in success.value for success in app.success)
+    assert any("Z3: unsat" in code.value for code in app.code)  # the formula, read out
