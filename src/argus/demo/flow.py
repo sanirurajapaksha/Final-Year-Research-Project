@@ -11,7 +11,6 @@ M3 reads saved kubectl output, and M4's executor is a stub that runs nothing.
 import json
 import time
 from collections.abc import Iterator
-from functools import partial
 from pathlib import Path
 
 from argus.config import Settings
@@ -99,7 +98,6 @@ def run_flow(batch: TelemetryBatch, settings: Settings) -> Iterator[dict]:
     namespace = namespace_of(batch)
     reads = canned_reads()
     config = DiagnosisConfig(namespace=namespace)
-    gate = partial(check, settings=settings)
 
     # Telemetry: what came in.
     started = time.perf_counter()
@@ -149,7 +147,7 @@ def run_flow(batch: TelemetryBatch, settings: Settings) -> Iterator[dict]:
 
     # M3: every proposed write goes through M4's action handler, which asks M3 first.
     started = time.perf_counter()
-    checks = handle_all(diagnosis.actions, gate)
+    checks = handle_all(diagnosis.actions, settings)
     status, line = _verify_line(checks)
     facts = cluster_facts(namespace, settings)
     yield _stage("M3 · Verify", status, line, started, {"checks": checks, "facts": facts})
@@ -163,7 +161,7 @@ def run_flow(batch: TelemetryBatch, settings: Settings) -> Iterator[dict]:
     else:
         m2_again = diagnose_report(context, blocked, config=config, reads=reads)
         revised = DiagnosisResult.model_validate(m2_again["diagnosis"])
-        feedback_checks = handle_all(revised.actions, gate)
+        feedback_checks = handle_all(revised.actions, settings)
         status, line = _feedback_line(feedback_checks)
         details = {"diagnosis": m2_again["diagnosis"], "checks": feedback_checks}
         yield _stage("M2 · Feedback", status, line, started, details)
@@ -179,12 +177,23 @@ def run_flow(batch: TelemetryBatch, settings: Settings) -> Iterator[dict]:
     yield _stage("M4 · Execute", status, line, started, {"actions": every_check})
 
 
-def handle_all(actions: list[ProposedAction], gate) -> list[dict]:
-    """M4's action handler on each action: reads run freely, writes need M3's APPROVE first."""
+def handle_all(actions: list[ProposedAction], settings: Settings) -> list[dict]:
+    """M4's action handler on each action: reads run freely, writes need M3's APPROVE first.
+
+    Each write's row also keeps M3's step-by-step trace, so the page can show inside M3.
+    """
+    traces = {}
+
+    def gate(action: ProposedAction) -> SafetyVerdict:
+        trace = []
+        traces[action.command] = trace
+        return check(action, settings=settings, trace=trace)
+
     rows = []
     for action in actions:
         result = handle_action(action, gate=gate)
         row = {"command": action.command, "is_write": action.is_write, "verdict": None, "execution": None}
+        row["trace"] = traces.get(action.command)
         if result.verdict is not None:
             row["verdict"] = result.verdict.model_dump(mode="json")
         if result.execution is not None:
