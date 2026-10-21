@@ -168,7 +168,9 @@ def _reject_unknown_flags(flags: dict[str, str], allowed: set[str]) -> None:
 
 def required_namespace(flags: dict[str, str]) -> str:
     if "namespace" not in flags:
-        raise ParseError("missing -n: kubectl would use its current context's namespace, which M3 can't see")
+        raise ParseError(
+            "missing -n: kubectl would use its current context's namespace, which the safety layer can't see"
+        )
     namespace = flags["namespace"]
     if not namespace:
         raise ParseError("empty namespace")

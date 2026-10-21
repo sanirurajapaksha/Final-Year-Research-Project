@@ -1,4 +1,4 @@
-"""The end-to-end demo flow: the real M4, M1, M2 and M3 on the sample incidents, the LLM a fake."""
+"""The end-to-end demo flow: all four real modules on the sample incidents, the LLM a fake."""
 
 import json
 
@@ -6,7 +6,7 @@ import pytest
 
 from argus.config import Settings
 from argus.demo.__main__ import main
-from argus.demo.flow import SCENARIOS, STAGES, load_telemetry, namespace_of, outcome, run_flow
+from argus.demo.flow import SCENARIOS, STAGES, VERIFY, load_telemetry, namespace_of, outcome, run_flow
 from argus.demo.run import KUBECTL_OUTPUT, verdict_line
 from argus.orchestration.report import compression_report
 from argus.safety import formulation
@@ -70,7 +70,7 @@ def test_missing_cart_addr_is_diagnosed_and_the_fix_is_approved(fake_llm, tmp_pa
     stages = run(CART_ADDR, tmp_path)
     assert stages["M1 · Context"]["details"]["kept_count"] == 5
     assert stages["M2 · Diagnose"]["status"] == "passed"
-    check = stages["M3 · Verify"]["details"]["checks"][-1]
+    check = stages[VERIFY]["details"]["checks"][-1]
     assert check["command"].startswith("kubectl patch deployment cart -n default")
     assert check["verdict"]["decision"] == "APPROVE"
     assert check["execution"] is not None  # approved, so M4's (stub) executor gets it
@@ -80,7 +80,7 @@ def test_missing_cart_addr_is_diagnosed_and_the_fix_is_approved(fake_llm, tmp_pa
 
 def test_unsafe_restart_is_blocked_and_handed_to_a_human(tmp_path):
     stages = run(OUT_OF_MEMORY, tmp_path)
-    check = stages["M3 · Verify"]["details"]["checks"][-1]
+    check = stages[VERIFY]["details"]["checks"][-1]
     assert check["command"] == "kubectl rollout restart deployment/cart -n shop"
     assert check["verdict"]["decision"] == "BLOCK"
     assert check["verdict"]["counterexample"]["during"] == {"pods_down": 1, "available": 1}
@@ -101,7 +101,7 @@ def test_without_canned_reads_m2_proposes_no_fix_and_m3_has_nothing_to_check(tmp
     for stage in run_flow(load_telemetry(json.dumps(batch)), demo_settings(tmp_path)):
         stages[stage["name"]] = stage
     assert stages["M2 · Diagnose"]["status"] == "attention"
-    assert stages["M3 · Verify"]["status"] == "skipped"
+    assert stages[VERIFY]["status"] == "skipped"
     assert outcome(list(stages.values()))["kind"] == "unsure"
 
 
@@ -127,10 +127,10 @@ def test_main_prints_every_stage_and_saves_the_run(monkeypatch, tmp_path, capsys
     printed = capsys.readouterr().out
     for name in STAGES:
         assert name in printed
-    assert "M3 blocked the fix" in printed
+    assert "The safety layer blocked the fix" in printed
     assert len(json.loads(saved.read_text(encoding="utf-8"))) == len(STAGES)
 
 
 def test_verdict_line_leaves_out_z3_when_the_solver_never_ran():
-    assert verdict_line({"decision": "BLOCK", "z3_result": "sat"}) == "M3: BLOCK (z3: sat)"
-    assert verdict_line({"decision": "BLOCK", "z3_result": None}) == "M3: BLOCK"
+    assert verdict_line({"decision": "BLOCK", "z3_result": "sat"}) == "Safety layer: BLOCK (z3: sat)"
+    assert verdict_line({"decision": "BLOCK", "z3_result": None}) == "Safety layer: BLOCK"

@@ -24,8 +24,8 @@ def demo_settings() -> Settings:
 
 
 def verdict_line(verdict: dict) -> str:
-    """'M3: BLOCK (z3: sat)'; without the z3 part when M3 decided before the solver ran."""
-    text = f"M3: {verdict['decision']}"
+    """'Safety layer: BLOCK (z3: sat)'; without the z3 part when it decided before the solver ran."""
+    text = f"Safety layer: {verdict['decision']}"
     if verdict["z3_result"] is not None:
         text += f" (z3: {verdict['z3_result']})"
     return text

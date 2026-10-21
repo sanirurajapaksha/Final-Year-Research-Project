@@ -30,7 +30,7 @@ STYLE = """<style>
 .attention {border-color: #d97706; background: #fffbeb; color: #78350f;}
 </style>"""
 
-# How one of M3's own steps (from gate.check's trace) is drawn: card colour and label.
+# How one of the safety layer's own steps (from gate.check's trace) is drawn: card colour and label.
 STEP_COLOURS = {"passed": "passed", "skipped": "skipped", "stopped": "blocked"}
 STEP_LABELS = {"passed": "Passed", "skipped": "Skipped", "stopped": "Stopped here"}
 
@@ -52,7 +52,7 @@ def card(name: str, status: str, line: str, ms: float | None, label: str | None 
 
 
 def show_verdict(verdict: dict, with_counterexample: bool = True) -> None:
-    """M3's verdict: the decision and reason, the counterexample if any, and the stage timings."""
+    """A safety verdict: the decision and reason, the counterexample if any, and the stage timings."""
     text = f"{verdict_line(verdict)}. {verdict['reason']}"
     if verdict["decision"] == "APPROVE":
         st.success(text)
@@ -64,11 +64,11 @@ def show_verdict(verdict: dict, with_counterexample: bool = True) -> None:
     stages = []
     for stage, ms in verdict["timings_ms"].items():
         stages.append(f"{stage} {ms:.1f} ms")
-    st.caption("M3 timings: " + ", ".join(stages))
+    st.caption("Timings: " + ", ".join(stages))
 
 
-def show_m3_steps(trace: list[dict], verdict: dict, pace_s: float = 0.0) -> None:
-    """Inside M3 for one command: a card per step, in order, then each step's data in a tab.
+def show_steps(trace: list[dict], verdict: dict, pace_s: float = 0.0) -> None:
+    """The safety layer's steps for one command: a card per step, in order, then each step's data in a tab.
 
     With pace_s, the cards appear one by one (for presenting); the times on them are real.
     """
@@ -84,7 +84,7 @@ def show_m3_steps(trace: list[dict], verdict: dict, pace_s: float = 0.0) -> None
 
 
 def step_card(step: dict, verdict: dict) -> str:
-    """The card for one M3 step. Z3's card shows its answer; the decision card says why in plain words."""
+    """The card for one step. Z3's card shows its answer; the decision card says why in plain words."""
     colour = STEP_COLOURS[step["status"]]
     label = STEP_LABELS[step["status"]]
     line = step["summary"]
@@ -96,7 +96,7 @@ def step_card(step: dict, verdict: dict) -> str:
         elif answer == "unsat":
             colour, line = "passed", "no end state breaks a rule: proved, for the encoded rules"
         else:
-            colour, line = "blocked", "undecided, so M3 blocks (fail-closed)"
+            colour, line = "blocked", "undecided, so the command is blocked (fail-closed)"
     if step["step"] == "Decision":
         label = verdict["decision"]
         line = in_plain_words(verdict)
@@ -104,7 +104,7 @@ def step_card(step: dict, verdict: dict) -> str:
 
 
 def show_step(step: dict) -> None:
-    """What one M3 step saw or produced."""
+    """What one step saw or produced."""
     st.markdown(step["summary"])
     data = step["data"]
     if data is None:
@@ -113,13 +113,13 @@ def show_step(step: dict) -> None:
         st.caption("The command split into words, exactly as kubectl would receive them:")
         st.json(data)
     elif step["step"] in ("Parse", "LLM formulation"):
-        st.caption("The action M3 checks:")
+        st.caption("The action that is checked:")
         st.json(data)
     elif step["step"] == "Cluster facts":
         st.caption("Facts about the target, from read-only kubectl get (saved output in PP1):")
         st.dataframe([data], hide_index=True)
     elif step["step"] == "Logic compiler + Z3":
-        st.caption(f"The formula M3 built and gave Z3 (solved in {data['solver_ms']:.0f} ms):")
+        st.caption(f"The formula built for Z3 (solved in {data['solver_ms']:.0f} ms):")
         st.code(formula_text(data), language="text")
         if data["counterexample"] is not None:
             st.caption("Z3's model, the counterexample: an end state that breaks a rule.")
@@ -148,5 +148,5 @@ def formula_text(solved: dict) -> str:
     elif solved["z3_result"] == "unsat":
         lines.append("Z3: unsat. No such state exists, so no encoded rule can break: APPROVE.")
     else:
-        lines.append(f"Z3: {solved['z3_result']}. Undecided, so M3 blocks (fail-closed).")
+        lines.append(f"Z3: {solved['z3_result']}. Undecided, so the command is blocked (fail-closed).")
     return "\n".join(lines)

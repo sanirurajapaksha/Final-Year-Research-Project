@@ -1,11 +1,11 @@
 """The incident run as a pipeline of stages, for the dashboard (app.py) and the command line.
 
-    Telemetry -> M4 compress -> M1 context -> M2 diagnose -> M3 verify -> M2 feedback -> M4 execute
+    Telemetry -> M4 compress -> M1 context -> M2 diagnose -> Formal Verification -> M2 feedback -> M4 execute
 
 Each stage calls the real module code and returns plain data, which the page draws as soon as the
 stage finishes. PP1 has no cluster, so four things are not real, and the page says so:
 the telemetry is synthetic (or uploaded), M2's reads are answered from canned kubectl output,
-M3 reads saved kubectl output, and M4's executor is a stub that runs nothing.
+the safety layer reads saved kubectl output, and M4's executor is a stub that runs nothing.
 """
 
 import json
@@ -40,7 +40,7 @@ SCENARIOS = {
     },
 }
 
-# M3's rules (invariants I1-I4 and the replica range) in plain words, for the page.
+# The safety layer's rules (invariants I1-I4 and the replica range) in plain words, for the page.
 RULE_NAMES = {
     "min_replicas": "fewer replicas than the minimum",
     "min_available_during_restart": "too few pods during the restart",
@@ -49,12 +49,15 @@ RULE_NAMES = {
     "replicas_in_int32_range": "an invalid replica count",
 }
 
+# The safety layer's stage. Its real name: the Proactive Formal Verification Safety Layer.
+VERIFY = "Formal Verification"
+
 STAGES = [
     "Telemetry",
     "M4 · Compress",
     "M1 · Context",
     "M2 · Diagnose",
-    "M3 · Verify",
+    VERIFY,
     "M2 · Feedback",
     "M4 · Execute",
 ]
@@ -145,14 +148,15 @@ def run_flow(batch: TelemetryBatch, settings: Settings) -> Iterator[dict]:
     status, line = _diagnosis_line(m2, diagnosis)
     yield _stage("M2 · Diagnose", status, line, started, m2)
 
-    # M3: every proposed write goes through M4's action handler, which asks M3 first.
+    # Formal Verification: every proposed write goes through M4's action handler, which asks the
+    # safety layer first.
     started = time.perf_counter()
     checks = handle_all(diagnosis.actions, settings)
     status, line = _verify_line(checks)
     facts = cluster_facts(namespace, settings)
-    yield _stage("M3 · Verify", status, line, started, {"checks": checks, "facts": facts})
+    yield _stage(VERIFY, status, line, started, {"checks": checks, "facts": facts})
 
-    # M2 again, only if M3 blocked something: M2 gets the BLOCK verdicts and answers once.
+    # M2 again, only if the safety layer blocked something: M2 gets the BLOCK verdicts and answers once.
     started = time.perf_counter()
     blocked = blocked_verdicts(checks)
     feedback_checks = []
@@ -178,9 +182,9 @@ def run_flow(batch: TelemetryBatch, settings: Settings) -> Iterator[dict]:
 
 
 def handle_all(actions: list[ProposedAction], settings: Settings) -> list[dict]:
-    """M4's action handler on each action: reads run freely, writes need M3's APPROVE first.
+    """M4's action handler on each action: reads run freely, writes need the safety layer's APPROVE.
 
-    Each write's row also keeps M3's step-by-step trace, so the page can show inside M3.
+    Each write's row also keeps the safety layer's step-by-step trace, so the page can show its steps.
     """
     traces = {}
 
@@ -203,7 +207,7 @@ def handle_all(actions: list[ProposedAction], settings: Settings) -> list[dict]:
 
 
 def blocked_verdicts(checks: list[dict]) -> list[SafetyVerdict]:
-    """M3's BLOCK verdicts, as M4 hands them back to M2."""
+    """The safety layer's BLOCK verdicts, as M4 hands them back to M2."""
     blocked = []
     for row in checks:
         if row["verdict"] is not None and row["verdict"]["decision"] == GateDecision.BLOCK.value:
@@ -212,7 +216,7 @@ def blocked_verdicts(checks: list[dict]) -> list[SafetyVerdict]:
 
 
 def approved_writes(checks: list[dict]) -> list[dict]:
-    """The writes M3 approved."""
+    """The writes the safety layer approved."""
     approved = []
     for row in checks:
         if row["verdict"] is not None and row["verdict"]["decision"] == GateDecision.APPROVE.value:
@@ -221,13 +225,13 @@ def approved_writes(checks: list[dict]) -> list[dict]:
 
 
 def cluster_facts(namespace: str, settings: Settings) -> list[dict] | None:
-    """The deployments M3's extractor sees in the namespace (saved kubectl output in PP1), or None."""
+    """The deployments the safety layer's extractor sees in the namespace (saved kubectl output), or None."""
     if not settings.m3_kubectl_output:
         return None
     try:
         snapshot = extractor.extract(namespace, extractor.saved_output(Path(settings.m3_kubectl_output)))
     except Exception:
-        return None  # no saved output for this namespace: M3 itself blocks, and says why
+        return None  # no saved output for this namespace: the safety layer itself blocks, and says why
     return snapshot["deployments"]
 
 
@@ -236,7 +240,7 @@ def outcome(stages: list[dict]) -> dict:
     by_name = {}
     for stage in stages:
         by_name[stage["name"]] = stage
-    checks = by_name["M3 · Verify"]["details"]["checks"]
+    checks = by_name[VERIFY]["details"]["checks"]
     feedback = by_name["M2 · Feedback"]["details"]
     if feedback is not None:
         checks = checks + feedback["checks"]
@@ -245,7 +249,7 @@ def outcome(stages: list[dict]) -> dict:
     if approved:
         return {
             "kind": "approved",
-            "title": "Fix approved by M3",
+            "title": "Fix approved by the safety layer",
             "command": approved[0]["command"],
             "text": in_plain_words(approved[0]["verdict"]),
         }
@@ -253,7 +257,7 @@ def outcome(stages: list[dict]) -> dict:
     if blocked:
         return {
             "kind": "blocked",
-            "title": "M3 blocked the fix, so the incident goes to a human",
+            "title": "The safety layer blocked the fix, so the incident goes to a human",
             "command": blocked[0].command,
             "text": in_plain_words(blocked[0].model_dump(mode="json")),
         }
@@ -266,9 +270,9 @@ def outcome(stages: list[dict]) -> dict:
 
 
 def in_plain_words(verdict: dict) -> str:
-    """M3's verdict as one sentence a non-expert can follow (the exact reason stays on the page)."""
+    """A safety verdict as one sentence a non-expert can follow (the exact reason stays on the page)."""
     if verdict["decision"] == GateDecision.APPROVE.value:
-        return "Z3 found no end state of this command that breaks one of M3's rules."
+        return "Z3 found no end state of this command that breaks one of the safety rules."
     example = verdict["counterexample"]
     if example is not None and "during" in example:
         before = example["before"]
@@ -299,7 +303,7 @@ def routing_record(stages: list[dict]) -> dict:
     for stage in stages:
         by_name[stage["name"]] = stage
     diagnosis = by_name["M2 · Diagnose"]["details"]["diagnosis"]
-    actions = by_name["M3 · Verify"]["details"]["checks"]
+    actions = by_name[VERIFY]["details"]["checks"]
     rounds = [{"title": "M2 diagnose", "hypotheses": diagnosis["hypotheses"], "actions": actions}]
     return {"context": by_name["M1 · Context"]["details"]["context"], "rounds": rounds}
 
