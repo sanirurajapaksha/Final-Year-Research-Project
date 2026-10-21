@@ -130,7 +130,13 @@ def show_context(details: dict) -> None:
     for signal in details["signals"]:
         kept = "kept" if signal["kept"] else "pruned"
         rows.append(
-            {"": kept, "service": signal["service"], "signal": signal["name"], "why": signal["reason"]}
+            {
+                "": kept,
+                "service": signal["service"],
+                "signal": signal["name"],
+                "evidence": signal["evidence"],
+                "why": signal["reason"],
+            }
         )
     st.dataframe(rows, hide_index=True)
     st.caption(details["notes"])
