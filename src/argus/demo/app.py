@@ -17,9 +17,9 @@ from dotenv import load_dotenv
 
 from argus.context.report import graph_dot
 from argus.contracts import ProposedAction
-from argus.demo.flow import SCENARIOS, STAGES, load_telemetry, outcome, routing_record, run_flow
+from argus.demo.flow import SCENARIOS, STAGES, VERIFY, load_telemetry, outcome, routing_record, run_flow
 from argus.demo.run import demo_settings
-from argus.demo.views import LABELS, STYLE, card, show_m3_steps, show_verdict
+from argus.demo.views import LABELS, STYLE, card, show_steps, show_verdict
 from argus.diagnosis.core.belief import H0
 from argus.diagnosis.demo import prior_beliefs
 from argus.orchestration.report import OUTCOMES, routing_replay
@@ -29,15 +29,15 @@ from argus.safety.gate import check
 load_dotenv(".env")
 
 PACE_S = 0.8  # pause after each stage when presenting, so the audience can follow; not in the timings
-M3_PACE_S = 0.5  # the same, between M3's own steps
+STEP_PACE_S = 0.5  # the same, between the safety layer's own steps
 
-# Commands for the "Inside M3" section: each shows a different part of M3 at work.
+# Example commands for the Formal Verification stage: each shows a different step at work.
 FIX_PATCH = (
     "kubectl patch deployment cart -n default -p "
     '\'{"spec":{"template":{"spec":{"containers":[{"name":"cart","env":'
     '[{"name":"CART_ADDR","value":"redis-cart:6379"}]}]}}}}\''
 )
-M3_EXAMPLES = {
+EXAMPLES = {
     "Scale cart to 0": "kubectl scale deployment cart --replicas=0 -n default",
     "Scale cart to 2": "kubectl scale deployment cart --replicas=2 -n default",
     "Restart cart (shop)": "kubectl rollout restart deployment/cart -n shop",
@@ -177,7 +177,7 @@ def show_diagnosis(details: dict) -> None:
 
     st.caption("What M2 proposes:")
     for action in details["diagnosis"]["actions"]:
-        kind = "WRITE (goes to M3)" if action["is_write"] else "READ"
+        kind = "WRITE (goes to the safety layer)" if action["is_write"] else "READ"
         st.markdown(f"**{kind}**: `{action['command']}`")
     if details["diagnosis"]["hypotheses"]:
         for line in details["diagnosis"]["hypotheses"][0]["evidence"]:
@@ -188,12 +188,12 @@ def show_diagnosis(details: dict) -> None:
 def show_checks(checks: list[dict]) -> None:
     writes = [row for row in checks if row["is_write"]]
     if not writes:
-        st.caption("No write was proposed, so there was nothing for M3 to check.")
+        st.caption("No write was proposed, so there was nothing to verify.")
     for row in writes:
         st.code(row["command"], language="bash")
         if row.get("trace"):
-            st.caption("Inside M3, step by step (open a step to see its data):")
-            show_m3_steps(row["trace"], row["verdict"])
+            st.caption("Step by step (open a step to see its data):")
+            show_steps(row["trace"], row["verdict"])
             show_verdict(row["verdict"], with_counterexample=False)
         else:
             show_verdict(row["verdict"])
@@ -201,26 +201,27 @@ def show_checks(checks: list[dict]) -> None:
 
 def show_verify(details: dict) -> None:
     st.caption(
-        "M3 asks Z3 whether ANY end state of the command breaks a rule: unsat → APPROVE; "
+        "The safety layer asks Z3 whether ANY end state of the command breaks a rule: unsat → APPROVE; "
         "sat → BLOCK with that end state as the counterexample; an error or unknown → BLOCK."
     )
     show_checks(details["checks"])
     if details["facts"]:
-        st.caption("What M3 knew about the cluster (saved kubectl output, read-only):")
+        st.caption("The cluster facts it read (saved kubectl output, read-only):")
         st.dataframe(details["facts"], hide_index=True)
+    try_a_command()
 
 
 def show_feedback(details: dict | None) -> None:
     if details is None:
         st.caption("Nothing was blocked, so M2 was not asked again.")
         return
-    st.caption("M4 handed M3's BLOCK, with its counterexample, back to M2. M2's answer:")
+    st.caption("M4 handed the safety layer's BLOCK, with its counterexample, back to M2. M2's answer:")
     if details["diagnosis"]["hypotheses"]:
         for line in details["diagnosis"]["hypotheses"][0]["evidence"]:
-            if line.startswith("M3 blocked"):
+            if line.startswith("M3 blocked"):  # M2 writes this line
                 st.markdown(line)
     for action in details["diagnosis"]["actions"]:
-        kind = "WRITE (goes to M3)" if action["is_write"] else "READ"
+        kind = "WRITE (goes to the safety layer)" if action["is_write"] else "READ"
         st.markdown(f"**{kind}**: `{action['command']}`")
     show_checks(details["checks"])
 
@@ -234,56 +235,54 @@ def show_execute(details: dict) -> None:
         output = "not sent (blocked)"
         if row["execution"] is not None:
             output = row["execution"]["output"]
-        rows.append({"command": row["command"], "M3": decision, "executor": output})
+        rows.append({"command": row["command"], "safety layer": decision, "executor": output})
     st.dataframe(rows, hide_index=True)
     st.caption(
-        "Reads skip M3; a write reaches the executor only with APPROVE. The executor is a stub in PP1."
+        "Reads skip the safety layer; a write reaches the executor only with APPROVE. "
+        "The executor is a stub in PP1."
     )
 
 
 def use_example(command: str) -> None:
     """An example button: put its command in the box and verify it."""
-    st.session_state["m3_command"] = command
-    st.session_state["m3_verify"] = True
+    st.session_state["verify_command"] = command
+    st.session_state["verify_now"] = True
+    st.session_state["keep_verify_open"] = True
 
 
 def verify_typed() -> None:
-    st.session_state["m3_verify"] = True
+    st.session_state["verify_now"] = True
+    st.session_state["keep_verify_open"] = True
 
 
-def inside_m3(present: bool) -> None:
-    """Verify one command with M3 and draw M3's own steps, in order, as they were taken."""
-    st.subheader("Inside M3: how one command is verified")
+def try_a_command() -> None:
+    """Inside the Formal Verification stage: verify any other command and draw its steps in order."""
+    st.markdown("**Try another command**")
     st.caption(
-        "Pick an example or type any kubectl write command. M3 checks it step by step: "
-        "pre-filter → parse (or the LLM for a patch) → cluster facts → logic compiler and Z3 → decision. "
-        "A red step is where M3 stopped; anything it can't check is blocked (fail-closed)."
+        "Pick an example or type any kubectl write command. A red step is where checking stopped; "
+        "anything that can't be checked is blocked (fail-closed). A patch costs one LLM call (team budget)."
     )
-    columns = st.columns(len(M3_EXAMPLES))
-    for column, (name, command) in zip(columns, M3_EXAMPLES.items(), strict=True):
+    columns = st.columns(len(EXAMPLES))
+    for column, (name, command) in zip(columns, EXAMPLES.items(), strict=True):
         column.button(name, on_click=use_example, args=(command,))
-    if "m3_command" not in st.session_state:
-        st.session_state["m3_command"] = M3_EXAMPLES["Scale cart to 0"]
-    st.text_input("Command", key="m3_command")
-    st.button("Verify with M3", type="primary", on_click=verify_typed)
-    st.caption(
-        "Saved cluster facts exist for the namespaces default, shop, hotel-reservation and kube-system. "
-        "A patch costs one LLM call (team budget)."
-    )
+    if "verify_command" not in st.session_state:
+        st.session_state["verify_command"] = EXAMPLES["Scale cart to 0"]
+    st.text_input("Command", key="verify_command")
+    st.button("Verify this command", on_click=verify_typed)
 
-    fresh = st.session_state.pop("m3_verify", False)
+    fresh = st.session_state.pop("verify_now", False)
     if fresh:
         trace = []
-        action = ProposedAction(command=st.session_state["m3_command"], is_write=True)
+        action = ProposedAction(command=st.session_state["verify_command"], is_write=True)
         verdict = check(action, settings=demo_settings(), trace=trace)
-        st.session_state["m3_result"] = {"verdict": verdict.model_dump(mode="json"), "trace": trace}
-    result = st.session_state.get("m3_result")
+        st.session_state["verify_result"] = {"verdict": verdict.model_dump(mode="json"), "trace": trace}
+    result = st.session_state.get("verify_result")
     if result is None:
         return
     pace = 0.0
-    if fresh and present:
-        pace = M3_PACE_S
-    show_m3_steps(result["trace"], result["verdict"], pace)
+    if fresh and st.session_state.get("present"):
+        pace = STEP_PACE_S
+    show_steps(result["trace"], result["verdict"], pace)
     show_verdict(result["verdict"], with_counterexample=False)
 
 
@@ -292,7 +291,7 @@ RENDERERS = {
     "M4 · Compress": show_compress,
     "M1 · Context": show_context,
     "M2 · Diagnose": show_diagnosis,
-    "M3 · Verify": show_verify,
+    VERIFY: show_verify,
     "M2 · Feedback": show_feedback,
     "M4 · Execute": show_execute,
 }
@@ -318,7 +317,7 @@ with st.sidebar:
         if uploaded is not None:
             label = uploaded.name
             text = uploaded.getvalue().decode("utf-8")
-    present = st.toggle("Step through slowly (for presenting)", value=True)
+    present = st.toggle("Step through slowly (for presenting)", value=True, key="present")
     run = st.button("Run the incident", type="primary", disabled=text is None)
 
     st.divider()
@@ -326,18 +325,18 @@ with st.sidebar:
     st.markdown(
         "**Real:** the code of all four modules, Z3, and the LLM call that reads a patch.\n\n"
         "**Simulated (no cluster in PP1):** the telemetry (synthetic or uploaded), the results of "
-        "M2's reads (canned kubectl output), M3's cluster facts (saved kubectl output), and the "
-        "executor (a stub: nothing is run)."
+        "M2's reads (canned kubectl output), the safety layer's cluster facts (saved kubectl output), "
+        "and the executor (a stub: nothing is run)."
     )
     if os.environ.get("ARGUS_LLM_API_KEY"):
         st.caption(f"LLM: {demo_settings().llm_model} (key set). At most one call per run.")
     else:
-        st.caption("No LLM key: M3 blocks patch commands (fail-closed).")
+        st.caption("No LLM key: patch commands are blocked (fail-closed).")
 
 st.title("Argus · incident run")
 st.caption(
-    "Telemetry goes in; each module runs in turn; every write is checked by M3 before anything "
-    "could run; the incident ends with an approved fix or a hand-over to a human."
+    "Telemetry goes in, each module runs in turn, and the incident ends with an approved fix "
+    "or a hand-over to a human."
 )
 
 placeholders = []
@@ -345,6 +344,7 @@ for column in st.columns(len(STAGES)):
     placeholders.append(column.empty())
 
 if run:
+    st.session_state["keep_verify_open"] = False
     stages = run_live(text, placeholders, present)
     st.session_state["stages"] = stages
     st.session_state["incident"] = label
@@ -354,25 +354,25 @@ if not stages:
     for index, name in enumerate(STAGES):
         placeholders[index].markdown(card(name, "waiting", "", None), unsafe_allow_html=True)
     st.info("Choose an incident in the sidebar and press **Run the incident**.")
-else:
-    for index, stage in enumerate(stages):
-        placeholders[index].markdown(
-            card(stage["name"], stage["status"], stage["headline"], stage["ms"]), unsafe_allow_html=True
-        )
-    if not run:
-        st.caption(f"Showing the last run: {st.session_state.get('incident')}")
-    show_outcome(stages)
-
-    st.subheader("How each module decided")
-    for stage in stages:
-        with st.expander(f"{stage['name']} · {LABELS[stage['status']]} · {stage['headline']}"):
-            RENDERERS[stage["name"]](stage["details"])
-
-st.divider()
-inside_m3(present)
-
-if not stages:
     st.stop()
+
+for index, stage in enumerate(stages):
+    placeholders[index].markdown(
+        card(stage["name"], stage["status"], stage["headline"], stage["ms"]), unsafe_allow_html=True
+    )
+if not run:
+    st.caption(f"Showing the last run: {st.session_state.get('incident')}")
+show_outcome(stages)
+
+st.subheader("How each module decided")
+for stage in stages:
+    # A click inside the Formal Verification panel reruns the page; keep that panel open afterwards.
+    keep_open = stage["name"] == VERIFY and st.session_state.get("keep_verify_open", False)
+    with st.expander(
+        f"{stage['name']} · {LABELS[stage['status']]} · {stage['headline']}", expanded=keep_open
+    ):
+        RENDERERS[stage["name"]](stage["details"])
+
 st.divider()
 with st.expander("M4 model routing: offline replay of this run's diagnosis (not part of the run)"):
     st.caption(

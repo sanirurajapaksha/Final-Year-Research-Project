@@ -45,14 +45,14 @@ def test_before_a_run_the_page_asks_for_an_incident(page):
 
 def test_the_cart_addr_incident_ends_with_an_approved_fix(page):
     app = run_sample(page, CART_ADDR)
-    assert any("Fix approved by M3" in success.value for success in app.success)
-    assert any("M3: APPROVE" in success.value for success in app.success)  # inside the M3 stage
+    assert any("Fix approved by the safety layer" in success.value for success in app.success)
+    assert any("Safety layer: APPROVE" in success.value for success in app.success)  # inside its stage
 
 
 def test_the_out_of_memory_incident_ends_with_a_block_and_a_human(page):
     app = run_sample(page, OUT_OF_MEMORY)
-    assert any("M3 blocked the fix" in error.value for error in app.error)
-    assert any("M3: BLOCK (z3: sat)" in error.value for error in app.error)
+    assert any("The safety layer blocked the fix" in error.value for error in app.error)
+    assert any("Safety layer: BLOCK (z3: sat)" in error.value for error in app.error)
 
 
 def table_with_columns(app, *columns):
@@ -100,16 +100,17 @@ def click(app, label: str):
     raise AssertionError(f"no button {label!r}")
 
 
-def test_inside_m3_draws_its_steps_for_an_example(page):
-    app = click(page, "Shell trick")
+def test_the_verification_stage_draws_the_steps_of_an_example(page):
+    app = click(run_sample(page, OUT_OF_MEMORY), "Shell trick")
     assert not app.exception
     assert any("Stopped here" in text.value for text in app.markdown)  # the pre-filter step card
     assert any("pre-filter" in error.value for error in app.error)
 
 
-def test_inside_m3_verifies_a_typed_command_and_shows_the_formula(page):
-    page.text_input[0].set_value("kubectl scale deployment cart --replicas=2 -n default")
-    app = click(page, "Verify with M3")
+def test_the_verification_stage_verifies_a_typed_command_and_shows_the_formula(page):
+    app = run_sample(page, OUT_OF_MEMORY)
+    app.text_input[0].set_value("kubectl scale deployment cart --replicas=2 -n default")
+    app = click(app, "Verify this command")
     assert not app.exception
-    assert any("M3: APPROVE (z3: unsat)" in success.value for success in app.success)
+    assert any("Safety layer: APPROVE (z3: unsat)" in success.value for success in app.success)
     assert any("Z3: unsat" in code.value for code in app.code)  # the formula, read out
