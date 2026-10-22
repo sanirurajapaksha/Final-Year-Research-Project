@@ -113,6 +113,20 @@ def show_compress(details: dict) -> None:
 
 
 def show_context(details: dict) -> None:
+    nrr = details["nrr"]
+    signals_in, stage1, stage2, compute = st.columns(4)
+    if nrr is None:
+        signals_in.metric("Signals in", "–")
+    else:
+        signals_in.metric("Signals in", nrr["raw"])
+        stage1.metric("NRR after Stage 1", f"{nrr['stage1']:.2f}")
+        stage2.metric("NRR after Stage 2", f"{nrr['stage2']:.2f}", f"{nrr['stage2'] - nrr['stage1']:+.2f}")
+    compute.metric("M1 compute time", f"{details['compute_ms']:.2f} ms")
+    st.caption(
+        "NRR = 1 − kept / signals in (metric, log and k8s records; spans only build the graph). "
+        "Labelled NRR and false-prune rate need an answer key, so they're in the M1 experiments."
+    )
+
     graph = details["graph"]
     if graph is None:
         st.info("No traces in the window, so M1 ran its noise filter only (no service graph).")
@@ -130,10 +144,18 @@ def show_context(details: dict) -> None:
     for signal in details["signals"]:
         kept = "kept" if signal["kept"] else "pruned"
         rows.append(
-            {"": kept, "service": signal["service"], "signal": signal["name"], "why": signal["reason"]}
+            {
+                "": kept,
+                "service": signal["service"],
+                "signal": signal["name"],
+                "evidence": signal["evidence"],
+                "why": signal["reason"],
+            }
         )
     st.dataframe(rows, hide_index=True)
     st.caption(details["notes"])
+    st.markdown("**Sent to M2: the SemanticContext**")
+    st.json(details["context"], expanded=1)
 
 
 def show_diagnosis(details: dict) -> None:

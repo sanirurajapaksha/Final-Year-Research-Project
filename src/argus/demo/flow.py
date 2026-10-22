@@ -14,6 +14,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from argus.config import Settings
+from argus.context.ingest import IngestError, parse_records
 from argus.context.report import report_data
 from argus.context.service import build_report
 from argus.contracts import DiagnosisResult, GateDecision, ProposedAction, SafetyVerdict, TelemetryBatch
@@ -135,8 +136,11 @@ def run_flow(batch: TelemetryBatch, settings: Settings) -> Iterator[dict]:
     # M1: filter the noise and find the failing path.
     started = time.perf_counter()
     report = build_report(compressed)
+    compute_ms = (time.perf_counter() - started) * 1000
     context = report.context
     m1 = report_data(report)
+    m1["compute_ms"] = compute_ms
+    m1["nrr"] = noise_reduction(batch, m1)
     failing = ", ".join(context.failing_services) or "none"
     line = f"kept {m1['kept_count']} of {m1['stage1_count']} signals; failing: {failing}"
     yield _stage("M1 · Context", "passed", line, started, m1)
@@ -204,6 +208,22 @@ def handle_all(actions: list[ProposedAction], settings: Settings) -> list[dict]:
             row["execution"] = result.execution.model_dump(mode="json")
         rows.append(row)
     return rows
+
+
+def noise_reduction(batch: TelemetryBatch, m1: dict) -> dict | None:
+    """M1's NRR (1 - kept / raw) after each stage, or None if there's nothing to divide by.
+
+    Raw is the metric, log and k8s records: spans are graph input, not candidate signals. Same
+    denominator as the M1 experiments.
+    """
+    try:
+        parsed = parse_records(batch.records)
+    except IngestError:
+        return None
+    raw = len(parsed.metrics) + len(parsed.logs) + len(parsed.k8s)
+    if raw == 0:
+        return None
+    return {"raw": raw, "stage1": 1 - m1["stage1_count"] / raw, "stage2": 1 - m1["kept_count"] / raw}
 
 
 def blocked_verdicts(checks: list[dict]) -> list[SafetyVerdict]:
