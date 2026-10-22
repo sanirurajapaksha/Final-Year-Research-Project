@@ -348,3 +348,59 @@ def test_patch_blocks_when_the_llm_log_cant_be_written(snapshot, monkeypatch, tm
     verdict = check(write(command), snapshot, settings)
     assert verdict.decision is GateDecision.BLOCK
     assert verdict.reason.startswith("formulation: can't keep the raw LLM answer")
+
+
+# The optional trace: what each step did, for the dashboard. It never changes the verdict.
+
+
+def steps(trace: list) -> list[tuple[str, str]]:
+    return [(item["step"], item["status"]) for item in trace]
+
+
+def test_trace_of_a_checked_scale_lists_every_step_and_the_formula(snapshot):
+    trace = []
+    verdict = check(
+        write("kubectl scale deployment geo --replicas=1 -n hotel-reservation"), snapshot, SETTINGS, trace
+    )
+    assert steps(trace) == [
+        ("Pre-filter", "passed"),
+        ("Parse", "passed"),
+        ("Cluster facts", "passed"),
+        ("Logic compiler + Z3", "passed"),
+        ("Decision", "stopped"),
+    ]
+    solved = trace[3]["data"]
+    assert solved["z3_result"] == "sat"
+    assert "replicas_after == 1" in solved["formula"]["transition"]
+    assert trace[4]["summary"] == "BLOCK: " + verdict.reason
+
+
+def test_trace_stops_where_m3_stops(snapshot):
+    trace = []
+    check(write("kubectl get pods -n hotel-reservation | grep geo"), snapshot, SETTINGS, trace)
+    assert steps(trace) == [("Pre-filter", "stopped"), ("Decision", "stopped")]
+
+
+def test_trace_of_a_pod_delete_skips_the_cluster_facts():
+    trace = []
+    check(write("kubectl delete pod coredns-1 -n kube-system"), None, SETTINGS, trace)
+    assert ("Cluster facts", "skipped") in steps(trace)
+    assert steps(trace)[-1] == ("Decision", "stopped")
+
+
+def test_trace_of_a_patch_shows_the_llm_step(snapshot, monkeypatch, tmp_path):
+    fake_llm(monkeypatch, patch_ir("geo", "set_replicas", 4))
+    settings = Settings(solver_timeout_s=30.0, solver_memory_mb=512, m3_llm_log=str(tmp_path / "llm.jsonl"))
+    trace = []
+    command = 'kubectl patch deployment geo -n hotel-reservation -p \'{"spec":{"replicas":4}}\''
+    check(write(command), snapshot, settings, trace)
+    assert steps(trace)[:3] == [("Pre-filter", "passed"), ("Parse", "skipped"), ("LLM formulation", "passed")]
+    assert steps(trace)[-1] == ("Decision", "passed")
+
+
+def test_the_trace_does_not_change_the_verdict(snapshot):
+    command = write("kubectl scale deployment geo --replicas=2 -n hotel-reservation")
+    without = check(command, snapshot, SETTINGS)
+    traced = check(command, snapshot, SETTINGS, [])
+    assert traced.decision is without.decision
+    assert traced.reason == without.reason

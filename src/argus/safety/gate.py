@@ -47,18 +47,27 @@ def check(
     action: ProposedAction,
     snapshot: dict[str, Any] | None = None,
     settings: Settings | None = None,
+    trace: list[dict[str, Any]] | None = None,
 ) -> SafetyVerdict:
     """Check one write command against the cluster facts in `snapshot`.
 
     Without a `snapshot`, the extractor reads the facts from the source in `settings`
     (saved kubectl output or the live cluster). With neither, every deployment or PVC command
     is blocked; pod and namespace deletes need no facts.
+
+    If a `trace` list is given, each step appends what it did, for the dashboard:
+    {"step", "status" (passed, skipped or stopped), "summary", "data", "ms"}. The verdict is the same.
     """
     settings = settings or load_settings()
     timings: dict[str, float] = {}
 
+    def note(step: str, status: str, summary: str, data: Any = None, ms: float | None = None) -> None:
+        if trace is not None:
+            trace.append({"step": step, "status": status, "summary": summary, "data": data, "ms": ms})
+
     # Helper function
     def block(reason: str) -> SafetyVerdict:
+        note("Decision", "stopped", "BLOCK: " + reason)
         return SafetyVerdict(
             command=action.command, decision=GateDecision.BLOCK, reason=reason, timings_ms=timings
         )
@@ -66,7 +75,10 @@ def check(
     with stage_timer(timings, "prefilter"):
         rejection = prefilter.check(action.command)
     if rejection is not None:
+        note("Pre-filter", "stopped", rejection, ms=timings["prefilter"])
         return block(f"pre-filter: {rejection}")
+    tokens = prefilter.tokenize(action.command)
+    note("Pre-filter", "passed", "one plain kubectl command, no shell syntax", tokens, timings["prefilter"])
 
     with stage_timer(timings, "parse"):
         try:
@@ -76,15 +88,23 @@ def check(
 
     # Commands the fixed parser can't read (v0: kubectl patch) go to the LLM Formulation Agent.
     if parsed is None and formulation.handles(action.command):
+        note("Parse", "skipped", "not a template command, so the LLM reads it", ms=timings["parse"])
         with stage_timer(timings, "formulation"):
             try:
                 parsed = formulation.formulate(action.command, settings.llm_model, settings.m3_llm_log)
             except (formulation.FormulationError, parser.ParseError) as exc:
                 formulation_error = str(exc)
         if parsed is None:
+            note("LLM formulation", "stopped", formulation_error, ms=timings["formulation"])
             return block(f"formulation: {formulation_error} (fail-closed)")
-    if parsed is None:
+        summary = f"the LLM's answer matches the command text; checked as {parsed.verb} {parsed.kind}"
+        note("LLM formulation", "passed", summary, parsed.to_request(), timings["formulation"])
+    elif parsed is None:
+        note("Parse", "stopped", parse_error, ms=timings["parse"])
         return block(f"parse: {parse_error}")
+    else:
+        summary = f"{parsed.verb} {parsed.kind} {parsed.namespace}/{parsed.name}"
+        note("Parse", "passed", summary, parsed.to_request(), timings["parse"])
 
     # Protected namespaces go on to the solver (I2 gives the counterexample). Any other namespace
     # delete removes everything inside it, which F1 doesn't model, so it is blocked here.
@@ -97,6 +117,7 @@ def check(
     # so they skip the extractor and keep the protected_namespace counterexample.
     if snapshot is None and parsed.kind not in ("deployment", "pvc"):
         snapshot = {}
+        note("Cluster facts", "skipped", "pods and namespaces need no cluster facts")
 
     # No snapshot passed in: the extractor builds one for the command's namespace.
     if snapshot is None:
@@ -112,12 +133,19 @@ def check(
             except Exception as exc:  # any extractor failure blocks; it never approves
                 snapshot, extract_error = None, f"{type(exc).__name__}: {exc}"
         if snapshot is None:
+            note("Cluster facts", "stopped", extract_error, ms=timings["extractor"])
             return block(f"extractor: {extract_error} (fail-closed)")
 
     with stage_timer(timings, "facts"):
         facts = facts_for(snapshot, parsed.kind, parsed.namespace, parsed.name)
     if facts is None:
+        note("Cluster facts", "stopped", f"{parsed.kind} {parsed.namespace}/{parsed.name} isn't there")
         return block(f"resource not in snapshot: {parsed.kind} {parsed.namespace}/{parsed.name}")
+    if parsed.kind in ("deployment", "pvc"):
+        read_ms = timings.get("extractor", 0.0) + timings["facts"]
+        note(
+            "Cluster facts", "passed", f"read-only facts for {parsed.namespace}/{parsed.name}", facts, read_ms
+        )
 
     request = {
         "action": parsed.to_request(),
@@ -127,11 +155,13 @@ def check(
     with stage_timer(timings, "sandbox_total"):
         outcome = sandbox.run(request, settings.solver_timeout_s, settings.solver_memory_mb)
     if outcome.result is None:
+        note("Logic compiler + Z3", "stopped", outcome.error, ms=timings["sandbox_total"])
         return block(f"solver: {outcome.error} (fail-closed)")
 
     result = outcome.result
     timings["solver"] = float(result.get("solver_ms", 0.0))
     if result.get("error"):
+        note("Logic compiler + Z3", "stopped", result["error"], ms=timings["sandbox_total"])
         return block(f"solver: {result['error']} (fail-closed)")
 
     try:
@@ -139,12 +169,26 @@ def check(
     except (KeyError, ValueError):
         return block(f"solver: unexpected result {result.get('z3_result')!r} (fail-closed)")
 
+    solved = {
+        "z3_result": z3_result.value,
+        "formula": result.get("formula"),
+        "checked_invariants": result.get("checked_invariants", []),
+        "counterexample": result.get("counterexample"),
+        "solver_ms": timings["solver"],
+    }
+    note("Logic compiler + Z3", "passed", f"z3 answered {z3_result.value}", solved, timings["sandbox_total"])
+
     decision = decision_for(z3_result)
+    reason = _reason(z3_result, result)
+    if decision is GateDecision.APPROVE:
+        note("Decision", "passed", "APPROVE: " + reason)
+    else:
+        note("Decision", "stopped", "BLOCK: " + reason)
     return SafetyVerdict(
         command=action.command,
         z3_result=z3_result,
         decision=decision,
-        reason=_reason(z3_result, result),
+        reason=reason,
         violated_invariants=result.get("violated_invariants", []),
         counterexample=result.get("counterexample"),
         timings_ms=timings,

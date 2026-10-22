@@ -10,4 +10,6 @@ It describes the same test cluster as `../snapshot_hotel_reservation.json`. Thes
 
 The `default` namespace is the cluster behind M1's `scenario_01` telemetry (the cart service is missing `CART_ADDR`), which the end-to-end demo uses. Its services run 1 replica each, with the Kubernetes default rolling-update limits (25% / 25%). `cart` and `frontend` have a PodDisruptionBudget with `minAvailable: 1`.
 
+The `shop` namespace is the cluster behind the demo's `scenario_02` telemetry (`data/fixtures/demo/scenario_02/`: cart keeps crashing, out of memory). There `cart` runs 2 replicas, with `maxUnavailable: 1` and `maxSurge: 0`, and a PodDisruptionBudget with `minAvailable: 2`. A rolling restart therefore takes one of its two pods down, below the minimum.
+
 Use it by setting `ARGUS_M3_KUBECTL_OUTPUT=data/fixtures/m3/kubectl` (run from the repo root).

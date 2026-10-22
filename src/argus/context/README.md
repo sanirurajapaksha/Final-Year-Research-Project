@@ -26,10 +26,10 @@
 
 **Try it:** `python -m argus.context` runs F1 on `data/fixtures/m1/scenario_01/telemetry.json`. It's a hand-written, synthetic CART_ADDR scenario, and its labels are in `ground_truth.json`.
 
-**Dashboard:** the **M1 context** page of the team app (`python -m streamlit run src/argus/demo/app.py`, page file `src/argus/demo/pages/1_M1_context.py`). After the incident runs on the first page, it re-runs M1 on the same telemetry and shows the graph, the kept and pruned signals with reasons, and the context M2 receives.
+**Dashboard:** the **M1 · Context** stage of the team app (`python -m streamlit run src/argus/demo/app.py`). It runs M1 on the incident's telemetry inside the pipeline, and its details show the graph (`report.graph_dot`) and every signal kept or pruned with its reason (`report.report_data`).
 
 **Results** (n = 1, synthetic):
 - `experiments/2026-10-11_m1_stage1_nrr/`: Stage 1 alone.
 - `experiments/2026-10-18_m1_stage2_failing_path/`: Stage 2 removes the 3 noise signals that Stage 1 keeps, with no evidence lost.
 
-**Tests:** `tests/unit/context/`, `tests/integration/test_m1_reads_m4_output.py` for reading M4's real output, and `tests/integration/test_m1_page.py` for the dashboard page.
+**Tests:** `tests/unit/context/`, and `tests/integration/test_m1_reads_m4_output.py` for reading M4's real output. The dashboard is tested in `tests/integration/test_demo.py` and `test_demo_app.py`.

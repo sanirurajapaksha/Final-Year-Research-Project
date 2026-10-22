@@ -9,7 +9,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from argus.context.ingest import decode_tsv
-from argus.contracts import DiagnosisResult, TelemetryBatch
+from argus.contracts import CompressedTelemetry, DiagnosisResult, TelemetryBatch
 from argus.orchestration.budget import EstimatedBudget
 from argus.orchestration.fake_models import FakeStep, ScriptedAdapter
 from argus.orchestration.model_dispatch import DispatchPolicy, dispatch
@@ -27,9 +27,6 @@ def load_scenario() -> TelemetryBatch:
 
 def build_report(batch: TelemetryBatch, record: dict) -> dict:
     """Measure compression again and summarize action handling from the saved run."""
-    compressed = compress(batch)
-    restored = decode_tsv(compressed.content)
-    compact_size = len(json.dumps(batch.records, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
     actions = []
     for one_round in record["rounds"]:
         for action in one_round["actions"]:
@@ -47,6 +44,15 @@ def build_report(batch: TelemetryBatch, record: dict) -> dict:
                     "output": execution["output"] if execution else "",
                 }
             )
+    return {**compression_report(batch), "actions": actions}
+
+
+def compression_report(batch: TelemetryBatch, compressed: CompressedTelemetry | None = None) -> dict:
+    """Measure and verify the incident's TSV payload, optionally reusing the payload sent to M1."""
+    if compressed is None:
+        compressed = compress(batch)
+    restored = decode_tsv(compressed.content)
+    compact_size = len(json.dumps(batch.records, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
     original = json.dumps(batch.records, ensure_ascii=False, sort_keys=True, allow_nan=False)
     decoded = json.dumps(restored, ensure_ascii=False, sort_keys=True, allow_nan=False)
     return {
@@ -58,7 +64,6 @@ def build_report(batch: TelemetryBatch, record: dict) -> dict:
         "round_trip_exact": original == decoded,
         "alert_time_preserved": compressed.alert_time == batch.alert_time,
         "tsv": compressed.content,
-        "actions": actions,
     }
 
 

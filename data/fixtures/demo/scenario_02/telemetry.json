@@ -1,0 +1,30 @@
+{
+  "source": "fixture demo/scenario_02 (hand-written, synthetic): cart crash-looping, out of memory (namespace shop)",
+  "collected_at": "2026-10-12T14:20:30Z",
+  "alert_time": "2026-10-12T14:20:00Z",
+  "records": [
+    {"kind": "metric", "service": "frontend", "name": "http_5xx_rate", "timestamp": "2026-10-12T14:19:30Z", "value": 0.19},
+    {"kind": "metric", "service": "checkout", "name": "http_5xx_rate", "timestamp": "2026-10-12T14:19:30Z", "value": 0.57},
+    {"kind": "metric", "service": "cart", "name": "http_5xx_rate", "timestamp": "2026-10-12T14:19:30Z", "value": 0.81},
+    {"kind": "metric", "service": "cart", "name": "memory_utilization", "labels": {"pod": "cart-9c1d7-k2x8p"}, "timestamp": "2026-10-12T14:19:30Z", "value": 0.99},
+    {"kind": "metric", "service": "frontend", "name": "cpu_utilization", "timestamp": "2026-10-12T14:19:30Z", "value": 0.38},
+    {"kind": "metric", "service": "product-catalog", "name": "cpu_utilization", "timestamp": "2026-10-12T14:19:30Z", "value": 0.93},
+    {"kind": "log", "service": "cart", "severity": "ERROR", "message": "fatal: out of memory loading carts from CART_ADDR=redis-cart:6379", "timestamp": "2026-10-12T14:19:41Z"},
+    {"kind": "log", "service": "checkout", "severity": "ERROR", "message": "PlaceOrder failed: rpc error: code = Unavailable desc = cart", "timestamp": "2026-10-12T14:19:42Z"},
+    {"kind": "log", "service": "frontend", "severity": "ERROR", "message": "checkout failed: rpc error: code = Unavailable desc = checkout", "timestamp": "2026-10-12T14:19:42Z"},
+    {"kind": "log", "service": "product-catalog", "severity": "INFO", "message": "catalog reindex started", "timestamp": "2026-10-12T14:19:10Z"},
+    {"kind": "log", "service": "metrics-server", "severity": "ERROR", "message": "unable to fetch node metrics: connection timed out", "timestamp": "2026-10-12T14:19:20Z"},
+    {"kind": "span", "service": "frontend", "trace_id": "t-201", "span_id": "c1", "parent_span_id": null, "operation": "POST /cart/checkout", "span_kind": "SERVER", "start_time": "2026-10-12T14:19:42.000Z", "duration_ms": 48.0, "otel_status_code": "ERROR", "http_status_code": 500},
+    {"kind": "span", "service": "frontend", "trace_id": "t-201", "span_id": "c2", "parent_span_id": "c1", "operation": "hipstershop.CheckoutService/PlaceOrder", "span_kind": "CLIENT", "start_time": "2026-10-12T14:19:42.002Z", "duration_ms": 44.0, "otel_status_code": "ERROR", "grpc_status_code": 14},
+    {"kind": "span", "service": "checkout", "trace_id": "t-201", "span_id": "c3", "parent_span_id": "c2", "operation": "hipstershop.CheckoutService/PlaceOrder", "span_kind": "SERVER", "start_time": "2026-10-12T14:19:42.004Z", "duration_ms": 40.0, "otel_status_code": "ERROR", "grpc_status_code": 14},
+    {"kind": "span", "service": "checkout", "trace_id": "t-201", "span_id": "c4", "parent_span_id": "c3", "operation": "hipstershop.CartService/GetCart", "span_kind": "CLIENT", "start_time": "2026-10-12T14:19:42.006Z", "duration_ms": 35.0, "otel_status_code": "ERROR", "grpc_status_code": 14},
+    {"kind": "span", "service": "cart", "trace_id": "t-201", "span_id": "c5", "parent_span_id": "c4", "operation": "hipstershop.CartService/GetCart", "span_kind": "SERVER", "start_time": "2026-10-12T14:19:42.008Z", "duration_ms": 30.0, "otel_status_code": "ERROR", "grpc_status_code": 14},
+    {"kind": "span", "service": "frontend", "trace_id": "t-202", "span_id": "d1", "parent_span_id": null, "operation": "GET /product/OLJCESPC7Z", "span_kind": "SERVER", "start_time": "2026-10-12T14:19:43.000Z", "duration_ms": 9.0, "otel_status_code": "OK", "http_status_code": 200},
+    {"kind": "span", "service": "frontend", "trace_id": "t-202", "span_id": "d2", "parent_span_id": "d1", "operation": "hipstershop.ProductCatalogService/GetProduct", "span_kind": "CLIENT", "start_time": "2026-10-12T14:19:43.001Z", "duration_ms": 5.0, "otel_status_code": "OK", "grpc_status_code": 0},
+    {"kind": "span", "service": "product-catalog", "trace_id": "t-202", "span_id": "d3", "parent_span_id": "d2", "operation": "hipstershop.ProductCatalogService/GetProduct", "span_kind": "SERVER", "start_time": "2026-10-12T14:19:43.002Z", "duration_ms": 3.0, "otel_status_code": "OK", "grpc_status_code": 0},
+    {"kind": "k8s", "service": "cart", "name": "cart-9c1d7-k2x8p", "namespace": "shop", "resource": "Pod", "status": "CrashLoopBackOff", "restart_count": 7},
+    {"kind": "k8s", "service": "cart", "name": "cart-9c1d7-m9q3r", "namespace": "shop", "resource": "Pod", "status": "Running", "restart_count": 5},
+    {"kind": "k8s", "service": "metrics-server", "name": "metrics-server-7c4b8", "namespace": "kube-system", "resource": "Pod", "status": "Running", "restart_count": 6},
+    {"kind": "k8s", "service": "cart", "name": "cart", "namespace": "shop", "resource": "Deployment", "status": "Available", "replicas": 2}
+  ]
+}
