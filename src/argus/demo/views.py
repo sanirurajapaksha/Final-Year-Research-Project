@@ -1,6 +1,7 @@
 """Display helpers for the dashboard (app.py). Display only: no module logic lives here."""
 
 import html
+import re
 import time
 
 import streamlit as st
@@ -17,6 +18,34 @@ LABELS = {
     "skipped": "Skipped",
     "failed": "Failed",
 }
+MODULE_NAMES = {
+    "M1": "Build Context",
+    "M2": "Diagnose Cause",
+    "M3": "Verify Safety",
+    "M4": "Action Orchestration",
+}
+STAGE_LABELS = {
+    "Telemetry": "Telemetry",
+    "M4 · Compress": "Prepare Telemetry",
+    "M1 · Context": "Build Context",
+    "M2 · Diagnose": "Diagnose Cause",
+    "Formal Verification": "Verify Safety",
+    "M2 · Feedback": "Revise Plan",
+    "M4 · Execute": "Execute Action",
+}
+_MODULE_ID = re.compile(r"\bM[1-4]\b")
+
+
+def display_text(value: str) -> str:
+    """Use module names in displayed prose without changing the underlying run data."""
+    return _MODULE_ID.sub(lambda match: MODULE_NAMES[match.group()], value)
+
+
+def stage_label(name: str) -> str:
+    """The short label for a pipeline card or detail panel."""
+    return STAGE_LABELS.get(name, name)
+
+
 STYLE = """<style>
 .stage {border: 1px solid; border-radius: 10px; padding: 10px 12px; min-height: 150px;}
 .stage .name {font-size: 0.8rem; font-weight: 600; opacity: 0.85;}
@@ -37,6 +66,8 @@ STEP_LABELS = {"passed": "Passed", "skipped": "Skipped", "stopped": "Stopped her
 
 def card(name: str, status: str, line: str, ms: float | None, label: str | None = None) -> str:
     """One card in a pipeline strip (HTML). `status` picks the colour; `label` overrides its text."""
+    name = stage_label(name)
+    line = display_text(line)
     if len(line) > 90:
         line = line[:87] + "…"
     if label is None:
@@ -53,7 +84,7 @@ def card(name: str, status: str, line: str, ms: float | None, label: str | None 
 
 def show_verdict(verdict: dict, with_counterexample: bool = True) -> None:
     """A safety verdict: the decision and reason, the counterexample if any, and the stage timings."""
-    text = f"{verdict_line(verdict)}. {verdict['reason']}"
+    text = display_text(f"{verdict_line(verdict)}. {verdict['reason']}")
     if verdict["decision"] == "APPROVE":
         st.success(text)
     else:
@@ -105,7 +136,7 @@ def step_card(step: dict, verdict: dict) -> str:
 
 def show_step(step: dict) -> None:
     """What one step saw or produced."""
-    st.markdown(step["summary"])
+    st.markdown(display_text(step["summary"]))
     data = step["data"]
     if data is None:
         return

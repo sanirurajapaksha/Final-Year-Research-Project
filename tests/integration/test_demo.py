@@ -11,7 +11,7 @@ from argus.demo.run import KUBECTL_OUTPUT, verdict_line
 from argus.orchestration.report import compression_report
 from argus.safety import formulation
 
-CART_ADDR, OUT_OF_MEMORY = list(SCENARIOS)
+CART_ADDR, OUT_OF_MEMORY, DISK_FULL = list(SCENARIOS)
 
 
 def demo_settings(tmp_path) -> Settings:
@@ -82,21 +82,47 @@ def test_missing_cart_addr_is_diagnosed_and_the_fix_is_approved(fake_llm, tmp_pa
     assert outcome(list(stages.values()))["kind"] == "approved"
 
 
-def test_unsafe_restart_is_blocked_and_handed_to_a_human(tmp_path):
+def test_unsafe_restart_is_blocked_and_m2_scales_up_first(tmp_path):
     stages = run(OUT_OF_MEMORY, tmp_path)
     check = stages[VERIFY]["details"]["checks"][-1]
     assert check["command"] == "kubectl rollout restart deployment/cart -n shop"
     assert check["verdict"]["decision"] == "BLOCK"
     assert check["verdict"]["counterexample"]["during"] == {"pods_down": 1, "available": 1}
     assert check["execution"] is None  # a blocked write never reaches M4's executor
-    assert stages["M2 · Feedback"]["status"] == "attention"  # M2 knows no other safe fix
+    # M3's counterexample says 2 replicas, 2 needed, 1 down: M2 asks for a third replica first.
+    scale = stages["M2 · Feedback"]["details"]["checks"][-1]
+    assert scale["command"] == "kubectl scale deployment cart --replicas=3 -n shop"
+    assert scale["verdict"]["decision"] == "APPROVE"
+    assert stages["M2 · Feedback"]["status"] == "passed"
+    assert stages["M4 · Execute"]["status"] == "passed"
+    result = outcome(list(stages.values()))
+    assert result["kind"] == "approved" and result["command"] == scale["command"]
+
+
+def test_full_mongodb_volume_is_confirmed_and_handed_to_a_human_with_the_expansion(tmp_path):
+    stages = run(DISK_FULL, tmp_path)
+    m2 = stages["M2 · Diagnose"]["details"]
+    # mongodb-geo sends no spans, but it crash-loops and geo's error names it, so it is the origin.
+    assert m2["candidates"][0] == {"service": "mongodb-geo", "weight": 1.5, "role": "origin", "hops": 0}
+    top = m2["hypotheses"][0]
+    assert (top["component"], top["layer"]) == ("mongodb-geo", "storage")
+    assert m2["stop_reason"] == "confident"
+    assert "kubectl patch pvc geo-pvc -n hotel-reservation" in m2["report_text"]
+    assert '"storage":"2Gi"' in m2["report_text"]
+    assert stages["M2 · Diagnose"]["status"] == "attention"  # the fix is a person's call
+    # The demo has tentative fixes on, so the expansion still goes to the safety layer, which has no
+    # rule for a PVC patch and blocks it; the flow runs on and ends with a person.
+    check = stages[VERIFY]["details"]["checks"][-1]
+    assert check["command"].startswith("kubectl patch pvc geo-pvc -n hotel-reservation")
+    assert check["verdict"]["decision"] == "BLOCK"
+    assert stages["M2 · Feedback"]["status"] == "attention"
     assert stages["M4 · Execute"]["status"] == "attention"
     result = outcome(list(stages.values()))
     assert result["kind"] == "blocked"
-    assert result["text"] == "During the restart 1 of 2 pods would be down, leaving 1; the minimum is 2."
+    assert "A person still decides" in result["text"] and "expand PVC geo-pvc" in result["text"]
 
 
-def test_without_canned_reads_m2_proposes_no_fix_and_m3_has_nothing_to_check(tmp_path):
+def test_without_canned_reads_m2_still_sends_a_tentative_fix_and_a_person_decides(tmp_path):
     batch = json.loads(SCENARIOS[CART_ADDR]["telemetry"].read_text(encoding="utf-8"))
     for record in batch["records"]:
         if record.get("namespace") == "default":
@@ -104,9 +130,12 @@ def test_without_canned_reads_m2_proposes_no_fix_and_m3_has_nothing_to_check(tmp
     stages = {}
     for stage in run_flow(load_telemetry(json.dumps(batch)), demo_settings(tmp_path)):
         stages[stage["name"]] = stage
-    assert stages["M2 · Diagnose"]["status"] == "attention"
-    assert stages[VERIFY]["status"] == "skipped"
-    assert outcome(list(stages.values()))["kind"] == "unsure"
+    m2 = stages["M2 · Diagnose"]
+    assert m2["status"] == "attention" and "not confirmed: tentative fix" in m2["headline"]
+    check = stages[VERIFY]["details"]["checks"][-1]
+    assert check["is_write"] and check["verdict"] is not None  # the safety layer checked it
+    result = outcome(list(stages.values()))
+    assert "A person still decides" in result["text"]
 
 
 def test_the_namespace_comes_from_the_kubernetes_records():
@@ -131,7 +160,7 @@ def test_main_prints_every_stage_and_saves_the_run(monkeypatch, tmp_path, capsys
     printed = capsys.readouterr().out
     for name in STAGES:
         assert name in printed
-    assert "The safety layer blocked the fix" in printed
+    assert "Fix approved by the safety layer" in printed  # the scale-up, after the blocked restart
     assert len(json.loads(saved.read_text(encoding="utf-8"))) == len(STAGES)
 
 

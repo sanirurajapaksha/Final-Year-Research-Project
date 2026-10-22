@@ -40,6 +40,10 @@ CLUES: dict[str, tuple[list[str], list[str]]] = {
         ["no endpoints", "connection refused", "no such host", "no route to host"],
         ["unavailable", "failed to connect", "timeout", "timed out", "deadline exceeded"],
     ),
+    "storage": (
+        ["no space left on device", "enospc", "disk full", "disk pressure"],
+        ["filesystem", "disk", "volume", "pvc"],
+    ),
     "resources": (
         ["oomkilled", "crashloopbackoff", "out of memory"],
         ["restart", "evicted", "memory", "cpu"],

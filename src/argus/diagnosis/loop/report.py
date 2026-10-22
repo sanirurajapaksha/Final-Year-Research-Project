@@ -94,7 +94,9 @@ def _facts(top, probability, confirmed, stop_reason, evidence, verdicts, fix, no
             lines.append(
                 f"{e.id}: {e.command} (FAILED: it returned nothing, so it is not evidence; do not cite it)"
             )
-    if fix is not None:
+    if fix is not None and not confirmed:
+        lines.append(f"Tentative fix, cause NOT confirmed (sent to M3 for checking only): {fix.command}")
+    elif fix is not None:
         lines.append(f"Proposed fix (M3 checks it before anything runs): {fix.command}")
     elif note:
         lines.append(f"No fix proposed: {note}")
@@ -126,7 +128,10 @@ def _template(top, probability, confirmed, stop_reason, evidence, verdicts, fix,
             f"Unconfirmed: the best guess is {top.label()} ({probability:.0%}) after {reads}; "
             f"stop reason: {stop_reason}."
         )
-    if fix is not None:
+    if fix is not None and not confirmed:
+        tail = " Tentative fix, sent to M3 for checking only because the cause is not confirmed: "
+        tail += fix.command
+    elif fix is not None:
         tail = f" Proposed fix, to be checked by M3: {fix.command}"
     elif note:
         tail = f" {note}"

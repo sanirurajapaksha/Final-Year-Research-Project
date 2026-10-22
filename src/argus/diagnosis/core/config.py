@@ -1,5 +1,6 @@
 """M2 settings: loop budgets, mechanism flags and the ablation presets (A1-A5)."""
 
+import os
 from dataclasses import dataclass, field, replace
 from typing import Literal
 
@@ -34,9 +35,17 @@ class DiagnosisConfig:
     # Who drafts hypotheses: "llm" uses the LLM when one is configured and falls back to the rules
     # (so with no key it behaves exactly like "rules"); "rules" never asks the LLM, for the R-* baselines.
     generator: Literal["llm", "rules"] = "llm"
+    # When the reads don't confirm the top hypothesis, still send its fix to M3, labelled TENTATIVE, so
+    # the safety layer and M4 run on every incident. None reads ARGUS_M2_TENTATIVE_FIXES (off unless set),
+    # so the demo can turn it on without changing how it builds this config. M4 executes whatever M3
+    # approves, so keep it off wherever the executor is not a stub.
+    tentative_fixes: bool | None = None
     params: Params = field(default_factory=Params)
 
     def __post_init__(self) -> None:
+        if self.tentative_fixes is None:
+            switch = os.environ.get("ARGUS_M2_TENTATIVE_FIXES", "").strip().lower()
+            object.__setattr__(self, "tentative_fixes", switch in ("1", "true", "yes", "on"))
         # Older callers pass True/False: True meant the Almanac's prior, False meant none.
         if self.graph_priors is True:
             object.__setattr__(self, "graph_priors", "almanac")

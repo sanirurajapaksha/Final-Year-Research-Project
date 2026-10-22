@@ -104,3 +104,26 @@ def test_endpoints_only_reads_the_components_own_row():
         "H1": "strong-refute"
     }  # another service's <none> doesn't count
     assert verdicts(header + "ad          <none>             3d") == {"H1": "strong-support"}
+
+
+def test_a_crash_loop_that_ended_for_another_reason_refutes_the_resources_fault():
+    crashed = (
+        "Reason: CrashLoopBackOff\nLast State:     Terminated\n  Reason:       Error\n  Exit Code:    14"
+    )
+    assert score(DESCRIBE, crashed) == {"H3": "strong-refute"}  # it stopped itself: no limit killed it
+    killed = crashed.replace("14", "137")
+    assert score(DESCRIBE, killed) == {"H3": "strong-support"}  # SIGKILL: the OOM killer, unlabelled
+
+
+def test_enospc_in_the_last_logs_supports_a_full_volume():
+    logs = "kubectl logs deployment/cart -n default --previous --tail=50"
+    hyps = {"H4": HypothesisSpec(component="cart", layer="storage", fault="f", test=logs)}
+
+    def verdicts(output: str) -> dict[str, str]:
+        evidence = Evidence(id="E1", hyp_id="H4", command=logs, output=output, ok=True)
+        return RuleScorer().score(evidence, hyps, CTX)
+
+    assert verdicts("pwrite: failed to write 4096 bytes: No space left on device") == {"H4": "strong-support"}
+    assert verdicts("write error: ENOSPC") == {"H4": "strong-support"}
+    assert verdicts("listening on :7070") == {"H4": "weak-refute"}  # the tail may have cut it off
+    assert verdicts("") == {}

@@ -118,3 +118,11 @@ def test_a_failed_read_is_never_citable():
     sent = llm.prompts[0][1]
     assert [e["id"] for e in sent["evidence"]] == ["E1"]
     assert any("E2" in line and "not evidence" in line for line in sent["facts"])
+
+
+def test_template_for_a_tentative_fix_says_it_is_not_confirmed():
+    text, _ = ReportWriter().write(TOP, 0.62, False, "out of hypotheses", [E1], {}, FIX, "", CTX)
+    assert text.startswith("Unconfirmed: the best guess is cart")
+    assert text.endswith(
+        f"Tentative fix, sent to M3 for checking only because the cause is not confirmed: {FIX.command}"
+    )
