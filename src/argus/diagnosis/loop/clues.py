@@ -10,7 +10,11 @@ The score is capped between 0.1 and 0.9, so log text alone can never decide: a r
 
 Phrases match whole words only ("env" is not in "envoy"), and an address variable must look like one:
 an upper-case env var name ending in _ADDR, _HOST or _URL (CART_ADDR), not an access-log field such
-as remote_addr or peer_addr.
+as remote_addr or peer_addr. For the phrases, "_" separates words, so M1's own signal names match
+(memory_utilization -> "memory", restart_count -> "restart"), and a word may take a plain ending
+(-s, -es, -ed, -ing), so "restart" also matches "restarted" and "timeout" matches "timeouts".
+A Running pod lowers resources only when nothing in the lines points at resources at all: a memory
+spike or six restarts on a running pod is still a weak clue.
 
 Caveat: the phrase table was written with scenario_01's CART_ADDR line in view, so how well rule mode
 does on scenario_01 mostly shows that the table fits it. Results on other cases (the fixtures in
@@ -38,7 +42,7 @@ CLUES: dict[str, tuple[list[str], list[str]]] = {
     ),
     "resources": (
         ["oomkilled", "crashloopbackoff", "out of memory"],
-        ["restart", "evicted", "memory"],
+        ["restart", "evicted", "memory", "cpu"],
     ),
 }
 # A strong app-config clue on the original (not lower-cased) text: an env var naming an address.
@@ -53,19 +57,20 @@ def layer_score(service: str, layer: str, ctx: DiagContext) -> float:
     strong, weak = CLUES[layer]
     status = ctx.node_status.get(service, "")
     text = " ".join([*_own_lines(service, ctx.symptoms), status])
-    lowered = text.lower()
-    if any(_has(p, lowered) for p in strong) or (layer == "app-config" and ADDRESS_VAR.search(text)):
+    words = text.lower().replace("_", " ")  # M1's signal names use _ between words
+    if any(_has(p, words) for p in strong) or (layer == "app-config" and ADDRESS_VAR.search(text)):
         return STRONG
+    if any(_has(p, words) for p in weak):
+        return WEAK  # checked before the pod status: a weak clue beats "the pod is up"
     if layer == "resources" and status.lower() in HEALTHY:
         return LOWEST  # the pod is up and nothing says otherwise
-    if any(_has(p, lowered) for p in weak):
-        return WEAK
     return NONE
 
 
 def _has(phrase: str, text: str) -> bool:
-    """`phrase` occurs in `text` as whole words: "env" matches "env var" but not "envoy"."""
-    return re.search(rf"(?<![\w-]){re.escape(phrase)}(?![\w-])", text) is not None
+    """`phrase` occurs in `text` as whole words, allowing a plain ending: "restart" matches "restarted"
+    and "restarts", "timeout" matches "timeouts"; "env" still doesn't match "envoy"."""
+    return re.search(rf"(?<![\w-]){re.escape(phrase)}(?:s|es|ed|ing)?(?![\w-])", text) is not None
 
 
 def _own_lines(service: str, symptoms: list[str]) -> list[str]:

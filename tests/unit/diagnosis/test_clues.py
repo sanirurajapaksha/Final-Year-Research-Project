@@ -105,3 +105,51 @@ def test_clues_on_the_other_fixtures(m2_context, name, service, expected):
     context, _ = m2_context(name)
     diag = adapt(context, "ns")
     assert {layer: layer_score(service, layer, diag) for layer in expected} == expected
+
+
+# ---------- review #40 (2nd round): M1's own signal names, word endings, and Running ----------
+
+
+def m1_stage1_context():
+    """M1's real Stage 1 output on scenario_01: it keeps the memory spike and the restarts (noise)."""
+    from pathlib import Path
+
+    from argus.context.service import build_context
+    from argus.contracts import TelemetryBatch
+    from argus.orchestration.service import compress
+
+    path = Path(__file__).resolve().parents[3] / "data" / "fixtures" / "m1" / "scenario_01" / "telemetry.json"
+    batch = TelemetryBatch.model_validate_json(path.read_text(encoding="utf-8"))
+    return adapt(build_context(compress(batch), strategy="stage1"), "ns")
+
+
+def test_m1_resource_signal_lines_are_weak_resource_clues():
+    diag = m1_stage1_context()
+    assert "product-catalog: memory_utilization (memory_utilization=0.94 > 0.9)" in diag.symptoms
+    assert layer_score("product-catalog", "resources", diag) == WEAK
+    assert layer_score("metrics-server", "resources", diag) == WEAK  # restart_count ... restarted 6 times
+
+
+@pytest.mark.parametrize(
+    "line, layer",
+    [
+        ("cart: memory_utilization (memory_utilization=0.94 > 0.9)", "resources"),
+        ("cart: cpu_utilization (cpu_utilization=0.97 > 0.9)", "resources"),
+        ("cart: restart_count (Pod cart-6b7c9 restarted 6 times)", "resources"),
+        ("cart: log_error (container restarts: 4)", "resources"),
+        ("cart: log_error (upstream timeouts after 5s)", "k8s-network"),
+    ],
+)
+def test_a_running_pod_does_not_hide_a_resource_or_network_signal(line, layer):
+    running = ctx(line, status={"cart": "Running"})
+    assert layer_score("cart", layer, running) == WEAK
+
+
+def test_a_running_pod_with_no_resource_signal_still_lowers_resources():
+    running = ctx("cart: log_error (CART_ADDR environment variable not set)", status={"cart": "Running"})
+    assert layer_score("cart", "resources", running) == LOWEST
+
+
+def test_endings_do_not_make_unrelated_words_match():
+    assert layer_score("cart", "app-config", ctx("cart: log_error (envoy upstream reset)")) == NONE
+    assert layer_score("cart", "resources", ctx("cart: log_error (restartable job queued)")) == NONE
