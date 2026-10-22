@@ -316,13 +316,13 @@ def outcome(stages: list[dict]) -> dict:
     if not m2["low_confidence"] and m2["hypotheses"]:
         return {
             "kind": "handoff",
-            "title": "Root Cause Diagnosis found the cause; the incident goes to a human for a safe fix",
+            "title": "The cause was found; the incident goes to a human for a safe fix",
             "command": None,
             "text": m2["report_text"],
         }
     return {
         "kind": "unsure",
-        "title": "Root Cause Diagnosis is not confident enough to propose a fix; "
+        "title": "The diagnosis is not confident enough to propose a fix; "
         "the incident goes to a human",
         "command": None,
         "text": by_name["M2 · Diagnose"]["headline"],
@@ -364,7 +364,7 @@ def routing_record(stages: list[dict]) -> dict:
         by_name[stage["name"]] = stage
     diagnosis = by_name["M2 · Diagnose"]["details"]["diagnosis"]
     actions = by_name[VERIFY]["details"]["checks"]
-    rounds = [{"title": "Root Cause Diagnosis", "hypotheses": diagnosis["hypotheses"], "actions": actions}]
+    rounds = [{"title": "Diagnose Cause", "hypotheses": diagnosis["hypotheses"], "actions": actions}]
     return {"context": by_name["M1 · Context"]["details"]["context"], "rounds": rounds}
 
 

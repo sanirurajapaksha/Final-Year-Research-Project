@@ -19,9 +19,9 @@ LABELS = {
     "failed": "Failed",
 }
 MODULE_NAMES = {
-    "M1": "Context Analysis",
-    "M2": "Root Cause Diagnosis",
-    "M3": "Safety Verification",
+    "M1": "Build Context",
+    "M2": "Diagnose Cause",
+    "M3": "Verify Safety",
     "M4": "Action Orchestration",
 }
 STAGE_LABELS = {
@@ -39,17 +39,6 @@ _MODULE_ID = re.compile(r"\bM[1-4]\b")
 def display_text(value: str) -> str:
     """Use module names in displayed prose without changing the underlying run data."""
     return _MODULE_ID.sub(lambda match: MODULE_NAMES[match.group()], value)
-
-
-def display_data(value):
-    """Return a UI copy of nested data with readable module names in text fields."""
-    if isinstance(value, str):
-        return display_text(value)
-    if isinstance(value, list):
-        return [display_data(item) for item in value]
-    if isinstance(value, dict):
-        return {key: display_data(item) for key, item in value.items()}
-    return value
 
 
 def stage_label(name: str) -> str:

@@ -6,7 +6,7 @@ One page, drawn like a CI pipeline. Choose a sample incident or upload a telemet
 Telemetry → Prepare Telemetry → Build Context → Diagnose Cause → Verify Safety → Revise Plan → Execute Action
 ```
 
-Under the pipeline, each stage opens to show how it reached its result. Context Analysis shows the service graph and pruned signals. Root Cause Diagnosis has three tabs: **Belief & Evidence** compares starting and final belief and shows the diagnostic reads; **Diagnosis Summary** explains the leading hypothesis and its read assessments; **Fixes** lists proposed commands and their review status. Safety Verification shows the verdict, counterexample and cluster facts. Action Orchestration shows how it handled each action.
+Under the pipeline, each stage opens to show how it reached its result. Build Context shows the service graph and pruned signals. Diagnose Cause has three tabs: **Belief & Evidence** compares starting and final belief and shows the diagnostic reads; **Diagnosis Summary** explains the leading hypothesis and its read assessments; **Fixes** lists proposed commands and their review status. Verify Safety shows the verdict, counterexample and cluster facts. Action Orchestration shows how it handled each action.
 
 The **Verify Safety** stage (the Proactive Formal Verification Safety Layer) also draws its own steps for each write, in order:
 

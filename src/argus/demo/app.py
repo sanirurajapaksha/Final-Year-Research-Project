@@ -22,7 +22,6 @@ from argus.demo.views import (
     LABELS,
     STYLE,
     card,
-    display_data,
     display_text,
     show_steps,
     show_verdict,
@@ -116,7 +115,7 @@ def show_compress(details: dict) -> None:
             {"check": "Alert time preserved", "passed": details["alert_time_preserved"]},
         ]
     )
-    with st.expander("Compressed input passed to Context Analysis"):
+    with st.expander("Compressed input passed to Build Context"):
         st.code(details["tsv"], language="text")
 
 
@@ -129,15 +128,15 @@ def show_context(details: dict) -> None:
         signals_in.metric("Signals in", nrr["raw"])
         stage1.metric("NRR after Stage 1", f"{nrr['stage1']:.2f}")
         stage2.metric("NRR after Stage 2", f"{nrr['stage2']:.2f}", f"{nrr['stage2'] - nrr['stage1']:+.2f}")
-    compute.metric("Context analysis time", f"{details['compute_ms']:.2f} ms")
+    compute.metric("Build Context time", f"{details['compute_ms']:.2f} ms")
     st.caption(
         "NRR = 1 − kept / signals in (metric, log and k8s records; spans only build the graph). "
-        "Labelled NRR and false-prune rate need an answer key; see the Context Analysis experiments."
+        "Labelled NRR and false-prune rate need an answer key; see the context-filtering experiments."
     )
 
     graph = details["graph"]
     if graph is None:
-        st.info("No traces in the window, so Context Analysis ran its noise filter only (no service graph).")
+        st.info("No traces in the window, so Build Context ran its noise filter only (no service graph).")
     else:
         left, right = st.columns([3, 2])
         left.graphviz_chart(graph_dot(details))
@@ -162,8 +161,8 @@ def show_context(details: dict) -> None:
         )
     st.dataframe(rows, hide_index=True)
     st.caption(display_text(details["notes"]))
-    st.markdown("**Sent to Root Cause Diagnosis: the SemanticContext**")
-    st.json(display_data(details["context"]), expanded=1)
+    st.markdown("**Exact SemanticContext sent to Diagnose Cause**")
+    st.json(details["context"], expanded=1)
 
 
 def show_diagnosis(details: dict) -> None:
@@ -295,7 +294,7 @@ def show_diagnosis_fixes(details: dict) -> None:
     left, right = st.columns(2)
     left.metric("Proposed fixes", len(writes))
     right.metric("Further read actions", len(reads))
-    st.caption("These are diagnosis proposals. Safety Verification checks every write before execution.")
+    st.caption("These are diagnosis proposals. Verify Safety checks every write before execution.")
 
     if not writes:
         st.info("No write fix was proposed. See the diagnosis summary for the recommended next step.")
@@ -355,9 +354,9 @@ def show_verify(details: dict) -> None:
 
 def show_feedback(details: dict | None) -> None:
     if details is None:
-        st.caption("Nothing was blocked, so Root Cause Diagnosis was not asked again.")
+        st.caption("Nothing was blocked, so no diagnosis feedback was needed.")
         return
-    st.caption("The safety decision and counterexample returned to Root Cause Diagnosis. Its answer:")
+    st.caption("The safety decision and counterexample returned to Diagnose Cause. Its answer:")
     if details["diagnosis"]["hypotheses"]:
         for line in details["diagnosis"]["hypotheses"][0]["evidence"]:
             if line.startswith("M3 blocked"):  # M2 writes this line
@@ -507,7 +506,7 @@ for stage in stages:
 st.divider()
 with st.expander("Action Orchestration: offline model routing replay (not part of the run)"):
     st.caption(
-        "The run calls Root Cause Diagnosis directly. This replays its answer through the "
+        "The run calls the diagnosis service directly. This replays its answer through the "
         "orchestration router with scripted model answers and invented costs; no model is called."
     )
     left, right = st.columns(2)

@@ -112,6 +112,10 @@ def test_pipeline_uses_descriptive_names_without_module_numbers(page, sample):
     ):
         assert label in page_text
     assert re.search(r"\bM[1-4]\b", page_text) is None
+    for old_name in ("Context Analysis", "Root Cause Diagnosis", "Safety Verification"):
+        assert old_name not in page_text
+    context = app.session_state["stages"][2]["details"]["context"]
+    assert any(json.loads(item.value) == context for item in app.json)
 
 
 @pytest.mark.parametrize("model_outcome", ["Success", "Invalid output", "Model error"])
