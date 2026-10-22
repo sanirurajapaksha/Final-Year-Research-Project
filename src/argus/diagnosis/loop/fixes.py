@@ -12,7 +12,7 @@ M2 only proposes: M4 sends each write to M3, and nothing here runs a command.
 import json
 import re
 
-from argus.contracts import ProposedAction
+from argus.contracts import ProposedAction, SafetyVerdict
 from argus.diagnosis.core.models import DiagContext, HypothesisSpec
 
 # DEMO KNOWLEDGE, not discovered: the address each *_ADDR variable should hold in the
@@ -55,6 +55,55 @@ def patch_env_command(target: str, var: str, value: str, namespace: str) -> str:
 def restart_command(target: str, namespace: str) -> str:
     """Rolling restart: new pods come up before old ones go, so the service stays available."""
     return f"kubectl rollout restart deployment/{target} -n {namespace}"
+
+
+def scale_command(target: str, replicas: int, namespace: str) -> str:
+    """Set the replica count (M3's parser reads exactly this form)."""
+    return f"kubectl scale deployment {target} --replicas={replicas} -n {namespace}"
+
+
+def stopgap_restart(top: HypothesisSpec, namespace: str) -> ProposedAction:
+    """A restart offered when no command fixes `top`: it clears the bad state, a person fixes the cause."""
+    return ProposedAction(
+        command=restart_command(top.component, namespace),
+        is_write=True,
+        target_namespace=namespace,
+        rationale=f"stopgap only: restart {top.component}; it does not fix {top.label()}, a person must",
+    )
+
+
+def scale_up_for_restart(
+    top: HypothesisSpec, namespace: str, verdict: SafetyVerdict
+) -> ProposedAction | None:
+    """After M3 blocked the restart for leaving too few pods up: add replicas so the restart fits.
+
+    Uses M3's counterexample only when every number in it came from the cluster, not from the solver
+    (a missing fact is chosen by Z3 to break the rule, so it says nothing about the real deployment).
+    """
+    example = verdict.counterexample or {}
+    before = example.get("before", {})
+    if (
+        "during" not in example
+        or "min_available_during_restart" not in verdict.violated_invariants
+        or example.get("missing_facts_chosen_by_solver")
+    ):
+        return None
+    try:
+        replicas, minimum = int(before["replicas"]), int(before["min_replicas"])
+        down = int(before["max_unavailable"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    # Enough that `down` pods may go during the restart and `minimum` still stay up.
+    target = max(replicas + 1, minimum + max(down, 1))
+    return ProposedAction(
+        command=scale_command(top.component, target, namespace),
+        is_write=True,
+        target_namespace=namespace,
+        rationale=(
+            f"scale {top.component} from {replicas} to {target} replicas so a rolling restart keeps "
+            f"{minimum} available; then restart it ({top.label()})"
+        ),
+    )
 
 
 def _set_address(top: HypothesisSpec, ctx: DiagContext) -> ProposedAction | None:

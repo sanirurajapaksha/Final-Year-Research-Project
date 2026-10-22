@@ -227,9 +227,68 @@ def test_a_full_volume_gets_no_write_but_the_expansion_for_a_person():
     )
     assert "storage class standard" in outcome.note
     assert [e.id for e in outcome.lookups] == ["L1", "L2"]
+    # The same command, as the write a person would run: sent to M3 only when tentative fixes are on.
+    assert outcome.for_human.command == (
+        'kubectl patch pvc db-pvc -n default -p \'{"spec":{"resources":{"requests":{"storage":"10Gi"}}}}\''
+    )
 
 
 def test_a_full_volume_without_a_readable_pvc_still_hands_over_without_guessing_a_name():
     outcome = FixProposer().propose(hyp("storage", "db"), CTX, [], {})
     assert outcome.action is None
     assert "expand the PVC that db mounts" in outcome.note and "kubectl patch" not in outcome.note
+    # No PVC to name, so the person gets a stopgap restart instead, so the flow still has a command.
+    assert outcome.for_human.command == "kubectl rollout restart deployment/db -n default"
+    assert outcome.for_human.rationale.startswith("stopgap only")
+
+
+def test_a_code_bug_gets_a_stopgap_restart_for_a_person():
+    outcome = FixProposer().propose(hyp("code"), CTX, [E1], {})
+    assert outcome.action is None and outcome.note == HUMAN_NOTE
+    assert outcome.for_human.command == RESTART and "a person must" in outcome.for_human.rationale
+
+
+def test_no_template_or_rule_still_gives_a_stopgap_unless_m3_blocked_it():
+    outcome = FixProposer().propose(hyp("unknown-layer"), CTX, [E1], {})
+    assert outcome.action is None and outcome.for_human.command == RESTART
+    block = SafetyVerdict(command=RESTART, decision=GateDecision.BLOCK, reason="no cluster facts")
+    outcome = FixProposer().propose(hyp("unknown-layer"), CTX, [E1], {RESTART: block})
+    assert outcome.for_human is None  # never send M3 a command it already blocked
+
+
+def restart_block(missing=()):
+    return SafetyVerdict(
+        command=RESTART,
+        decision=GateDecision.BLOCK,
+        reason="min_available_during_restart violated",
+        violated_invariants=["min_available_during_restart"],
+        counterexample={
+            "before": {"replicas": 2, "min_replicas": 2, "max_unavailable": 1},
+            "during": {"pods_down": 1, "available": 1},
+            "missing_facts_chosen_by_solver": list(missing),
+        },
+    )
+
+
+def test_a_restart_blocked_for_too_few_pods_gets_a_scale_up_first():
+    outcome = FixProposer().propose(hyp("resources"), CTX, [E1], {RESTART: restart_block()})
+    assert outcome.action.command == "kubectl scale deployment cart --replicas=3 -n default"
+    assert "then restart it" in outcome.action.rationale
+    assert "M3 blocked the restart" in outcome.note
+
+
+def test_no_scale_up_when_the_solver_chose_the_numbers():
+    blocked = {RESTART: restart_block(missing=["replicas"])}
+    outcome = FixProposer().propose(hyp("resources"), CTX, [E1], blocked)
+    assert outcome.action is None and "no other safe fix" in outcome.note
+    assert outcome.for_human is None
+
+
+def test_a_blocked_scale_up_is_not_proposed_again():
+    scale = "kubectl scale deployment cart --replicas=3 -n default"
+    blocked = {
+        RESTART: restart_block(),
+        scale: SafetyVerdict(command=scale, decision=GateDecision.BLOCK, reason="test"),
+    }
+    outcome = FixProposer().propose(hyp("resources"), CTX, [E1], blocked)
+    assert outcome.action is None and outcome.for_human is None

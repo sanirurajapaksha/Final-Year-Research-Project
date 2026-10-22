@@ -49,10 +49,10 @@ def test_the_cart_addr_incident_ends_with_an_approved_fix(page):
     assert any("Safety layer: APPROVE" in success.value for success in app.success)  # inside its stage
 
 
-def test_the_out_of_memory_incident_ends_with_a_block_and_a_human(page):
+def test_the_out_of_memory_restart_is_blocked_then_the_scale_up_approved(page):
     app = run_sample(page, OUT_OF_MEMORY)
-    assert any("The safety layer blocked the fix" in error.value for error in app.error)
     assert any("Safety layer: BLOCK (z3: sat)" in error.value for error in app.error)
+    assert any("Fix approved by the safety layer" in success.value for success in app.success)
 
 
 def table_with_columns(app, *columns):

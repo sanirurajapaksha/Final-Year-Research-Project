@@ -12,7 +12,10 @@ only picks HOW to repair it, and has the least freedom of any step:
   - a fault in the service's own code gets no command: a person has to change the code;
   - a full data volume gets no command either: a restart crashes again on the same full disk, and
     deleting the PVC loses the data. M2 reads the deployment and its PVC and hands a person the
-    expansion command instead (M3 has no rule for `kubectl patch pvc`, so it can't check one).
+    expansion command instead (M3 has no rule for `kubectl patch pvc`, so it can't check one);
+  - when M3 blocked a restart because too few pods would stay up, M2 proposes scaling up first;
+  - whenever there is still no command, a restart is offered as a stopgap for a person (`for_human`).
+With tentative fixes on, a `for_human` command still goes to M3 too, so the rest of the flow runs.
 For an app-config fault M2 first runs one more read-only command, `kubectl get services`, so the right
 address can come from the cluster. With no LLM, or after the tries run out, the rule fixes in fixes.py
 are used, checked against M3's blocks exactly as before.
@@ -28,7 +31,13 @@ from pydantic import BaseModel
 from argus.contracts import ProposedAction, SafetyVerdict
 from argus.diagnosis.core.models import DiagContext, Evidence, HypothesisSpec
 from argus.diagnosis.loop.context_adapter import NAMED_SERVICE, NOT_A_SERVICE
-from argus.diagnosis.loop.fixes import patch_env_command, propose_fix, restart_command
+from argus.diagnosis.loop.fixes import (
+    patch_env_command,
+    propose_fix,
+    restart_command,
+    scale_up_for_restart,
+    stopgap_restart,
+)
 from argus.diagnosis.loop.generator import SERVICE_NAME
 from argus.diagnosis.ports.base import LLMClient, LLMUnavailable, ReadExecutor, guarded_run
 from argus.diagnosis.ports.fakes import NoLLM, NullReadExecutor
@@ -73,6 +82,10 @@ class FixOutcome:
     source: Literal["llm", "rules", "none"]
     note: str = ""  # why there is no write, when there is none
     lookups: list[Evidence] = field(default_factory=list)  # extra reads run for this step
+    # The write M2 recommends to a person instead (a full volume's PVC expansion, or a stopgap restart).
+    # Not proposed on its own; with tentative fixes on, service.py still sends it to M3 so the safety
+    # layer and M4 run.
+    for_human: ProposedAction | None = None
 
 
 def blocked_note(verdict: SafetyVerdict) -> str:
@@ -98,16 +111,41 @@ class FixProposer:
         evidence: list[Evidence],
         blocked: dict[str, SafetyVerdict],
     ) -> FixOutcome:
+        outcome = self._propose(top, ctx, evidence, blocked)
+        if outcome.action is None and outcome.for_human is None:
+            # Still a command, so the flow runs on: a restart that clears the bad state, labelled as a
+            # stopgap for a person (unless M3 blocked it, or the component is not a deployment name).
+            stopgap = stopgap_restart(top, ctx.namespace)
+            if SERVICE_NAME.fullmatch(top.component) and stopgap.command not in blocked:
+                outcome.for_human = stopgap
+        return outcome
+
+    def _propose(self, top, ctx, evidence, blocked) -> FixOutcome:
         if top.layer in HUMAN_LAYERS:
             return FixOutcome(None, "none", HUMAN_NOTE)
         if top.layer == "storage":
             return self._storage_handoff(top, ctx)
+        scale = self._scale_up(top, ctx, blocked)
+        if scale is not None:
+            return scale
         allowed = [t for t, (layers, _, _) in TEMPLATES.items() if top.layer in layers]
         if allowed and not isinstance(self.llm, NoLLM):
             outcome = self._ask(top, ctx, evidence, blocked, allowed)
             if outcome is not None:
                 return outcome
         return self._rules(top, ctx, blocked)
+
+    def _scale_up(self, top, ctx, blocked) -> FixOutcome | None:
+        """M3 blocked the restart because too few pods would stay up: add replicas first, if M3 allows."""
+        verdict = blocked.get(restart_command(top.component, ctx.namespace))
+        action = scale_up_for_restart(top, ctx.namespace, verdict) if verdict is not None else None
+        if action is None or action.command in blocked:
+            return None
+        note = (
+            f"M3 blocked the restart: {verdict.reason}. M2 proposes scaling {top.component} up first, "
+            "so the restart keeps enough pods available; the restart follows once the new pods are ready."
+        )
+        return FixOutcome(action, "rules", note)
 
     # ---------- the LLM path ----------
 
@@ -239,7 +277,15 @@ class FixProposer:
         if storage_class:
             note += f" (storage class {storage_class} must allow volume expansion)"
         note += ", then let the pod restart; or free space on the volume."
-        return FixOutcome(None, "none", note, lookups)
+        if bigger is None:
+            return FixOutcome(None, "none", note, lookups)
+        expand = ProposedAction(
+            command=f"kubectl patch pvc {claim} -n {ns} -p '{patch}'",
+            is_write=True,
+            target_namespace=ns,
+            rationale=f"Expand PVC {claim} from {size} to {bigger}: the data volume is full ({top.label()})",
+        )
+        return FixOutcome(None, "none", note, lookups, for_human=expand)
 
     # ---------- the rule fallback ----------
 

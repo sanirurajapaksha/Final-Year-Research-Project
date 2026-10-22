@@ -54,6 +54,10 @@ RULE_NAMES = {
     "replicas_in_int32_range": "an invalid replica count",
 }
 
+# How M2 labels a fix it sends for checking only (the start of its rationale, see diagnosis/service.py).
+FOR_HUMAN = "FOR A HUMAN"
+TENTATIVE = "TENTATIVE"
+
 # The safety layer's stage. Its real name: the Proactive Formal Verification Safety Layer.
 VERIFY = "Formal Verification"
 
@@ -105,7 +109,9 @@ def run_flow(batch: TelemetryBatch, settings: Settings) -> Iterator[dict]:
     """Run one incident through every module, yielding each stage (in STAGES order) when it ends."""
     namespace = namespace_of(batch)
     reads = canned_reads()
-    config = DiagnosisConfig(namespace=namespace)
+    # Tentative fixes on: M2 sends a fix to the safety layer even when the reads did not confirm the
+    # cause, or the fix is a person's call, so every stage runs. Safe only because the executor is a stub.
+    config = DiagnosisConfig(namespace=namespace, tentative_fixes=True)
 
     # Telemetry: what came in.
     started = time.perf_counter()
@@ -168,12 +174,14 @@ def run_flow(batch: TelemetryBatch, settings: Settings) -> Iterator[dict]:
     started = time.perf_counter()
     blocked = blocked_verdicts(checks)
     feedback_checks = []
+    for_a_person = labelled_commands(diagnosis.actions)
     if not blocked:
         yield _stage("M2 · Feedback", "skipped", "nothing was blocked", started, None)
     else:
         m2_again = diagnose_report(context, blocked, config=config, reads=reads)
         revised = DiagnosisResult.model_validate(m2_again["diagnosis"])
         feedback_checks = handle_all(revised.actions, settings)
+        for_a_person |= labelled_commands(revised.actions)
         status, line = _feedback_line(feedback_checks)
         details = {"diagnosis": m2_again["diagnosis"], "checks": feedback_checks}
         yield _stage("M2 · Feedback", status, line, started, details)
@@ -182,8 +190,14 @@ def run_flow(batch: TelemetryBatch, settings: Settings) -> Iterator[dict]:
     started = time.perf_counter()
     every_check = checks + feedback_checks
     approved = approved_writes(every_check)
-    if approved:
-        status, line = "passed", f"{len(approved)} approved fix sent to the executor (stub)"
+    automatic = [row for row in approved if row["command"] not in for_a_person]
+    if automatic:
+        status, line = "passed", f"{len(automatic)} approved fix sent to the executor (stub)"
+    elif approved:
+        # M2 labelled it TENTATIVE or FOR A HUMAN: approved by the safety layer, but a person runs it.
+        status, line = "attention", "approved fix awaits a person's decision (labelled by M2)"
+    elif for_a_person:
+        status, line = "attention", "no approved fix: M2's recommended command goes to a person"
     else:
         status, line = "attention", "no approved fix: hand the incident to a human"
     yield _stage("M4 · Execute", status, line, started, {"actions": every_check})
@@ -239,6 +253,11 @@ def blocked_verdicts(checks: list[dict]) -> list[SafetyVerdict]:
     return blocked
 
 
+def labelled_commands(actions: list[ProposedAction]) -> set[str]:
+    """The writes M2 sent for checking only (TENTATIVE or FOR A HUMAN): a person decides on these."""
+    return {a.command for a in actions if a.is_write and a.rationale.startswith((FOR_HUMAN, TENTATIVE))}
+
+
 def approved_writes(checks: list[dict]) -> list[dict]:
     """The writes the safety layer approved."""
     approved = []
@@ -269,13 +288,22 @@ def outcome(stages: list[dict]) -> dict:
     if feedback is not None:
         checks = checks + feedback["checks"]
 
+    m2 = by_name["M2 · Diagnose"]["details"]
+    # A fix M2 sent for checking only (a person's call, or unconfirmed): a person still decides,
+    # so M2's report, with its recommendation, stays in the outcome whatever the safety layer said.
+    for_checking = []
+    proposed = m2["diagnosis"]["actions"] + (feedback["diagnosis"]["actions"] if feedback is not None else [])
+    for action in proposed:
+        if action["is_write"] and action["rationale"].startswith((FOR_HUMAN, TENTATIVE)):
+            for_checking.append(action)
+    still_human = f"\n\nA person still decides. M2's report: {m2['report_text']}" if for_checking else ""
     approved = approved_writes(checks)
     if approved:
         return {
             "kind": "approved",
-            "title": "Fix approved by the safety layer",
+            "title": "Fix approved by the safety layer" + (", but a person decides" if for_checking else ""),
             "command": approved[0]["command"],
-            "text": in_plain_words(approved[0]["verdict"]),
+            "text": in_plain_words(approved[0]["verdict"]) + still_human,
         }
     blocked = blocked_verdicts(checks)
     if blocked:
@@ -283,9 +311,8 @@ def outcome(stages: list[dict]) -> dict:
             "kind": "blocked",
             "title": "The safety layer blocked the fix, so the incident goes to a human",
             "command": blocked[0].command,
-            "text": in_plain_words(blocked[0].model_dump(mode="json")),
+            "text": in_plain_words(blocked[0].model_dump(mode="json")) + still_human,
         }
-    m2 = by_name["M2 · Diagnose"]["details"]
     if not m2["low_confidence"] and m2["hypotheses"]:
         return {
             "kind": "handoff",
@@ -346,6 +373,10 @@ def _diagnosis_line(m2: dict, diagnosis: DiagnosisResult) -> tuple[str, str]:
     top = m2["hypotheses"][0]
     line = f"{top['component']} [{top['layer']}] at {top['probability']:.0%}"
     for action in diagnosis.actions:
+        if action.is_write and action.rationale.startswith(FOR_HUMAN):
+            return "attention", line + "; confirmed, the fix is a person's call: sent for checking anyway"
+        if action.is_write and action.rationale.startswith(TENTATIVE):
+            return "attention", line + "; not confirmed: tentative fix sent for checking"
         if action.is_write:
             return "passed", line + "; proposes a fix"
     if not m2["low_confidence"]:

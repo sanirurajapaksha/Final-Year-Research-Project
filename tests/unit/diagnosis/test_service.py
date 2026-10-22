@@ -196,12 +196,23 @@ def test_an_unconfirmed_fix_goes_to_m3_labelled_tentative_when_switched_on():
     assert "Tentative fix, sent to M3 for checking only" in report["report_text"]
 
 
-def test_no_tentative_fix_for_a_guess_the_reads_nearly_ruled_out():
+def test_a_guess_the_reads_nearly_ruled_out_gets_a_low_confidence_fix():
     context = CONTEXT.model_copy(update={"anomalies": [CART_LOG]})
     refuted = {"H1": "strong-refute", "H2": "strong-refute", "H3": "strong-refute"}
     llm = FakeLLM({"score": [{"verdicts": refuted}] * 10})
     reads = FakeReadExecutor({CART_DEPLOYMENT: "a healthy deployment"})
     result = diagnose(context, config=TENTATIVE, llm=llm, reads=reads)
+    writes = [a for a in result.actions if a.is_write]
+    assert len(writes) == 1 and writes[0].rationale.startswith("TENTATIVE (low confidence, ")
+    assert "labelled low confidence" in result.hypotheses[0].evidence[-1]
+
+
+def test_with_tentative_off_a_weak_guess_still_gets_no_write():
+    context = CONTEXT.model_copy(update={"anomalies": [CART_LOG]})
+    refuted = {"H1": "strong-refute", "H2": "strong-refute", "H3": "strong-refute"}
+    llm = FakeLLM({"score": [{"verdicts": refuted}] * 10})
+    reads = FakeReadExecutor({CART_DEPLOYMENT: "a healthy deployment"})
+    result = diagnose(context, config=DiagnosisConfig(tentative_fixes=False), llm=llm, reads=reads)
     assert [a for a in result.actions if a.is_write] == []
 
 
@@ -210,5 +221,20 @@ def test_a_blocked_tentative_fix_is_not_proposed_again():
     fix = next(a for a in diagnose(context, config=TENTATIVE).actions if a.is_write)
     verdict = SafetyVerdict(command=fix.command, decision=GateDecision.BLOCK, reason="no cluster facts")
     result = diagnose(context, feedback=[verdict], config=TENTATIVE)
-    assert [a for a in result.actions if a.is_write] == []
-    assert "M3 blocked the fix" in result.hypotheses[0].evidence[-1]
+    writes = [a for a in result.actions if a.is_write]
+    # Not the blocked patch again: a stopgap restart instead, still labelled, so a person decides.
+    assert [a.command for a in writes] == ["kubectl rollout restart deployment/cart -n default"]
+    assert writes[0].rationale.startswith("TENTATIVE") and "stopgap only" in writes[0].rationale
+
+
+def test_a_confirmed_code_bug_sends_a_stopgap_for_a_person_when_switched_on():
+    context = CONTEXT.model_copy(update={"anomalies": [CART_LOG]})
+    llm = FakeLLM({"score": [{"verdicts": CART_SUPPORTED}] * 2})
+    reads = FakeReadExecutor({CART_DEPLOYMENT: "env: CART_ADDR missing"})
+    fix = next(a for a in diagnose(context, llm=llm, reads=reads).actions if a.is_write)
+    block = SafetyVerdict(command=fix.command, decision=GateDecision.BLOCK, reason="test block")
+    llm = FakeLLM({"score": [{"verdicts": CART_SUPPORTED}] * 2})
+    result = diagnose(context, feedback=[block], config=TENTATIVE, llm=llm, reads=reads)
+    writes = [a for a in result.actions if a.is_write]
+    assert [a.command for a in writes] == ["kubectl rollout restart deployment/cart -n default"]
+    assert writes[0].rationale.startswith("FOR A HUMAN")
