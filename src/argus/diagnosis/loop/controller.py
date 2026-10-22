@@ -6,20 +6,47 @@ DRAFT -> PRIOR -> (PLAN -> EXECUTE -> SCORE -> UPDATE -> DECIDE)* -> REHYPOTHESI
 import time
 from dataclasses import dataclass, replace
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from argus.diagnosis.core.belief import H0, BeliefState
 from argus.diagnosis.core.config import DiagnosisConfig
 from argus.diagnosis.core.models import DiagContext, DiagnosisReport, Evidence, HypothesisSpec, Verdict
 from argus.diagnosis.loop.generator import RuleGenerator
+from argus.diagnosis.loop.llm_generator import LLMGenerator
 from argus.diagnosis.ports.base import LLMClient, LLMUnavailable, ReadExecutor, guarded_run
 from argus.diagnosis.ports.fakes import NoLLM, NullReadExecutor
 
 
-class ScoreAnswer(BaseModel):
-    """The LLM's reading of one piece of evidence: a verdict word per hypothesis id."""
+class VerdictItem(BaseModel):
+    id: str
+    verdict: Verdict
 
-    verdicts: dict[str, Verdict] = {}
+
+class ScoreAnswer(BaseModel):
+    """The LLM's reading of one piece of evidence: a verdict word per hypothesis id.
+
+    A list of {id, verdict} rather than a dict, because OpenRouter's strict JSON Schema can't express
+    free-form keys. The dict form {"H1": "strong-support"} is still accepted (FakeLLM scripts use it).
+    """
+
+    verdicts: list[VerdictItem] = []
+
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_dict_form(cls, data):
+        if isinstance(data, dict) and isinstance(data.get("verdicts"), dict):
+            data = {**data, "verdicts": [{"id": h, "verdict": v} for h, v in data["verdicts"].items()]}
+        return data
+
+    def by_id(self) -> dict[str, str]:
+        """Verdict per id. An id answered twice with different words is dropped (counts as neutral)."""
+        out: dict[str, str] = {}
+        clash: set[str] = set()
+        for item in self.verdicts:
+            if item.id in out and out[item.id] != item.verdict:
+                clash.add(item.id)
+            out.setdefault(item.id, item.verdict)
+        return {h: v for h, v in out.items() if h not in clash}
 
 
 @dataclass
@@ -42,7 +69,13 @@ class Controller:
         self.cfg = config or DiagnosisConfig()
         self.llm = llm or NoLLM()
         self.reads = reads or NullReadExecutor()
-        self.generator = generator or RuleGenerator()
+        rules = RuleGenerator(per_component=self.cfg.per_component)
+        if generator is not None:
+            self.generator = generator
+        elif self.cfg.generator == "llm":  # with NoLLM every draft falls straight back to the rules
+            self.generator = LLMGenerator(self.llm, fallback=rules, per_component=self.cfg.per_component)
+        else:
+            self.generator = rules
         self.scorer = scorer  # RuleScorer or None: what scores a read when the LLM can't
 
     def run(self, ctx: DiagContext) -> LoopResult:
@@ -95,21 +128,23 @@ class Controller:
             new = self._draft(ctx, hyps)
             if not new:
                 return finish("out of hypotheses", low=True)
-            bs.add_hypotheses([h.id for h in new])
+            bs.add_hypotheses([h.id for h in new], {h.id: self._prior(h, ctx) for h in new})
             rehyps += 1
             rounds += 1
 
     def _draft(self, ctx: DiagContext, hyps: dict[str, HypothesisSpec]) -> list[HypothesisSpec]:
         """New hypotheses that repeat nothing already tried; ids carry on from the last round."""
-        tried = {(h.component, h.fault) for h in hyps.values()}
+        tried = {(h.component, h.fault) for h in hyps.values()} | {
+            (h.component, h.layer) for h in hyps.values()
+        }
         new = self.generator.draft(ctx, self.cfg.k, tried, next_id=len(hyps) + 1)
         hyps.update({h.id: h for h in new})
         return new
 
     def _prior(self, hyp: HypothesisSpec, ctx: DiagContext) -> float:
-        """c(confidence) x g(component): the graph prior only when graph_priors is on."""
+        """c(confidence) x g(component): the graph prior unless graph_priors is "off"."""
         weight = {c.service: c.weight for c in ctx.candidates}.get(hyp.component, 1.0)
-        return max(hyp.confidence, 0.01) * (weight if self.cfg.graph_priors else 1.0)
+        return max(hyp.confidence, 0.01) * (weight if self.cfg.graph_priors != "off" else 1.0)
 
     def _execute(self, hyp: HypothesisSpec, evidence_id: str) -> Evidence:
         result = guarded_run(self.reads, hyp.test)
@@ -141,4 +176,4 @@ class Controller:
             if self.scorer is None:
                 return {}
             return self.scorer.score(ev, {h: hyps[h] for h in active}, ctx)
-        return {h: v for h, v in answer.verdicts.items() if h in active}  # invented ids ignored
+        return {h: v for h, v in answer.by_id().items() if h in active}  # invented ids ignored

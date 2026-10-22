@@ -1,0 +1,22 @@
+{
+  "model": "google/gemini-2.5-flash-lite",
+  "pass_counts": {
+    "score": "9/9",
+    "draft": "3/3",
+    "fix": "4/5",
+    "report": "3/3",
+    "end_to_end": "0/3"
+  },
+  "fix_tries": [
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "end_to_end_stop": [
+    "out of hypotheses",
+    "out of hypotheses",
+    "out of hypotheses"
+  ]
+}
