@@ -6,10 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from argus.demo.flow import SCENARIOS
-
 APP = Path(__file__).resolve().parents[2] / "src" / "argus" / "demo" / "app.py"
-CART_ADDR, OUT_OF_MEMORY, _DISK_FULL = list(SCENARIOS)
+CART_ADDR = "Cart can't reach its cache (CART_ADDR missing)"
+OUT_OF_MEMORY = "Cart keeps crashing (out of memory)"
+DISK_FULL = "Hotel search fails (MongoDB disk full)"
 
 
 @pytest.fixture
@@ -54,10 +54,12 @@ def test_the_out_of_memory_restart_is_blocked_then_the_scale_up_approved(page):
     app = run_sample(page, OUT_OF_MEMORY)
     assert any("Safety layer: BLOCK (z3: sat)" in error.value for error in app.error)
     assert any("Fix approved by the safety layer" in success.value for success in app.success)
-    assert len(app.get("vega_lite_chart")) >= 2  # belief comparison and belief over reads
-    assert any("How the leading hypotheses changed" in text.value for text in app.markdown)
-    assert any("Diagnosis summary" in text.value for text in app.markdown)
-    assert any("Leading hypothesis:" in text.value for text in app.markdown)
+    tabs = {tab.label: tab for tab in app.tabs}
+    assert {"Belief & Evidence", "Diagnosis Summary", "Fixes"} <= tabs.keys()
+    assert len(tabs["Belief & Evidence"].get("vega_lite_chart")) == 2
+    assert any("Diagnosis summary" in text.value for text in tabs["Diagnosis Summary"].markdown)
+    assert any("Leading hypothesis:" in text.value for text in tabs["Diagnosis Summary"].markdown)
+    assert any("Fix 1" in text.value for text in tabs["Fixes"].markdown)
 
 
 def table_with_columns(app, *columns):
@@ -89,7 +91,7 @@ def test_m4_compression_and_routing_controls(page):
     assert app.warning
 
 
-@pytest.mark.parametrize("sample", [CART_ADDR, OUT_OF_MEMORY, _DISK_FULL])
+@pytest.mark.parametrize("sample", [CART_ADDR, OUT_OF_MEMORY, DISK_FULL])
 def test_pipeline_uses_descriptive_names_without_module_numbers(page, sample):
     app = run_sample(page, sample)
     visible = [

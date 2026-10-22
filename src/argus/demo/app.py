@@ -167,13 +167,18 @@ def show_context(details: dict) -> None:
 
 
 def show_diagnosis(details: dict) -> None:
-    hypotheses = details["hypotheses"]
-    left, middle, right = st.columns(3)
-    if hypotheses:
-        left.metric("Top hypothesis", f"{hypotheses[0]['component']} [{hypotheses[0]['layer']}]")
-        middle.metric("Belief", f"{hypotheses[0]['probability']:.0%}")
-    right.metric("Stopped because", details["stop_reason"])
+    charts_tab, summary_tab, fixes_tab = st.tabs(["Belief & Evidence", "Diagnosis Summary", "Fixes"])
+    with charts_tab:
+        show_diagnosis_charts(details)
+    with summary_tab:
+        show_diagnosis_summary(details)
+    with fixes_tab:
+        show_diagnosis_fixes(details)
 
+
+def show_diagnosis_charts(details: dict) -> None:
+    hypotheses = details["hypotheses"]
+    st.caption("Compare the candidates, then follow how each diagnostic read changed their belief.")
     priors = prior_beliefs(details)
     rows = []
     for hypothesis in hypotheses:
@@ -186,7 +191,10 @@ def show_diagnosis(details: dict) -> None:
                 "status": hypothesis["status"],
             }
         )
-    st.dataframe(rows, hide_index=True)
+    if rows:
+        st.dataframe(rows, hide_index=True)
+    else:
+        st.info("No root-cause hypotheses were produced for this incident.")
 
     if hypotheses:
         compared = hypotheses[:6]
@@ -216,56 +224,107 @@ def show_diagnosis(details: dict) -> None:
             alt="Starting and final belief for the leading root-cause hypotheses, in percent",
         )
 
-    beliefs = []
-    steps = []
-    for one_round in details["belief_rounds"]:
-        beliefs.append(one_round["belief"])
-        steps.append(one_round["step"])
-    chart = pd.DataFrame(beliefs, index=pd.Index(steps, name="step")).rename(
-        columns={H0: "H0 (none of these)"}
-    )
-    st.caption("Belief in each hypothesis after every read (H0 = none of them):")
-    st.line_chart(chart)
+    if details["belief_rounds"]:
+        beliefs = [one_round["belief"] for one_round in details["belief_rounds"]]
+        steps = [one_round["step"] for one_round in details["belief_rounds"]]
+        chart = pd.DataFrame(beliefs, index=pd.Index(steps, name="step")).rename(
+            columns={H0: "H0 (none of these)"}
+        )
+        st.markdown("**Belief after each read**")
+        st.caption("H0 means none of the current hypotheses explains the incident.")
+        st.line_chart(chart)
 
-    st.markdown("**Diagnosis summary**")
-    st.write(display_text(details["report_text"]))
+    st.markdown("**Diagnostic reads**")
+    st.caption("Read results are canned kubectl output in this demo; there is no live cluster.")
+    if not details["reads"]:
+        st.info("No diagnostic reads were run.")
+    for read in details["reads"]:
+        with st.container(border=True):
+            result = "Available" if read["ok"] else "Unavailable"
+            st.markdown(f"**{read['id']} · Tests {read['hypothesis']}** · {result}")
+            st.code(read["command"], language="bash")
+            st.code(read["output"][:800], language="text")
+
+
+def show_diagnosis_summary(details: dict) -> None:
+    hypotheses = details["hypotheses"]
+    left, middle, right = st.columns(3)
     if hypotheses:
         top = hypotheses[0]
-        st.markdown(f"**Leading hypothesis:** {top['component']} · {top['fault']}")
-        st.caption(f"Layer: {top['layer']} · Status: {top['status']} · Source: {top['source']}")
-        if top["test"]:
-            st.write("Test used to check it:")
-            st.code(top["test"], language="bash")
-        if top["expected"]:
-            st.write(f"Expected observation: {top['expected']}")
-        verdicts = read_verdicts(details)
-        assessments = [
-            {
-                "read": read["id"],
-                "assessment": verdicts[read["id"]][top["id"]],
-                "result": "available" if read["ok"] else "unavailable",
-            }
-            for read in details["reads"]
-            if top["id"] in verdicts.get(read["id"], {})
-        ]
-        if assessments:
-            st.caption("How each diagnostic read affected the leading hypothesis:")
-            st.dataframe(assessments, hide_index=True)
+        left.metric("Leading hypothesis", f"{top['component']} [{top['layer']}]")
+        middle.metric("Final belief", f"{top['probability']:.0%}")
+    right.metric("Stopped because", details["stop_reason"])
 
-    st.caption("Reads used to test them (FAKE: canned kubectl output, no cluster):")
-    for read in details["reads"]:
-        result = "ok" if read["ok"] else "unavailable"
-        st.markdown(f"**{read['id']}** tests {read['hypothesis']}: `{read['command']}` ({result})")
-        st.code(read["output"][:800], language="text")
+    with st.container(border=True):
+        st.markdown("**Diagnosis summary**")
+        if details["report_text"]:
+            st.write(display_text(details["report_text"]))
+        else:
+            st.info("No diagnosis summary was produced.")
 
-    st.caption("What Root Cause Diagnosis proposes:")
-    for action in details["diagnosis"]["actions"]:
-        kind = "WRITE (goes to the safety layer)" if action["is_write"] else "READ"
-        st.markdown(f"**{kind}**: `{action['command']}`")
-    if details["diagnosis"]["hypotheses"]:
-        for line in details["diagnosis"]["hypotheses"][0]["evidence"]:
-            if line.startswith("No write:"):
-                st.markdown(display_text(line))
+    if hypotheses:
+        with st.container(border=True):
+            st.markdown(f"**Leading hypothesis: {top['component']} · {top['fault']}**")
+            st.caption(f"Layer: {top['layer']} · Status: {top['status']} · Source: {top['source']}")
+            if top["test"]:
+                st.markdown("**Test used to check it**")
+                st.code(top["test"], language="bash")
+            if top["expected"]:
+                st.write(f"Expected observation: {top['expected']}")
+            verdicts = read_verdicts(details)
+            assessments = [
+                {
+                    "read": read["id"],
+                    "assessment": verdicts[read["id"]][top["id"]],
+                    "result": "available" if read["ok"] else "unavailable",
+                }
+                for read in details["reads"]
+                if top["id"] in verdicts.get(read["id"], {})
+            ]
+            if assessments:
+                st.markdown("**Read assessments for the leading hypothesis**")
+                st.dataframe(assessments, hide_index=True)
+    else:
+        st.info("There is no leading hypothesis to explain yet.")
+
+
+def show_diagnosis_fixes(details: dict) -> None:
+    actions = details["diagnosis"]["actions"]
+    writes = [action for action in actions if action["is_write"]]
+    reads = [action for action in actions if not action["is_write"]]
+    left, right = st.columns(2)
+    left.metric("Proposed fixes", len(writes))
+    right.metric("Further read actions", len(reads))
+    st.caption("These are diagnosis proposals. Safety Verification checks every write before execution.")
+
+    if not writes:
+        st.info("No write fix was proposed. See the diagnosis summary for the recommended next step.")
+        if details["diagnosis"]["hypotheses"]:
+            for line in details["diagnosis"]["hypotheses"][0]["evidence"]:
+                if line.startswith("No write:"):
+                    st.write(display_text(line))
+    for index, action in enumerate(writes, start=1):
+        rationale = action["rationale"]
+        if rationale.startswith("FOR A HUMAN"):
+            state = "Human review required"
+        elif rationale.startswith("TENTATIVE"):
+            state = "Tentative"
+        else:
+            state = "Proposed"
+        with st.container(border=True):
+            st.markdown(f"**Fix {index} · {state}**")
+            st.code(action["command"], language="bash")
+            if rationale:
+                st.write(display_text(rationale))
+            st.caption("See Verify Safety for the command's approval or block decision.")
+
+    if reads:
+        st.markdown("**Further diagnostic reads**")
+        for action in reads:
+            with st.container(border=True):
+                st.code(action["command"], language="bash")
+                if action["rationale"]:
+                    st.caption(display_text(action["rationale"]))
 
 
 def show_checks(checks: list[dict]) -> None:
