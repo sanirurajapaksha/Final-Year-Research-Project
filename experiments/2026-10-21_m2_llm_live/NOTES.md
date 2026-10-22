@@ -39,7 +39,7 @@ Raw files are in `results/<model>/`:
 
 - **Fix, deepseek:** the first answer was `CART_ADDR=cart:7070` (cart pointed at itself) in all 5 runs. The host check sent it back naming redis, and the second try gave `redis-cart:6379`.
 - **Fix, gemini:** right on the first try in all 4 completed runs. The 5th fix call got HTTP 429 (rate limit) from OpenRouter, so the step fell back to the rule fix. The check counts that as a fail because the source is not the LLM.
-- **End to end, both models: 0/3, and the cause is the canned data, not the logic.**
+- **End to end, both models: 0/3, most likely because of the canned data.** These runs show that the LLM's own checks weren't in `reads.json`; whether the loop would confirm on a real cluster is still untested.
   - deepseek: the right hypothesis, cart / app-config, ended at 78.6–78.9% in all three runs, just under the 0.80 stop line. Its other checks (`endpoints redis`, `logs deployment/frontend`) are not in `reads.json`, so they failed and counted as neutral. That leaves the loop "out of hypotheses" with no write, which is the intended behaviour when the reads don't confirm.
   - gemini: it chose checks that `reads.json` can't answer at all (a `jsonpath` query on the pods, `logs deployment/redis`), so it only reached 48%.
   - An earlier manual run on 20 Oct (not saved) once reached the stop line with deepseek, so this result varies between runs.
