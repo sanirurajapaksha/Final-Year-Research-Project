@@ -195,9 +195,9 @@ def run_flow(batch: TelemetryBatch, settings: Settings) -> Iterator[dict]:
         status, line = "passed", f"{len(automatic)} approved fix sent to the executor (stub)"
     elif approved:
         # M2 labelled it TENTATIVE or FOR A HUMAN: approved by the safety layer, but a person runs it.
-        status, line = "attention", "approved fix awaits a person's decision (labelled by M2)"
+        status, line = "attention", "approved fix awaits a person's decision (marked for review)"
     elif for_a_person:
-        status, line = "attention", "no approved fix: M2's recommended command goes to a person"
+        status, line = "attention", "no approved fix: recommended command goes to a person"
     else:
         status, line = "attention", "no approved fix: hand the incident to a human"
     yield _stage("M4 · Execute", status, line, started, {"actions": every_check})
@@ -296,7 +296,7 @@ def outcome(stages: list[dict]) -> dict:
     for action in proposed:
         if action["is_write"] and action["rationale"].startswith((FOR_HUMAN, TENTATIVE)):
             for_checking.append(action)
-    still_human = f"\n\nA person still decides. M2's report: {m2['report_text']}" if for_checking else ""
+    still_human = f"\n\nA person still decides. Diagnosis report: {m2['report_text']}" if for_checking else ""
     approved = approved_writes(checks)
     if approved:
         return {
@@ -316,13 +316,14 @@ def outcome(stages: list[dict]) -> dict:
     if not m2["low_confidence"] and m2["hypotheses"]:
         return {
             "kind": "handoff",
-            "title": "M2 found the cause, but no automatic fix is safe, so the incident goes to a human",
+            "title": "Root Cause Diagnosis found the cause; the incident goes to a human for a safe fix",
             "command": None,
             "text": m2["report_text"],
         }
     return {
         "kind": "unsure",
-        "title": "M2 is not confident enough to propose a fix, so the incident goes to a human",
+        "title": "Root Cause Diagnosis is not confident enough to propose a fix; "
+        "the incident goes to a human",
         "command": None,
         "text": by_name["M2 · Diagnose"]["headline"],
     }
@@ -363,7 +364,7 @@ def routing_record(stages: list[dict]) -> dict:
         by_name[stage["name"]] = stage
     diagnosis = by_name["M2 · Diagnose"]["details"]["diagnosis"]
     actions = by_name[VERIFY]["details"]["checks"]
-    rounds = [{"title": "M2 diagnose", "hypotheses": diagnosis["hypotheses"], "actions": actions}]
+    rounds = [{"title": "Root Cause Diagnosis", "hypotheses": diagnosis["hypotheses"], "actions": actions}]
     return {"context": by_name["M1 · Context"]["details"]["context"], "rounds": rounds}
 
 

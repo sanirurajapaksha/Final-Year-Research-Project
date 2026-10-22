@@ -1,6 +1,7 @@
 """The dashboard page, driven by Streamlit's own test runner. Skipped without the 'demo' extra."""
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -53,6 +54,10 @@ def test_the_out_of_memory_restart_is_blocked_then_the_scale_up_approved(page):
     app = run_sample(page, OUT_OF_MEMORY)
     assert any("Safety layer: BLOCK (z3: sat)" in error.value for error in app.error)
     assert any("Fix approved by the safety layer" in success.value for success in app.success)
+    assert len(app.get("vega_lite_chart")) >= 2  # belief comparison and belief over reads
+    assert any("How the leading hypotheses changed" in text.value for text in app.markdown)
+    assert any("Diagnosis summary" in text.value for text in app.markdown)
+    assert any("Leading hypothesis:" in text.value for text in app.markdown)
 
 
 def table_with_columns(app, *columns):
@@ -67,7 +72,7 @@ def test_m4_compression_and_routing_controls(page):
     assert checks["passed"].all()
     compression = app.session_state["stages"][1]["details"]
     assert any(compression["tsv"].strip() == code.value.strip() for code in app.code)
-    assert any(button.label == "Download M4 report" for button in app.get("download_button"))
+    assert any(button.label == "Download orchestration report" for button in app.get("download_button"))
     assignments = table_with_columns(app, "task_id", "model_id", "estimated_cost_units", "quality", "layer")
     assert assignments.iloc[0]["model_id"] == "fake-primary"
     attempts = table_with_columns(app, "task_id", "model_id", "status", "charged_estimated_units", "reason")
@@ -82,6 +87,29 @@ def test_m4_compression_and_routing_controls(page):
     assert not app.exception
     assert any("infeasible" in text.value for text in app.markdown)
     assert app.warning
+
+
+@pytest.mark.parametrize("sample", [CART_ADDR, OUT_OF_MEMORY, _DISK_FULL])
+def test_pipeline_uses_descriptive_names_without_module_numbers(page, sample):
+    app = run_sample(page, sample)
+    visible = [
+        element.value
+        for kind in ("markdown", "caption", "success", "error", "info", "warning")
+        for element in app.get(kind)
+    ]
+    visible += [element.label for element in app.get("expander")]
+    visible += [element.label for element in app.get("download_button")]
+    page_text = "\n".join(visible)
+    for label in (
+        "Prepare Telemetry",
+        "Build Context",
+        "Diagnose Cause",
+        "Verify Safety",
+        "Revise Plan",
+        "Execute Action",
+    ):
+        assert label in page_text
+    assert re.search(r"\bM[1-4]\b", page_text) is None
 
 
 @pytest.mark.parametrize("model_outcome", ["Success", "Invalid output", "Model error"])

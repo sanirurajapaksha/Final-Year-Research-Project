@@ -3,12 +3,12 @@
 One page, drawn like a CI pipeline. Choose a sample incident or upload a telemetry file, press **Run**, and each stage card fills in as its module finishes:
 
 ```
-Telemetry → M4 Compress → M1 Context → M2 Diagnose → Formal Verification → M2 Feedback → M4 Execute
+Telemetry → Prepare Telemetry → Build Context → Diagnose Cause → Verify Safety → Revise Plan → Execute Action
 ```
 
-Under the pipeline, each stage opens to show how that module decided: M1's service graph and pruned signals, M2's hypotheses and belief after every read, the safety layer's verdict, counterexample and the cluster facts it read, and what M4 did with each action.
+Under the pipeline, each stage opens to show how it reached its result: Context Analysis shows the service graph and pruned signals; Root Cause Diagnosis compares starting and final belief, shows belief after every read, and explains the leading hypothesis with its test and read assessments; Safety Verification shows the verdict, counterexample and cluster facts; Action Orchestration shows how it handled each action.
 
-The **Formal Verification** stage (the Proactive Formal Verification Safety Layer) also draws its own steps for each write, in order:
+The **Verify Safety** stage (the Proactive Formal Verification Safety Layer) also draws its own steps for each write, in order:
 
 ```
 Pre-filter → Parse (or LLM formulation for a patch) → Cluster facts → Logic compiler + Z3 → Decision

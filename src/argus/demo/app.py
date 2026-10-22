@@ -18,9 +18,18 @@ from argus.context.report import graph_dot
 from argus.contracts import ProposedAction
 from argus.demo.flow import SCENARIOS, STAGES, VERIFY, load_telemetry, outcome, routing_record, run_flow
 from argus.demo.run import demo_settings
-from argus.demo.views import LABELS, STYLE, card, show_steps, show_verdict
+from argus.demo.views import (
+    LABELS,
+    STYLE,
+    card,
+    display_data,
+    display_text,
+    show_steps,
+    show_verdict,
+    stage_label,
+)
 from argus.diagnosis.core.belief import H0
-from argus.diagnosis.demo import prior_beliefs
+from argus.diagnosis.demo import prior_beliefs, read_verdicts
 from argus.orchestration.report import OUTCOMES, routing_replay
 from argus.safety.gate import check
 
@@ -61,7 +70,7 @@ def run_live(text: str, placeholders: list, present: bool) -> list[dict] | None:
             stage = next(flow)
         except Exception as exc:  # show where the run broke instead of a stack trace
             placeholders[index].markdown(card(name, "failed", str(exc), None), unsafe_allow_html=True)
-            st.error(f"{name} failed: {type(exc).__name__}: {exc}")
+            st.error(display_text(f"{stage_label(name)} failed: {type(exc).__name__}: {exc}"))
             return None
         stages.append(stage)
         placeholders[index].markdown(
@@ -74,10 +83,10 @@ def run_live(text: str, placeholders: list, present: bool) -> list[dict] | None:
 
 def show_outcome(stages: list[dict]) -> None:
     result = outcome(stages)
-    text = f"**{result['title']}**"
+    text = f"**{display_text(result['title'])}**"
     if result["command"]:
         text += f"\n\n`{result['command']}`"
-    text += f"\n\n{result['text']}"
+    text += f"\n\n{display_text(result['text'])}"
     if result["kind"] == "approved":
         st.success(text + "\n\nNothing was executed: the executor is a stub in PP1.")
     elif result["kind"] == "blocked":
@@ -107,7 +116,7 @@ def show_compress(details: dict) -> None:
             {"check": "Alert time preserved", "passed": details["alert_time_preserved"]},
         ]
     )
-    with st.expander("Compressed input passed to M1"):
+    with st.expander("Compressed input passed to Context Analysis"):
         st.code(details["tsv"], language="text")
 
 
@@ -120,15 +129,15 @@ def show_context(details: dict) -> None:
         signals_in.metric("Signals in", nrr["raw"])
         stage1.metric("NRR after Stage 1", f"{nrr['stage1']:.2f}")
         stage2.metric("NRR after Stage 2", f"{nrr['stage2']:.2f}", f"{nrr['stage2'] - nrr['stage1']:+.2f}")
-    compute.metric("M1 compute time", f"{details['compute_ms']:.2f} ms")
+    compute.metric("Context analysis time", f"{details['compute_ms']:.2f} ms")
     st.caption(
         "NRR = 1 − kept / signals in (metric, log and k8s records; spans only build the graph). "
-        "Labelled NRR and false-prune rate need an answer key, so they're in the M1 experiments."
+        "Labelled NRR and false-prune rate need an answer key; see the Context Analysis experiments."
     )
 
     graph = details["graph"]
     if graph is None:
-        st.info("No traces in the window, so M1 ran its noise filter only (no service graph).")
+        st.info("No traces in the window, so Context Analysis ran its noise filter only (no service graph).")
     else:
         left, right = st.columns([3, 2])
         left.graphviz_chart(graph_dot(details))
@@ -152,9 +161,9 @@ def show_context(details: dict) -> None:
             }
         )
     st.dataframe(rows, hide_index=True)
-    st.caption(details["notes"])
-    st.markdown("**Sent to M2: the SemanticContext**")
-    st.json(details["context"], expanded=1)
+    st.caption(display_text(details["notes"]))
+    st.markdown("**Sent to Root Cause Diagnosis: the SemanticContext**")
+    st.json(display_data(details["context"]), expanded=1)
 
 
 def show_diagnosis(details: dict) -> None:
@@ -179,6 +188,34 @@ def show_diagnosis(details: dict) -> None:
         )
     st.dataframe(rows, hide_index=True)
 
+    if hypotheses:
+        compared = hypotheses[:6]
+        ranking = pd.DataFrame(
+            [
+                {
+                    "Hypothesis": f"{hypothesis['id']} · {hypothesis['component']} ({hypothesis['layer']})",
+                    "Before reads": 100 * priors.get(hypothesis["id"], 0.0),
+                    "After reads": 100 * hypothesis["probability"],
+                }
+                for hypothesis in compared
+            ]
+        )
+        st.markdown("**How the leading hypotheses changed**")
+        st.caption(
+            f"Belief in percent, before and after diagnostic reads. "
+            f"Showing {len(compared)} of {len(hypotheses)}."
+        )
+        st.bar_chart(
+            ranking,
+            x="Hypothesis",
+            y=["Before reads", "After reads"],
+            horizontal=True,
+            stack=False,
+            sort=False,
+            height=max(220, 48 * len(compared)),
+            alt="Starting and final belief for the leading root-cause hypotheses, in percent",
+        )
+
     beliefs = []
     steps = []
     for one_round in details["belief_rounds"]:
@@ -190,20 +227,45 @@ def show_diagnosis(details: dict) -> None:
     st.caption("Belief in each hypothesis after every read (H0 = none of them):")
     st.line_chart(chart)
 
-    st.caption("Reads M2 ran to test them (FAKE: canned kubectl output, there is no cluster):")
+    st.markdown("**Diagnosis summary**")
+    st.write(display_text(details["report_text"]))
+    if hypotheses:
+        top = hypotheses[0]
+        st.markdown(f"**Leading hypothesis:** {top['component']} · {top['fault']}")
+        st.caption(f"Layer: {top['layer']} · Status: {top['status']} · Source: {top['source']}")
+        if top["test"]:
+            st.write("Test used to check it:")
+            st.code(top["test"], language="bash")
+        if top["expected"]:
+            st.write(f"Expected observation: {top['expected']}")
+        verdicts = read_verdicts(details)
+        assessments = [
+            {
+                "read": read["id"],
+                "assessment": verdicts[read["id"]][top["id"]],
+                "result": "available" if read["ok"] else "unavailable",
+            }
+            for read in details["reads"]
+            if top["id"] in verdicts.get(read["id"], {})
+        ]
+        if assessments:
+            st.caption("How each diagnostic read affected the leading hypothesis:")
+            st.dataframe(assessments, hide_index=True)
+
+    st.caption("Reads used to test them (FAKE: canned kubectl output, no cluster):")
     for read in details["reads"]:
         result = "ok" if read["ok"] else "unavailable"
         st.markdown(f"**{read['id']}** tests {read['hypothesis']}: `{read['command']}` ({result})")
         st.code(read["output"][:800], language="text")
 
-    st.caption("What M2 proposes:")
+    st.caption("What Root Cause Diagnosis proposes:")
     for action in details["diagnosis"]["actions"]:
         kind = "WRITE (goes to the safety layer)" if action["is_write"] else "READ"
         st.markdown(f"**{kind}**: `{action['command']}`")
     if details["diagnosis"]["hypotheses"]:
         for line in details["diagnosis"]["hypotheses"][0]["evidence"]:
             if line.startswith("No write:"):
-                st.markdown(line)
+                st.markdown(display_text(line))
 
 
 def show_checks(checks: list[dict]) -> None:
@@ -234,13 +296,13 @@ def show_verify(details: dict) -> None:
 
 def show_feedback(details: dict | None) -> None:
     if details is None:
-        st.caption("Nothing was blocked, so M2 was not asked again.")
+        st.caption("Nothing was blocked, so Root Cause Diagnosis was not asked again.")
         return
-    st.caption("M4 handed the safety layer's BLOCK, with its counterexample, back to M2. M2's answer:")
+    st.caption("The safety decision and counterexample returned to Root Cause Diagnosis. Its answer:")
     if details["diagnosis"]["hypotheses"]:
         for line in details["diagnosis"]["hypotheses"][0]["evidence"]:
             if line.startswith("M3 blocked"):  # M2 writes this line
-                st.markdown(line)
+                st.markdown(display_text(line))
     for action in details["diagnosis"]["actions"]:
         kind = "WRITE (goes to the safety layer)" if action["is_write"] else "READ"
         st.markdown(f"**{kind}**: `{action['command']}`")
@@ -378,15 +440,16 @@ for stage in stages:
     # A click inside the Formal Verification panel reruns the page; keep that panel open afterwards.
     keep_open = stage["name"] == VERIFY and st.session_state.get("keep_verify_open", False)
     with st.expander(
-        f"{stage['name']} · {LABELS[stage['status']]} · {stage['headline']}", expanded=keep_open
+        f"{stage_label(stage['name'])} · {LABELS[stage['status']]} · {display_text(stage['headline'])}",
+        expanded=keep_open,
     ):
         RENDERERS[stage["name"]](stage["details"])
 
 st.divider()
-with st.expander("M4 model routing: offline replay of this run's diagnosis (not part of the run)"):
+with st.expander("Action Orchestration: offline model routing replay (not part of the run)"):
     st.caption(
-        "The run calls M2 directly. This replays M2's diagnosis through M4's real router and fallback "
-        "dispatcher with scripted model answers and invented costs; no model is called."
+        "The run calls Root Cause Diagnosis directly. This replays its answer through the "
+        "orchestration router with scripted model answers and invented costs; no model is called."
     )
     left, right = st.columns(2)
     budget = left.slider("Budget (synthetic credits)", 0, 10, 5)
@@ -408,8 +471,8 @@ with st.expander("M4 model routing: offline replay of this run's diagnosis (not 
         st.json({"request": replay["request"], "policy": replay["policy"]})
     compression = stages[STAGES.index("M4 · Compress")]["details"]
     st.download_button(
-        "Download M4 report",
+        "Download orchestration report",
         json.dumps({"compression": compression, "routing_replay": replay}, ensure_ascii=False, indent=2),
-        "m4-report.json",
+        "orchestration-report.json",
         "application/json",
     )
