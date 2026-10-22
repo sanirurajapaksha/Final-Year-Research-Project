@@ -322,8 +322,7 @@ def outcome(stages: list[dict]) -> dict:
         }
     return {
         "kind": "unsure",
-        "title": "The diagnosis is not confident enough to propose a fix; "
-        "the incident goes to a human",
+        "title": "The diagnosis is not confident enough to propose a fix; the incident goes to a human",
         "command": None,
         "text": by_name["M2 · Diagnose"]["headline"],
     }
