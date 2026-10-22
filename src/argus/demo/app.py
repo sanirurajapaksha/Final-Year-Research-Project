@@ -8,7 +8,6 @@ itself is in flow.py and the modules; this page only draws it.
 """
 
 import json
-import os
 import time
 
 import pandas as pd
@@ -342,18 +341,6 @@ with st.sidebar:
     present = st.toggle("Step through slowly (for presenting)", value=True, key="present")
     run = st.button("Run the incident", type="primary", disabled=text is None)
 
-    st.divider()
-    st.subheader("Real or simulated")
-    st.markdown(
-        "**Real:** the code of all four modules, Z3, and the LLM call that reads a patch.\n\n"
-        "**Simulated (no cluster in PP1):** the telemetry (synthetic or uploaded), the results of "
-        "M2's reads (canned kubectl output), the safety layer's cluster facts (saved kubectl output), "
-        "and the executor (a stub: nothing is run)."
-    )
-    if os.environ.get("ARGUS_LLM_API_KEY"):
-        st.caption(f"LLM: {demo_settings().llm_model} (key set). At most one call per run.")
-    else:
-        st.caption("No LLM key: patch commands are blocked (fail-closed).")
 
 st.title("Argus · incident run")
 st.caption(
