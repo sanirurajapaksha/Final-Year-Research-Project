@@ -47,8 +47,9 @@ def diagnose(
     ARGUS_M2_USE_LLM is on and ARGUS_LLM_API_KEY / ARGUS_LLM_MODEL are set (opt-in, because those two
     are shared with M3). With no cluster every read is neutral.
     """
-    ctx, result, fixer = _run(context, config, llm, reads)
-    return to_result(result, ctx, blocked_verdicts(feedback), fixer)
+    cfg = config or DiagnosisConfig()
+    ctx, result, fixer = _run(context, cfg, llm, reads)
+    return to_result(result, ctx, blocked_verdicts(feedback), fixer, cfg.tentative_fixes)
 
 
 def diagnose_report(
@@ -60,8 +61,9 @@ def diagnose_report(
     reads: ReadExecutor | None = None,
 ) -> dict:
     """The same run as diagnose(), as plain data the dashboard can show and a test can check."""
-    ctx, result, fixer = _run(context, config, llm, reads)
-    diagnosis = to_result(result, ctx, blocked_verdicts(feedback), fixer)
+    cfg = config or DiagnosisConfig()
+    ctx, result, fixer = _run(context, cfg, llm, reads)
+    diagnosis = to_result(result, ctx, blocked_verdicts(feedback), fixer, cfg.tentative_fixes)
     return {
         "namespace": ctx.namespace,
         "candidates": [
@@ -84,11 +86,10 @@ def diagnose_report(
 
 def _run(
     context: SemanticContext,
-    config: DiagnosisConfig | None,
+    cfg: DiagnosisConfig,
     llm: LLMClient | None,
     reads: ReadExecutor | None,
 ) -> tuple[DiagContext, LoopResult, FixProposer]:
-    cfg = config or DiagnosisConfig()
     ctx = adapt(context, cfg.namespace, scheme="hop" if cfg.graph_priors == "hop" else "almanac")
     if llm is None:  # M4's plain diagnose(context): rules, unless ARGUS_M2_USE_LLM turns the LLM on
         settings = load_settings()
@@ -103,8 +104,13 @@ def to_result(
     ctx: DiagContext,
     blocked: dict[str, SafetyVerdict],
     fixer: FixProposer | None = None,
+    tentative: bool = False,
 ) -> DiagnosisResult:
-    """Turn the loop's belief state into the contract: hypotheses best first, then actions."""
+    """Turn the loop's belief state into the contract: hypotheses best first, then actions.
+
+    With `tentative` (DiagnosisConfig.tentative_fixes), an unconfirmed top hypothesis still gets its fix,
+    labelled TENTATIVE in its rationale, when it beats H0 and holds at least rho: then M3 checks it.
+    """
     ranked = [(h, p) for h, p in result.belief.ranked() if h != H0]
     hypotheses = [
         Hypothesis(
@@ -124,6 +130,18 @@ def to_result(
             # Test before acting: the reads never confirmed `top`, so M2 proposes only the read
             # that would, and no write M3 might approve. The reason goes where the dashboard shows it.
             note = _unconfirmed_line(result)
+            if tentative and worth_a_tentative_fix(result):
+                # Unless tentative fixes are on: then the same fix a confirmation would give goes to M3,
+                # labelled, so the safety layer and M4 still run. M3 checks it exactly like any other.
+                outcome = fixer.propose(top, ctx, result.evidence, blocked)
+                lookups = outcome.lookups
+                hypotheses[0].evidence.extend(_evidence_lines(top.id, lookups))
+                if outcome.action is not None:
+                    fix = _labelled_tentative(outcome.action, ranked[0][1])
+                    actions.append(fix)
+                    note = _tentative_line(result)
+                elif outcome.note:
+                    note += f" No tentative fix either: {outcome.note}"
             hypotheses[0].evidence.append(note)
         else:
             # The LLM picks a fix template and its values from the evidence (rules without an LLM);
@@ -161,6 +179,31 @@ def confirmed(result: LoopResult) -> bool:
     ends with low confidence: the top hypothesis is then just the least-refuted guess.
     """
     return result.report.stop_reason == "confident" and not result.report.low_confidence
+
+
+def worth_a_tentative_fix(result: LoopResult) -> bool:
+    """The top hypothesis beats H0 ("none of these") and holds at least rho, the belief below which
+    the loop itself drafts new hypotheses. A guess the reads nearly ruled out gets no fix."""
+    ranked = [(h, p) for h, p in result.belief.ranked() if h != H0]
+    if not ranked:
+        return False
+    top = ranked[0][1]
+    return top > result.belief.belief.get(H0, 0.0) and top >= result.belief.params.rho
+
+
+def _labelled_tentative(action: ProposedAction, probability: float) -> ProposedAction:
+    """The fix with TENTATIVE first in its rationale: a free-text contract field, so it reaches M3 and M4."""
+    label = f"TENTATIVE (unconfirmed, {probability:.0%}): "
+    return action.model_copy(update={"rationale": label + action.rationale})
+
+
+def _tentative_line(result: LoopResult) -> str:
+    """Why a write goes out although nothing confirmed the hypothesis."""
+    return (
+        "Tentative fix: the reads did not confirm this hypothesis "
+        f"(stop reason: {result.report.stop_reason}), but tentative fixes are on, "
+        "so M2 sends its fix to M3 for checking only, labelled TENTATIVE."
+    )
 
 
 def _unconfirmed_line(result: LoopResult) -> str:

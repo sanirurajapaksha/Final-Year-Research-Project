@@ -45,6 +45,8 @@ Scenario 1's fix is a `kubectl patch`, which the safety layer reads with its LLM
 
 To try another incident, download a sample's telemetry from the sidebar, edit it, and upload it. The flow is the same; what happens depends on the data. M2 only has canned read results for the three samples, so for a new incident it usually stops as not confident and proposes no fix.
 
+To run the safety layer and M4 on such an incident anyway, set `ARGUS_M2_TENTATIVE_FIXES=1` before starting the page or the command. M2 then sends its best guess's fix to the safety layer even though the reads did not confirm it, with `TENTATIVE (unconfirmed, NN%)` at the start of the fix's rationale and in M2's report. It does this only when that guess beats "none of these" and holds at least 30%. The safety layer checks it like any other fix. M4 cannot tell a tentative fix from a confirmed one, so an approved tentative fix reaches the executor: keep the switch off anywhere the executor is not the PP1 stub.
+
 ## What is real and what is simulated
 
 - **Real:** the code of all four modules, Z3, and the LLM call.
