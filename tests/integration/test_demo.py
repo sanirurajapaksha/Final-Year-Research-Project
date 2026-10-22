@@ -68,7 +68,11 @@ def test_m4_compression_report_uses_the_incident_payload(sample, tmp_path):
 
 def test_missing_cart_addr_is_diagnosed_and_the_fix_is_approved(fake_llm, tmp_path):
     stages = run(CART_ADDR, tmp_path)
-    assert stages["M1 · Context"]["details"]["kept_count"] == 5
+    m1 = stages["M1 · Context"]["details"]
+    assert m1["kept_count"] == 5
+    assert m1["nrr"] == {"raw": 21, "stage1": 1 - 8 / 21, "stage2": 1 - 5 / 21}
+    assert m1["compute_ms"] > 0
+    assert m1["context"]["failing_services"] == ["cart", "frontend"]
     assert stages["M2 · Diagnose"]["status"] == "passed"
     check = stages[VERIFY]["details"]["checks"][-1]
     assert check["command"].startswith("kubectl patch deployment cart -n default")
