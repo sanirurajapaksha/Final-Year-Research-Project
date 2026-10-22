@@ -1,0 +1,110 @@
+[
+  {
+    "run": 0,
+    "hypotheses": [
+      {
+        "id": "H1",
+        "component": "cart",
+        "layer": "app-config",
+        "fault": "CART_ADDR environment variable not set",
+        "confidence": 0.5,
+        "test": "kubectl get pod -n default -l app=cart -o jsonpath='{.items[*].spec.containers[*].env[*].name}'",
+        "expected": "CART_ADDR",
+        "source": "llm"
+      },
+      {
+        "id": "H2",
+        "component": "cart",
+        "layer": "dependency",
+        "fault": "redis is unavailable",
+        "confidence": 0.3,
+        "test": "kubectl logs deployment/redis -n default",
+        "expected": "redis is not running or responding",
+        "source": "llm"
+      },
+      {
+        "id": "H3",
+        "component": "frontend",
+        "layer": "code",
+        "fault": "frontend incorrectly handles cart unavailability",
+        "confidence": 0.2,
+        "test": "kubectl logs deployment/frontend -n default",
+        "expected": "frontend logs indicate an issue processing the response from cart",
+        "source": "llm"
+      }
+    ],
+    "pass": true
+  },
+  {
+    "run": 1,
+    "hypotheses": [
+      {
+        "id": "H1",
+        "component": "cart",
+        "layer": "app-config",
+        "fault": "CART_ADDR environment variable not set",
+        "confidence": 0.5,
+        "test": "kubectl get pod -n default -l app=cart -o jsonpath='{.items[*].spec.containers[*].env[*].name}'",
+        "expected": "CART_ADDR",
+        "source": "llm"
+      },
+      {
+        "id": "H2",
+        "component": "cart",
+        "layer": "dependency",
+        "fault": "redis is unavailable",
+        "confidence": 0.3,
+        "test": "kubectl logs deployment/redis -n default",
+        "expected": "redis is not running or responding",
+        "source": "llm"
+      },
+      {
+        "id": "H3",
+        "component": "frontend",
+        "layer": "code",
+        "fault": "frontend incorrectly handles cart unavailability",
+        "confidence": 0.2,
+        "test": "kubectl logs deployment/frontend -n default",
+        "expected": "frontend logs indicate an issue processing the response from cart",
+        "source": "llm"
+      }
+    ],
+    "pass": true
+  },
+  {
+    "run": 2,
+    "hypotheses": [
+      {
+        "id": "H1",
+        "component": "cart",
+        "layer": "app-config",
+        "fault": "CART_ADDR environment variable not set",
+        "confidence": 0.5,
+        "test": "kubectl get pod -n default -l app=cart -o jsonpath='{.items[*].spec.containers[*].env[*].name}'",
+        "expected": "CART_ADDR",
+        "source": "llm"
+      },
+      {
+        "id": "H2",
+        "component": "cart",
+        "layer": "dependency",
+        "fault": "redis is unavailable",
+        "confidence": 0.3,
+        "test": "kubectl logs deployment/redis -n default",
+        "expected": "redis is not running or responding",
+        "source": "llm"
+      },
+      {
+        "id": "H3",
+        "component": "frontend",
+        "layer": "code",
+        "fault": "frontend incorrectly handles cart unavailability",
+        "confidence": 0.2,
+        "test": "kubectl logs deployment/frontend -n default",
+        "expected": "frontend logs indicate an issue processing the response from cart",
+        "source": "llm"
+      }
+    ],
+    "pass": true
+  }
+]

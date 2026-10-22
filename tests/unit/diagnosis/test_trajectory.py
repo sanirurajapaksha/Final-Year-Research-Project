@@ -56,3 +56,52 @@ def test_greedy_is_confidently_wrong_where_ach_rca_backtracks(tmp_path):
     # The full method notices H0 taking over, backtracks once and lands on cart.
     assert full["top_label"].startswith("cart") and full["rehypothesized"] == 1
     assert len(path.read_text().splitlines()) > 4
+
+
+def test_a_rules_only_run_logs_no_model_and_counts_sources(tmp_path):
+    path = tmp_path / "rules.jsonl"
+    _, finish = run_logged(Controller(preset("ach_rca", namespace="demo")), CTX, "rules", path)
+    lines = [json.loads(line) for line in path.read_text().splitlines()]
+    start = lines[0]
+    assert start["model"] is None and set(start["prompt_versions"]) == {"score", "draft", "fix", "report"}
+    assert not [line for line in lines if line["event"] == "llm_call"]
+    assert set(finish["sources"]) == {"rules"}  # no reads succeed, so it backtracks: every round from rules
+
+
+def test_every_llm_call_is_logged_with_its_status_and_a_prompt_hash(monkeypatch, tmp_path):
+    from argus.diagnosis.ports import openrouter
+    from argus.diagnosis.ports.openrouter import OpenRouterLLM
+
+    replies = iter(['{"hypotheses": []}', '{"verdicts": "bad"}'])
+
+    def fake(prompt, schema, model, timeout_s, max_tokens, reasoning=None):
+        return next(replies, '{"verdicts": []}'), {"prompt_tokens": 50, "completion_tokens": 7}
+
+    monkeypatch.setattr(openrouter, "complete_json", fake)
+    reads = FakeReadExecutor({FRONTEND_DEPLOYMENT: "env looks fine"})
+    controller = Controller(
+        preset("ach_rca", namespace="demo", max_rehyp=0), OpenRouterLLM("test/model"), reads
+    )
+    path = tmp_path / "llm.jsonl"
+    run_logged(controller, CTX, "llm", path)
+
+    lines = [json.loads(line) for line in path.read_text().splitlines()]
+    assert lines[0]["model"] == "test/model"
+    calls = [line for line in lines if line["event"] == "llm_call"]
+    assert [(c["task"], c["status"]) for c in calls][:2] == [("draft", "ok"), ("score", "invalid")]
+    assert all(len(c["prompt_sha256"]) == 16 and c["prompt_chars"] > 0 for c in calls)
+    assert calls[0]["usage"] == {"prompt_tokens": 50, "completion_tokens": 7}
+    assert lines[-1]["sources"] == {"rules": 3}  # the LLM drafted nothing usable, so the rules did
+
+
+def test_a_second_run_with_the_same_llm_logs_only_its_own_calls(monkeypatch, tmp_path):
+    from argus.diagnosis.ports import openrouter
+    from argus.diagnosis.ports.openrouter import OpenRouterLLM
+
+    monkeypatch.setattr(openrouter, "complete_json", lambda *a, **k: ('{"hypotheses": []}', {}))
+    llm = OpenRouterLLM("test/model")
+    first, second = tmp_path / "a.jsonl", tmp_path / "b.jsonl"
+    run_logged(Controller(preset("ach_rca", namespace="demo"), llm), CTX, "a", first)
+    run_logged(Controller(preset("ach_rca", namespace="demo"), llm), CTX, "b", second)
+    count = lambda p: sum(json.loads(x)["event"] == "llm_call" for x in p.read_text().splitlines())  # noqa: E731
+    assert count(first) == count(second) == len(llm.calls) // 2

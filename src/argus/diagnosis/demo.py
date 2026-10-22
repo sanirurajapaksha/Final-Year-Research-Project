@@ -8,8 +8,10 @@ file comes back "unavailable", exactly as with no cluster. Nothing here touches 
 import json
 from pathlib import Path
 
+from argus.config import load_settings
 from argus.contracts import DiagnosisResult, GateDecision, SafetyVerdict, SemanticContext
-from argus.diagnosis.ports.fakes import FakeReadExecutor
+from argus.diagnosis.ports.fakes import FakeReadExecutor, NoLLM
+from argus.diagnosis.ports.openrouter import llm_from_env
 from argus.diagnosis.service import diagnose, diagnose_report
 
 REPO = Path(__file__).resolve().parents[3]
@@ -25,21 +27,36 @@ def scenario_reads(path: Path = SCENARIO_READS) -> FakeReadExecutor:
     return FakeReadExecutor(data["reads"])
 
 
-def demo_diagnose(context: SemanticContext, feedback: list[SafetyVerdict] | None = None) -> DiagnosisResult:
+def _demo_llm(use_llm: bool):
+    """The demo runs on rules unless asked: free, the same every time, and what main always did.
+    use_llm=True (the page's toggle) is an explicit opt-in, so it builds the team's model from
+    ARGUS_LLM_API_KEY / ARGUS_LLM_MODEL without needing ARGUS_M2_USE_LLM; with no key, rules."""
+    if not use_llm:
+        return NoLLM()
+    return llm_from_env(load_settings().llm_model) or NoLLM()
+
+
+def demo_diagnose(
+    context: SemanticContext, feedback: list[SafetyVerdict] | None = None, use_llm: bool = False
+) -> DiagnosisResult:
     """Called like diagnose(), so the demo can pass it to run_once(..., diagnoser=demo_diagnose)."""
-    return diagnose(context, feedback, reads=scenario_reads())
+    return diagnose(context, feedback, llm=_demo_llm(use_llm), reads=scenario_reads())
 
 
-def demo_report(context: SemanticContext, feedback: list[SafetyVerdict] | None = None) -> dict:
+def demo_report(
+    context: SemanticContext, feedback: list[SafetyVerdict] | None = None, use_llm: bool = False
+) -> dict:
     """diagnose_report() with the canned reads, labelled as fake, for the M2 dashboard page."""
-    report = diagnose_report(context, feedback, reads=scenario_reads())
+    report = diagnose_report(context, feedback, llm=_demo_llm(use_llm), reads=scenario_reads())
     report["reads_source"] = FAKE_READS_LABEL
     return report
 
 
-def no_cluster_report(context: SemanticContext, feedback: list[SafetyVerdict] | None = None) -> dict:
+def no_cluster_report(
+    context: SemanticContext, feedback: list[SafetyVerdict] | None = None, use_llm: bool = False
+) -> dict:
     """diagnose_report() with no reads at all: every read is unavailable, as with no cluster and no fakes."""
-    report = diagnose_report(context, feedback)
+    report = diagnose_report(context, feedback, llm=_demo_llm(use_llm))
     report["reads_source"] = NO_READS_LABEL
     return report
 

@@ -1,0 +1,18 @@
+{
+  "command": "python experiments/2026-10-21_m2_llm_live/run.py --model google/gemini-2.5-flash-lite",
+  "commit": "0c548015bc5a2613fc6a60d3b41d338f1d751447",
+  "uncommitted_tracked_changes": false,
+  "python": "3.12.10",
+  "platform": "Windows-11-10.0.26100-SP0",
+  "model": "google/gemini-2.5-flash-lite",
+  "prompt_versions": {
+    "score": "score-v2",
+    "draft": "draft-v2",
+    "fix": "fix-v3",
+    "report": "report-v1"
+  },
+  "inputs": [
+    "data/fixtures/m2/contexts/cart_addr.json",
+    "data/fixtures/m2/scenario_01/reads.json"
+  ]
+}

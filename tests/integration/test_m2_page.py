@@ -49,7 +49,7 @@ def test_the_summary_shows_the_top_hypothesis():
 def test_every_read_has_an_expander():
     app = run_page()
     labels = [expander.label for expander in app.expander]
-    assert labels == ["E1 · H1 · ok", "E2 · H2 · ok", "E3 · H3 · ok"]
+    assert labels == ["E1 · H1 · ok"]  # the clues put cart/config first and one read settles it
 
 
 def test_the_write_is_labelled_and_sent_to_m3():
@@ -69,6 +69,9 @@ def a_report(**changes):
         "belief_rounds": [],
         "stop_reason": "no hypotheses: no candidates",
         "low_confidence": True,
+        "report_text": "",
+        "report_source": "",
+        "llm": {"model": None, "usage": {}, "calls": []},
         "diagnosis": {"hypotheses": [], "actions": []},
         "reads_source": FAKE_READS_LABEL,
     }
@@ -83,7 +86,9 @@ def fake_report(monkeypatch):
     import argus.diagnosis.demo
 
     def use(report):
-        monkeypatch.setattr(argus.diagnosis.demo, "demo_report", lambda context, feedback=None: report)
+        monkeypatch.setattr(
+            argus.diagnosis.demo, "demo_report", lambda context, feedback=None, use_llm=False: report
+        )
 
     st.cache_data.clear()
     yield use
@@ -169,3 +174,24 @@ def test_with_no_reads_the_page_says_why_there_is_no_write():
     assert not app.exception
     assert not any(markdown.value.startswith("**WRITE**") for markdown in app.markdown)
     assert any(markdown.value.startswith("No write: the reads did not confirm") for markdown in app.markdown)
+
+
+def test_the_page_says_no_llm_ran_and_shows_the_note():
+    app = run_page()
+    assert any("Every step ran on M2's rules (no LLM)" in warning.value for warning in app.warning)
+    assert any(m.value.startswith("> Root cause: cart [app-config]") for m in app.markdown)  # template note
+    assert app.toggle[1].disabled  # no key in tests: the LLM toggle can't be switched on
+
+
+def test_an_llm_run_names_the_model_and_what_fell_back(fake_report):
+    calls = [
+        {"task": "draft", "prompt_version": "draft-v2", "status": "ok"},
+        {"task": "fix", "prompt_version": "fix-v3", "status": "invalid"},
+    ]
+    llm = {"model": "deepseek/test", "usage": {"calls": 2, "failed": 1, "prompt_tokens": 900}, "calls": calls}
+    fake_report(a_report(llm=llm, report_text="cart is missing CART_ADDR [E1].", report_source="llm"))
+    app = run_page()
+    assert not app.exception
+    text = " ".join(w.value for w in app.warning)
+    assert "LLM: deepseek/test; it did draft; fell back to rules on fix." in text
+    assert "Fell back to rules" in [m.label for m in app.metric]

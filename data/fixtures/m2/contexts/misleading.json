@@ -1,0 +1,35 @@
+{
+  "provenance": "SYNTHETIC, hand-written: the log blames a setting, but the real fault is that cart is OOMKilled and restarting. Checks must overrule the log text.",
+  "truth": {"component": "cart", "layer": "resources", "fault": "container OOMKilled and crash-looping"},
+  "context": {
+    "anomalies": [
+      "frontend: http_5xx_rate (http_5xx_rate=0.30 > 0.05)",
+      "cart: http_5xx_rate (http_5xx_rate=0.75 > 0.05)",
+      "cart: log_error (config reload failed: CART_ADDR environment variable not set)",
+      "frontend: log_error (rpc error: code = Unavailable desc = cart)"
+    ],
+    "services": ["cart", "frontend"],
+    "dependencies": [["frontend", "cart"]],
+    "notes": "",
+    "symptoms": ["frontend GET /cart failed (HTTP 500)"],
+    "kept_signals": [
+      {"service": "frontend", "source": "metric", "name": "http_5xx_rate", "value": 0.30,
+       "timestamp": "2026-10-10T10:04:30Z", "evidence": "http_5xx_rate=0.30 > 0.05"},
+      {"service": "cart", "source": "metric", "name": "http_5xx_rate", "value": 0.75,
+       "timestamp": "2026-10-10T10:04:30Z", "evidence": "http_5xx_rate=0.75 > 0.05"},
+      {"service": "cart", "source": "log", "name": "log_error", "value": null,
+       "timestamp": "2026-10-10T10:04:41Z",
+       "evidence": "config reload failed: CART_ADDR environment variable not set"},
+      {"service": "frontend", "source": "log", "name": "log_error", "value": null,
+       "timestamp": "2026-10-10T10:04:42Z", "evidence": "rpc error: code = Unavailable desc = cart"}
+    ],
+    "nodes": [
+      {"name": "cart", "k8s_status": "CrashLoopBackOff", "replicas": 1},
+      {"name": "frontend", "k8s_status": "Available", "replicas": 1}
+    ],
+    "failing_services": ["cart", "frontend"],
+    "entry_point": "frontend",
+    "fallback_used": false,
+    "strategy": "failing_path"
+  }
+}

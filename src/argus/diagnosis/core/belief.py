@@ -69,13 +69,22 @@ class BeliefState:
         """All hypotheses, highest belief first."""
         return sorted(self.belief.items(), key=lambda kv: -kv[1])
 
-    def add_hypotheses(self, new_ids: list[str]) -> None:
-        """New hypotheses inherit part of H0's mass (used after rehypothesize)."""
-        share = self.params.inherit * self.belief[H0]
+    def add_hypotheses(self, new_ids: list[str], scores: dict[str, float] | None = None) -> None:
+        """New hypotheses inherit part of H0's mass (used after rehypothesize).
+
+        The inherited mass is shared in proportion to `scores` (the same c x g as in init), so the
+        graph prior still counts after backtracking; without scores it is shared equally.
+        """
         for h in new_ids:
             if h in self.belief:
                 raise ValueError(f"duplicate hypothesis id {h}")
-            self.belief[h] = share / len(new_ids)
+        weight = {h: (scores or {}).get(h, 1.0) for h in new_ids}
+        if min(weight.values(), default=1.0) <= 0:
+            raise ValueError("need a positive score for every new hypothesis")
+        total = sum(weight.values())
+        share = self.params.inherit * self.belief[H0]
+        for h in new_ids:
+            self.belief[h] = share * weight[h] / total
             self.status[h] = "active"
         self.belief[H0] -= share
         self._log("rehypothesize", added=list(new_ids))

@@ -57,7 +57,7 @@ def test_report_is_labelled_plain_data():
     assert report["reads_source"] == FAKE_READS_LABEL
     assert report["stop_reason"] == "confident"
     assert report["hypotheses"][0]["component"] == "cart"
-    assert [r["ok"] for r in report["reads"]] == [True, True, True]
+    assert [r["ok"] for r in report["reads"]] == [True]  # cart/config leads from the start (clues)
 
 
 def test_prior_is_the_first_belief_even_for_a_later_hypothesis():
@@ -74,7 +74,7 @@ def test_prior_is_the_first_belief_even_for_a_later_hypothesis():
 def test_each_scenario_read_has_its_verdict():
     verdicts = read_verdicts(demo_report(scenario_context()))
     assert verdicts["E1"] == {"H1": "strong-support"}
-    assert sorted(verdicts) == ["E1", "E2", "E3"]
+    assert sorted(verdicts) == ["E1"]
 
 
 def test_no_reads_means_no_verdicts():
@@ -124,3 +124,15 @@ def test_with_no_reads_m2_says_it_is_unsure():
     assert report["reads"]
     assert all(not read["ok"] for read in report["reads"])
     assert report["low_confidence"]
+
+
+def test_the_dashboard_toggle_is_an_opt_in_on_its_own(monkeypatch):
+    # The page's LLM toggle builds the team's model directly; diagnose() alone needs ARGUS_M2_USE_LLM.
+    import argus.diagnosis.demo as demo
+    from argus.diagnosis.ports.fakes import FakeLLM
+
+    monkeypatch.setattr(demo, "llm_from_env", lambda model: FakeLLM({}))
+    assert isinstance(demo._demo_llm(True), FakeLLM)
+    assert type(demo._demo_llm(False)).__name__ == "NoLLM"
+    monkeypatch.setattr(demo, "llm_from_env", lambda model: None)  # no key: rules
+    assert type(demo._demo_llm(True)).__name__ == "NoLLM"

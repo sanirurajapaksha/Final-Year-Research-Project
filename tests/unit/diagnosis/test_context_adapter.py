@@ -155,3 +155,129 @@ def test_m1_ingest_error_reaches_m2_through_notes():
     diag = adapt(build_context(bad), "ns")
     assert diag.candidates == []
     assert diag.notes.startswith("M1 could not read the telemetry")
+
+
+# --- hop scheme -------------------------------------------------------------------------------
+
+
+def roles(diag):
+    return {c.service: (c.role, c.hops) for c in diag.candidates}
+
+
+def test_hop_scheme_grades_the_chain_by_distance_from_the_origin(m2_context):
+    ctx, _ = m2_context("chain4")
+    diag = adapt(ctx, "ns", scheme="hop")
+
+    assert weights(diag) == {
+        "cart": 1.5,  # origin
+        "checkout": 1.0,  # 1 hop up
+        "redis-cart": 1.0,  # quiet dependency: cart calls it, it reports nothing
+        "frontend": 0.7,  # 2 hops up
+        "product-catalog": 0.5,  # off the failing path
+    }
+    assert roles(diag) == {
+        "cart": ("origin", 0),
+        "checkout": ("upstream", 1),
+        "redis-cart": ("quiet-dependency", 1),
+        "frontend": ("upstream", 2),
+        "product-catalog": ("other", None),
+    }
+
+
+def test_almanac_scheme_keeps_the_three_levels_and_adds_roles(m2_context):
+    ctx, _ = m2_context("chain4")
+    diag = adapt(ctx, "ns")  # the default scheme
+
+    assert weights(diag) == {
+        "cart": 1.5,
+        "frontend": 1.0,
+        "checkout": 1.0,
+        "redis-cart": 0.5,
+        "product-catalog": 0.5,
+    }
+    assert roles(diag)["redis-cart"] == ("quiet-dependency", 1)  # role is shown, weight is unchanged
+
+
+def test_three_or_more_hops_up_get_the_far_weight():
+    ctx = SemanticContext(
+        dependencies=[("lb", "web"), ("web", "api"), ("api", "orders"), ("orders", "db")],
+        failing_services=["lb", "web", "api", "orders", "db"],
+        entry_point="lb",
+    )
+    assert weights(adapt(ctx, "ns", scheme="hop")) == {
+        "db": 1.5,
+        "orders": 1.0,
+        "api": 0.7,
+        "web": 0.5,
+        "lb": 0.5,
+    }
+
+
+def test_service_named_only_in_the_origins_log_becomes_a_quiet_dependency(m2_context):
+    ctx, _ = m2_context("redis_down")  # M1 knows frontend and cart; redis-cart is only in cart's error
+    diag = adapt(ctx, "ns", scheme="hop")
+
+    assert weights(diag) == {"cart": 1.5, "frontend": 1.0, "redis-cart": 1.0}
+    assert roles(diag)["redis-cart"] == ("quiet-dependency", 1)
+
+
+def test_your_m1_log_adds_redis_from_carts_error(m2_context):
+    ctx, _ = m2_context("cart_addr")  # "failed to connect to redis: CART_ADDR ..."
+    assert weights(adapt(ctx, "ns", scheme="hop")) == {"cart": 1.5, "frontend": 1.0, "redis": 1.0}
+    assert "redis" not in weights(adapt(ctx, "ns"))  # almanac never reads names out of log text
+
+
+def test_short_name_in_a_log_resolves_to_the_known_service():
+    ctx = SemanticContext(
+        services=["frontend", "cart", "redis-cart"],
+        dependencies=[("frontend", "cart")],
+        failing_services=["frontend", "cart"],
+        entry_point="frontend",
+        kept_signals=[
+            AnomalySignal(
+                service="cart",
+                source="log",
+                name="log_error",
+                timestamp=T,
+                evidence="failed to connect to redis: connection refused",
+            ),
+        ],
+    )
+    diag = adapt(ctx, "ns", scheme="hop")
+    assert weights(diag) == {"cart": 1.5, "frontend": 1.0, "redis-cart": 1.0}
+
+
+def test_common_words_and_upstream_logs_add_no_service():
+    ctx = SemanticContext(
+        dependencies=[("frontend", "cart")],
+        failing_services=["frontend", "cart"],
+        entry_point="frontend",
+        kept_signals=[
+            AnomalySignal(
+                service="cart",
+                source="log",
+                name="log_error",
+                timestamp=T,
+                evidence="failed to connect to the server",
+            ),
+            # frontend is not the origin: what it names is on the path or past it, never a quiet dependency
+            AnomalySignal(
+                service="frontend",
+                source="log",
+                name="log_error",
+                timestamp=T,
+                evidence="dial tcp: lookup payments: no such host",
+            ),
+        ],
+    )
+    assert weights(adapt(ctx, "ns", scheme="hop")) == {"cart": 1.5, "frontend": 1.0}
+
+
+def test_signal_mode_is_the_same_in_both_schemes_and_marks_the_top():
+    ctx = SemanticContext(kept_signals=[signal("a"), signal("a"), signal("b")], services=["c"])
+    assert adapt(ctx, "ns", scheme="hop") == adapt(ctx, "ns")
+    assert roles(adapt(ctx, "ns")) == {
+        "a": ("top-signals", None),
+        "b": ("has-signals", None),
+        "c": ("other", None),
+    }

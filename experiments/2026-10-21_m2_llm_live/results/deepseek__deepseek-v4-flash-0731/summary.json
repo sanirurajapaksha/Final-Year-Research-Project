@@ -1,0 +1,22 @@
+{
+  "model": "deepseek/deepseek-v4-flash-0731",
+  "pass_counts": {
+    "score": "9/9",
+    "draft": "3/3",
+    "fix": "5/5",
+    "report": "3/3",
+    "end_to_end": "0/3"
+  },
+  "fix_tries": [
+    2,
+    2,
+    2,
+    2,
+    2
+  ],
+  "end_to_end_stop": [
+    "out of hypotheses",
+    "out of hypotheses",
+    "out of hypotheses"
+  ]
+}
