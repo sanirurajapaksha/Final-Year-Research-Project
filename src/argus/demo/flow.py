@@ -39,6 +39,10 @@ SCENARIOS = {
         "telemetry": FIXTURES / "demo" / "scenario_02" / "telemetry.json",
         "reads": FIXTURES / "demo" / "scenario_02" / "reads.json",
     },
+    "Hotel search fails (MongoDB disk full)": {
+        "telemetry": FIXTURES / "demo" / "scenario_03" / "telemetry.json",
+        "reads": FIXTURES / "demo" / "scenario_03" / "reads.json",
+    },
 }
 
 # The safety layer's rules (invariants I1-I4 and the replica range) in plain words, for the page.
@@ -281,6 +285,14 @@ def outcome(stages: list[dict]) -> dict:
             "command": blocked[0].command,
             "text": in_plain_words(blocked[0].model_dump(mode="json")),
         }
+    m2 = by_name["M2 · Diagnose"]["details"]
+    if not m2["low_confidence"] and m2["hypotheses"]:
+        return {
+            "kind": "handoff",
+            "title": "M2 found the cause, but no automatic fix is safe, so the incident goes to a human",
+            "command": None,
+            "text": m2["report_text"],
+        }
     return {
         "kind": "unsure",
         "title": "M2 is not confident enough to propose a fix, so the incident goes to a human",
@@ -336,6 +348,8 @@ def _diagnosis_line(m2: dict, diagnosis: DiagnosisResult) -> tuple[str, str]:
     for action in diagnosis.actions:
         if action.is_write:
             return "passed", line + "; proposes a fix"
+    if not m2["low_confidence"]:
+        return "attention", line + "; confirmed, no safe automatic fix: recommendation for a human"
     return "attention", line + "; not confirmed, no fix proposed"
 
 

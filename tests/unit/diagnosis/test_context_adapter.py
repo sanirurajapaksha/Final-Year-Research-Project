@@ -2,8 +2,8 @@ from datetime import datetime
 from pathlib import Path
 
 from argus.context.service import build_context
-from argus.contracts import AnomalySignal, CompressedTelemetry, SemanticContext, TelemetryBatch
-from argus.diagnosis.loop.context_adapter import adapt, failing_path
+from argus.contracts import AnomalySignal, CompressedTelemetry, SemanticContext, ServiceNode, TelemetryBatch
+from argus.diagnosis.loop.context_adapter import NAMED_SERVICE, adapt, failing_path
 from argus.diagnosis.loop.generator import RuleGenerator
 from argus.orchestration.service import compress
 
@@ -281,3 +281,38 @@ def test_signal_mode_is_the_same_in_both_schemes_and_marks_the_top():
         "b": ("has-signals", None),
         "c": ("other", None),
     }
+
+
+def test_a_crashing_database_with_no_spans_becomes_the_origin():
+    # mongodb-geo sends no spans, so M1's graph stops at geo; geo's error names it by its address.
+    named = "server selection error: { Addr: mongodb-geo:27017, Last error: connection refused }"
+    context = SemanticContext(
+        services=["frontend", "search", "geo", "mongodb-geo"],
+        dependencies=[("frontend", "search"), ("search", "geo")],
+        failing_services=["frontend", "search", "geo"],
+        entry_point="frontend",
+        nodes=[ServiceNode(name="mongodb-geo", k8s_status="CrashLoopBackOff")],
+        kept_signals=[
+            AnomalySignal(service="geo", source="log", name="log_error", timestamp=T, evidence=named)
+        ],
+    )
+    diag = adapt(context, "hotel-reservation")
+    assert diag.failing_path == ["frontend", "search", "geo", "mongodb-geo"]
+    assert diag.candidates[0].service == "mongodb-geo" and diag.candidates[0].role == "origin"
+    assert weights(diag)["geo"] == 1.0  # now only the caller that reports the database's failure
+
+
+def test_a_fatal_log_marks_a_service_failing_but_kube_system_services_do_not():
+    context = SemanticContext(
+        services=["api", "worker", "kube-proxy"],
+        dependencies=[("api", "worker")],
+        failing_services=["api"],
+        kept_signals=[signal("worker", "log_fatal"), signal("kube-proxy", "log_fatal")],
+    )
+    diag = adapt(context, "ns")
+    assert "worker" in diag.failing_path and "kube-proxy" not in diag.failing_path
+
+
+def test_an_access_log_address_field_is_not_a_service_name():
+    assert NAMED_SERVICE.findall("Addr: mongodb-geo:27017") == ["mongodb-geo"]
+    assert NAMED_SERVICE.findall("remote_addr=frontend peer_addr: cart") == []

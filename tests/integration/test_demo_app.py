@@ -8,7 +8,7 @@ import pytest
 from argus.demo.flow import SCENARIOS
 
 APP = Path(__file__).resolve().parents[2] / "src" / "argus" / "demo" / "app.py"
-CART_ADDR, OUT_OF_MEMORY = list(SCENARIOS)
+CART_ADDR, OUT_OF_MEMORY, _DISK_FULL = list(SCENARIOS)
 
 
 @pytest.fixture

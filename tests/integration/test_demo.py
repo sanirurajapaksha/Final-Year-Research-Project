@@ -11,7 +11,7 @@ from argus.demo.run import KUBECTL_OUTPUT, verdict_line
 from argus.orchestration.report import compression_report
 from argus.safety import formulation
 
-CART_ADDR, OUT_OF_MEMORY = list(SCENARIOS)
+CART_ADDR, OUT_OF_MEMORY, DISK_FULL = list(SCENARIOS)
 
 
 def demo_settings(tmp_path) -> Settings:
@@ -94,6 +94,20 @@ def test_unsafe_restart_is_blocked_and_handed_to_a_human(tmp_path):
     result = outcome(list(stages.values()))
     assert result["kind"] == "blocked"
     assert result["text"] == "During the restart 1 of 2 pods would be down, leaving 1; the minimum is 2."
+
+
+def test_full_mongodb_volume_is_confirmed_and_handed_to_a_human_with_the_expansion(tmp_path):
+    stages = run(DISK_FULL, tmp_path)
+    m2 = stages["M2 · Diagnose"]["details"]
+    # mongodb-geo sends no spans, but it crash-loops and geo's error names it, so it is the origin.
+    assert m2["candidates"][0] == {"service": "mongodb-geo", "weight": 1.5, "role": "origin", "hops": 0}
+    top = m2["hypotheses"][0]
+    assert (top["component"], top["layer"]) == ("mongodb-geo", "storage")
+    assert m2["stop_reason"] == "confident"
+    assert "kubectl patch pvc geo-pvc -n hotel-reservation" in m2["report_text"]
+    assert '"storage":"2Gi"' in m2["report_text"]
+    assert stages[VERIFY]["status"] == "skipped"  # no write: M3 can't check a PVC patch
+    assert outcome(list(stages.values()))["kind"] == "handoff"
 
 
 def test_without_canned_reads_m2_proposes_no_fix_and_m3_has_nothing_to_check(tmp_path):

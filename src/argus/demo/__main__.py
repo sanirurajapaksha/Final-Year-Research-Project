@@ -1,6 +1,6 @@
 """End-to-end demo on the command line: one incident through the whole agent, stage by stage.
 
-    python -m argus.demo [--scenario 1|2 | --telemetry FILE] [--save run.json]
+    python -m argus.demo [--scenario 1|2|3 | --telemetry FILE] [--save run.json]
 
 The run is in flow.py. The Streamlit page (app.py) draws the same stages.
 """
@@ -17,7 +17,7 @@ from argus.demo.run import demo_settings
 
 def main(argv: list[str] | None = None) -> int:
     cli = argparse.ArgumentParser(prog="python -m argus.demo", description="Run one incident end to end.")
-    cli.add_argument("--scenario", type=int, default=1, help="sample incident: 1 or 2 (default 1)")
+    cli.add_argument("--scenario", type=int, default=1, help="sample incident: 1, 2 or 3 (default 1)")
     cli.add_argument("--telemetry", type=Path, help="a telemetry batch file instead of a sample")
     cli.add_argument("--save", type=Path, help="also write every stage to this JSON file")
     args = cli.parse_args(argv)

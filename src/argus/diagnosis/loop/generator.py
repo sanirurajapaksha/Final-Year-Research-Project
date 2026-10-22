@@ -8,7 +8,7 @@ import re
 
 from argus.diagnosis.core.models import DiagContext, HypothesisSpec
 from argus.diagnosis.core.readonly import is_read_only
-from argus.diagnosis.loop.clues import layer_score
+from argus.diagnosis.loop.clues import NONE, layer_score
 
 # (layer, fault, test template, what the test shows if the fault is real)
 SIGNATURES = [
@@ -24,6 +24,14 @@ SIGNATURES = [
         "kubectl get endpoints {svc} -n {ns}",
         "no ready addresses",
     ),
+    # Before resources: a full disk also crash-loops the pod, so on a tie the deeper cause is tested first.
+    # Only drafted on a clue (CLUE_ONLY): a full disk always logs ENOSPC, so without one it isn't guessed.
+    (
+        "storage",
+        "data volume full (no space left on device)",
+        "kubectl logs deployment/{svc} -n {ns} --previous --tail=50",
+        "No space left on device (ENOSPC) in the crashed container's last log lines",
+    ),
     (
         "resources",
         "container OOMKilled or crash-looping",
@@ -31,6 +39,7 @@ SIGNATURES = [
         "Last State: Terminated (OOMKilled) or CrashLoopBackOff",
     ),
 ]
+CLUE_ONLY = {"storage"}  # layers drafted only when M1's evidence already points at them
 
 
 def validate(
@@ -121,6 +130,7 @@ class RuleGenerator:
                     confidence=layer_score(c.service, layer, ctx) if self.use_clues else 0.5,
                 )
                 for layer, fault, test, expected in SIGNATURES
+                if layer not in CLUE_ONLY or (self.use_clues and layer_score(c.service, layer, ctx) > NONE)
             ]
             specs += sorted(own, key=lambda h: -h.confidence)  # stable: ties keep the table's order
         return validate(specs, ctx, refuted, k, next_id, self.per_component)

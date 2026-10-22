@@ -9,7 +9,10 @@ only picks HOW to repair it, and has the least freedom of any step:
     This replaces the hard-coded demo address table on the LLM path;
   - a value that fails the checks, or a command M3 already blocked, goes back to it with the reason
     (at most max_revisions more tries: the REVISE step);
-  - a fault in the service's own code gets no command: a person has to change the code.
+  - a fault in the service's own code gets no command: a person has to change the code;
+  - a full data volume gets no command either: a restart crashes again on the same full disk, and
+    deleting the PVC loses the data. M2 reads the deployment and its PVC and hands a person the
+    expansion command instead (M3 has no rule for `kubectl patch pvc`, so it can't check one).
 For an app-config fault M2 first runs one more read-only command, `kubectl get services`, so the right
 address can come from the cluster. With no LLM, or after the tries run out, the rule fixes in fixes.py
 are used, checked against M3's blocks exactly as before.
@@ -52,6 +55,7 @@ HUMAN_NOTE = (
     "human_pr_required: the diagnosed fault is in the service's own code, which no kubectl command "
     "can fix safely, so M2 proposes no write."
 )
+SIZE = re.compile(r"(\d+)(Ki|Mi|Gi|Ti)")
 
 
 class FixAnswer(BaseModel):
@@ -96,6 +100,8 @@ class FixProposer:
     ) -> FixOutcome:
         if top.layer in HUMAN_LAYERS:
             return FixOutcome(None, "none", HUMAN_NOTE)
+        if top.layer == "storage":
+            return self._storage_handoff(top, ctx)
         allowed = [t for t, (layers, _, _) in TEMPLATES.items() if top.layer in layers]
         if allowed and not isinstance(self.llm, NoLLM):
             outcome = self._ask(top, ctx, evidence, blocked, allowed)
@@ -198,6 +204,43 @@ class FixProposer:
             return None, "a value must cite the evidence that shows it"
         return _action(patch_env_command(target, var, value, ctx.namespace), ctx, answer, top), ""
 
+    # ---------- full volume: a recommendation for a person ----------
+
+    def _storage_handoff(self, top: HypothesisSpec, ctx: DiagContext) -> FixOutcome:
+        """No write. Reads which PVC the deployment mounts and its size, and recommends doubling it."""
+        ns = ctx.namespace
+        command = f"kubectl get deployment {top.component} -n {ns} -o json"
+        result = guarded_run(self.reads, command)
+        lookups = [Evidence(id="L1", hyp_id=top.id, command=command, output=result.output, ok=result.ok)]
+        claim = _claim_name(result.output) if result.ok else None
+        size, storage_class = None, None
+        if claim is not None:
+            command = f"kubectl get pvc {claim} -n {ns} -o json"
+            result = guarded_run(self.reads, command)
+            lookups.append(
+                Evidence(id="L2", hyp_id=top.id, command=command, output=result.output, ok=result.ok)
+            )
+            if result.ok:
+                size, storage_class = _pvc_size(result.output)
+
+        note = (
+            f"human_action_required: {top.component}'s data volume is full. No write M3 can check frees "
+            "disk space (a restart crashes again on the same full volume; deleting the PVC loses the data), "
+            "so M2 proposes no write. Recommended for a person: "
+        )
+        if claim is None:
+            note += f"expand the PVC that {top.component} mounts, or free space on it."
+            return FixOutcome(None, "none", note, lookups)
+        bigger = _doubled(size) if size else None
+        request = {"storage": bigger or "<larger size>"}
+        patch = json.dumps({"spec": {"resources": {"requests": request}}}, separators=(",", ":"))
+        note += f"expand PVC {claim}" + (f" from {size} to {bigger}" if bigger else "")
+        note += f": `kubectl patch pvc {claim} -n {ns} -p '{patch}'`"
+        if storage_class:
+            note += f" (storage class {storage_class} must allow volume expansion)"
+        note += ", then let the pod restart; or free space on the volume."
+        return FixOutcome(None, "none", note, lookups)
+
     # ---------- the rule fallback ----------
 
     def _rules(self, top: HypothesisSpec, ctx: DiagContext, blocked: dict[str, SafetyVerdict]) -> FixOutcome:
@@ -207,6 +250,36 @@ class FixProposer:
         if fix.command in blocked:  # M3 proved this unsafe; the rules know one fix per fault
             return FixOutcome(None, "none", blocked_note(blocked[fix.command]))
         return FixOutcome(fix, "rules")
+
+
+def _claim_name(deployment_json: str) -> str | None:
+    """The first PVC the deployment's pods mount (`spec.template.spec.volumes[].persistentVolumeClaim`)."""
+    try:
+        volumes = json.loads(deployment_json)["spec"]["template"]["spec"].get("volumes", [])
+        for volume in volumes:
+            claim = (volume.get("persistentVolumeClaim") or {}).get("claimName")
+            if claim and SERVICE_NAME.fullmatch(claim):
+                return claim
+    except (ValueError, KeyError, TypeError, AttributeError):
+        pass  # not JSON, or not shaped like a deployment
+    return None
+
+
+def _pvc_size(pvc_json: str) -> tuple[str | None, str | None]:
+    """(capacity, storage class) of a `kubectl get pvc -o json`; capacity falls back to the request."""
+    try:
+        pvc = json.loads(pvc_json)
+        size = pvc.get("status", {}).get("capacity", {}).get("storage")
+        size = size or pvc["spec"].get("resources", {}).get("requests", {}).get("storage")
+        return size, pvc["spec"].get("storageClassName")
+    except (ValueError, KeyError, TypeError, AttributeError):
+        return None, None
+
+
+def _doubled(size: str) -> str | None:
+    """'1Gi' -> '2Gi'; None for a size written any other way."""
+    match = SIZE.fullmatch(size)
+    return f"{int(match.group(1)) * 2}{match.group(2)}" if match else None
 
 
 def _unreachable(component: str, symptoms: list[str]) -> list[str]:

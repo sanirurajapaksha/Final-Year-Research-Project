@@ -41,8 +41,9 @@ Scenario 1's fix is a `kubectl patch`, which the safety layer reads with its LLM
 |---|---|
 | **Cart can't reach its cache** (M1's `scenario_01`, namespace `default`) | M1 keeps 5 of 8 signals. M2's reads confirm "CART_ADDR missing" (85%) and it proposes a patch adding it. The LLM reads the patch as a pod-template change; Z3 finds no end state that breaks a rule, so the safety layer **approves**. |
 | **Cart keeps crashing, out of memory** (`data/fixtures/demo/scenario_02/`, namespace `shop`) | M1 keeps 9 of 12 signals. M2's reads confirm "OOMKilled / crash-looping" (85%) and it proposes a rolling restart. In `shop`, cart has 2 replicas and needs 2 available, and a restart takes 1 down, so the safety layer **blocks** it with that counterexample. M2 knows no other safe fix, so the incident goes to a human. |
+| **Hotel search fails, MongoDB disk full** (`data/fixtures/demo/scenario_03/`, namespace `hotel-reservation`) | mongodb-geo sends no spans, but it crash-loops and geo's error names it, so M2 makes it the origin. Its reads confirm "data volume full" (84%): the last logs show "No space left on device", and the crash was not an OOMKill. A restart would crash again on the same full disk, so M2 proposes **no write** and hands a person the PVC expansion command (`kubectl patch pvc geo-pvc ...`), which the safety layer has no rule to check yet. |
 
-To try another incident, download a sample's telemetry from the sidebar, edit it, and upload it. The flow is the same; what happens depends on the data. M2 only has canned read results for the two samples, so for a new incident it usually stops as not confident and proposes no fix.
+To try another incident, download a sample's telemetry from the sidebar, edit it, and upload it. The flow is the same; what happens depends on the data. M2 only has canned read results for the three samples, so for a new incident it usually stops as not confident and proposes no fix.
 
 ## What is real and what is simulated
 

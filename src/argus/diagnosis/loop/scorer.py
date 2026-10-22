@@ -6,9 +6,14 @@ hypothesis stays neutral, and so does anything a rule can't read.
 """
 
 import json
+import re
 
 from argus.diagnosis.core.models import DiagContext, Evidence, HypothesisSpec
 from argus.diagnosis.loop.fixes import KNOWN_ADDRESSES, address_var
+
+# `kubectl describe pods`: why the last container run ended, e.g. "Last State: Terminated / Reason: Error".
+LAST_REASON = re.compile(r"Last State:\s+Terminated\s*\n\s+Reason:\s+\w+")
+LAST_EXIT_137 = re.compile(r"Exit Code:\s+137\b")  # SIGKILL: what the kernel's OOM killer sends
 
 
 class RuleScorer:
@@ -34,6 +39,19 @@ def _verdict(hyp: HypothesisSpec, output: str, ctx: DiagContext) -> str:
         return _endpoints_ready(hyp.component, output)
     if hyp.layer == "resources":
         return _pods_healthy(output)
+    if hyp.layer == "storage":
+        return _disk_full(output)
+    return "neutral"
+
+
+def _disk_full(logs: str) -> str:
+    """`kubectl logs --previous`: the crashed container's last lines. ENOSPC supports a full volume;
+    other lines only weakly refute it, since the tail may have cut the write error off."""
+    lowered = logs.lower()
+    if "no space left on device" in lowered or "enospc" in lowered:
+        return "strong-support"
+    if logs.strip():
+        return "weak-refute"
     return "neutral"
 
 
@@ -98,9 +116,17 @@ def _endpoints_ready(component: str, endpoints: str) -> str:
 
 
 def _pods_healthy(describe: str) -> str:
-    """`kubectl describe pods`: an OOMKill or crash loop supports the fault, Running refutes it."""
-    if "OOMKilled" in describe or "CrashLoopBackOff" in describe:
+    """`kubectl describe pods`: an OOMKill or crash loop supports the fault, Running refutes it.
+
+    Except a crash loop whose last run ended for another named reason and not with exit code 137
+    ("Reason: Error", exit code 14): a memory limit kills with OOMKilled / 137 and a CPU limit only
+    throttles, so the container stopped itself, as a full disk or a bad config makes it do.
+    """
+    if "OOMKilled" in describe:
         return "strong-support"
+    if "CrashLoopBackOff" in describe:
+        killed = LAST_EXIT_137.search(describe)
+        return "strong-refute" if LAST_REASON.search(describe) and not killed else "strong-support"
     if "Running" in describe:
         return "strong-refute"
     return "neutral"

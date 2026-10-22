@@ -12,6 +12,11 @@ Two modes, picked by what M1 sent:
 - signals: no graph (M1 Stage 1 only). Every service with a kept signal gets 1.0,
   and the one with the most signals gets 1.5. Both schemes are the same here.
 An empty context gives no candidates; `notes` says why, so the report can explain it.
+
+Before either mode, a crashing service joins the failing set: a pod in CrashLoopBackOff (or that
+OOMKilled) or a FATAL log is a failure even when no trace shows it. A database sends no spans, so
+M1's graph misses it; when a failing service's own error names it ("Addr: mongodb-geo:27017"),
+that caller -> crashing service edge is added, which makes the crashing service the origin.
 """
 
 import re
@@ -29,17 +34,24 @@ HOP_UP = {0: 1.5, 1: 1.0, 2: 0.7}  # hops up from the origin -> weight; further 
 FAR = 0.5
 QUIET = 1.0
 
-# A service named in an error line: "failed to connect to redis", "dial tcp: lookup redis-cart".
+# A service named in an error line: "failed to connect to redis", "dial tcp: lookup redis-cart",
+# or a driver's address field, "Addr: mongodb-geo:27017" (not an access-log field like remote_addr).
 NAMED_SERVICE = re.compile(
-    r"(?:connect(?:ing)?\s+to|lookup|dial\s+tcp:?|desc\s*=)\s+([a-z][a-z0-9-]*[a-z0-9])"
+    r"(?:(?:connect(?:ing)?\s+to|lookup|dial\s+tcp:?|desc\s*=)\s+|(?<![\w-])(?i:addr)\s*[:=]\s*)"
+    r"([a-z][a-z0-9-]*[a-z0-9])"
 )
 NOT_A_SERVICE = {"the", "a", "an", "it", "server", "host", "service", "upstream", "localhost", "tcp"}
+
+# A service is crashing when its pod status or a kept signal says so, traces or not.
+CRASH_STATUS = {"crashloopbackoff", "oomkilled", "error"}
+FATAL_SIGNALS = {"log_fatal", "crashloopbackoff", "oomkilled"}
 
 Scheme = Literal["almanac", "hop"]
 
 
 def adapt(context: SemanticContext, namespace: str, scheme: Scheme = "almanac") -> DiagContext:
     """Turn M1's context into what the loop diagnoses from. Pure: no I/O, no LLM."""
+    context = with_crashing_services(context)
     if context.failing_services and context.dependencies:
         path = failing_path(context)
         candidates = _graph_candidates(context, path, scheme)
@@ -54,6 +66,34 @@ def adapt(context: SemanticContext, namespace: str, scheme: Scheme = "almanac") 
         node_status={n.name: n.k8s_status for n in context.nodes if n.k8s_status},
         notes=context.notes,
     )
+
+
+def with_crashing_services(context: SemanticContext) -> SemanticContext:
+    """M1's context with crashing services added to `failing_services`, and an edge from each failing
+    service whose own errors name a crashing service to that service. Unchanged when none crash."""
+    crashing = _crashing(context)
+    new = [s for s in crashing if s not in context.failing_services]
+    if not new:
+        return context
+    failing = [*context.failing_services, *new]
+    known = _known_services(context)
+    edges = list(context.dependencies)
+    for signal in context.kept_signals:
+        if signal.service not in failing:
+            continue
+        for name in NAMED_SERVICE.findall(signal.evidence):
+            target = _resolve(name, known)
+            edge = (signal.service, target)
+            if target in new and target != signal.service and edge not in edges:
+                edges.append(edge)
+    return context.model_copy(update={"failing_services": failing, "dependencies": edges})
+
+
+def _crashing(context: SemanticContext) -> list[str]:
+    """Services whose pod is crash-looping or that logged FATAL (kube-system is the cluster's own)."""
+    found = [n.name for n in context.nodes if (n.k8s_status or "").lower() in CRASH_STATUS]
+    found += [s.service for s in context.kept_signals if s.name.lower() in FATAL_SIGNALS]
+    return [s for s in dict.fromkeys(found) if not s.startswith("kube-")]
 
 
 def failing_path(context: SemanticContext) -> list[str]:

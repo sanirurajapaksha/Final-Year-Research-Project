@@ -201,3 +201,35 @@ def test_m1_signal_lines_are_shown_and_citable_but_never_ground_a_value():
     sent = llm.prompts[0][1]["evidence"]
     assert sent[-1]["id"] == "S1" and "failed to connect to redis" in sent[-1]["output"]
     assert "appear in no read's output" in llm.prompts[1][1]["rejected"][0]
+
+
+DB_DEPLOYMENT = (
+    '{"spec": {"template": {"spec": {"containers": [{"name": "db"}],'
+    ' "volumes": [{"name": "data", "persistentVolumeClaim": {"claimName": "db-pvc"}}]}}}}'
+)
+DB_PVC = '{"spec": {"storageClassName": "standard"}, "status": {"capacity": {"storage": "5Gi"}}}'
+
+
+def test_a_full_volume_gets_no_write_but_the_expansion_for_a_person():
+    reads = FakeReadExecutor(
+        {
+            "kubectl get deployment db -n default -o json": DB_DEPLOYMENT,
+            "kubectl get pvc db-pvc -n default -o json": DB_PVC,
+        }
+    )
+    outcome = FixProposer(reads=reads).propose(hyp("storage", "db"), CTX, [], {})
+    assert outcome.action is None and outcome.source == "none"
+    assert outcome.note.startswith("human_action_required:")
+    assert "from 5Gi to 10Gi" in outcome.note
+    assert (
+        '`kubectl patch pvc db-pvc -n default -p \'{"spec":{"resources":{"requests":{"storage":"10Gi"}}}}\'`'
+        in outcome.note
+    )
+    assert "storage class standard" in outcome.note
+    assert [e.id for e in outcome.lookups] == ["L1", "L2"]
+
+
+def test_a_full_volume_without_a_readable_pvc_still_hands_over_without_guessing_a_name():
+    outcome = FixProposer().propose(hyp("storage", "db"), CTX, [], {})
+    assert outcome.action is None
+    assert "expand the PVC that db mounts" in outcome.note and "kubectl patch" not in outcome.note

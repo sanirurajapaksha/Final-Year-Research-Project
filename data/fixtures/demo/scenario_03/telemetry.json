@@ -1,0 +1,748 @@
+{
+  "source": "uploaded test (hand-written, synthetic): hotel-reservation, mongodb-geo out of disk",
+  "collected_at": "2026-10-21T09:42:20Z",
+  "alert_time": "2026-10-21T09:42:00Z",
+  "records": [
+    {
+      "kind": "metric",
+      "service": "frontend",
+      "name": "http_5xx_rate",
+      "timestamp": "2026-10-21T09:39:00Z",
+      "value": 0.31
+    },
+    {
+      "kind": "metric",
+      "service": "search",
+      "name": "http_5xx_rate",
+      "timestamp": "2026-10-21T09:39:00Z",
+      "value": 0.52
+    },
+    {
+      "kind": "metric",
+      "service": "geo",
+      "name": "http_5xx_rate",
+      "timestamp": "2026-10-21T09:39:00Z",
+      "value": 0.89
+    },
+    {
+      "kind": "metric",
+      "service": "rate",
+      "name": "http_5xx_rate",
+      "timestamp": "2026-10-21T09:39:00Z",
+      "value": 0.0
+    },
+    {
+      "kind": "metric",
+      "service": "profile",
+      "name": "http_5xx_rate",
+      "timestamp": "2026-10-21T09:39:00Z",
+      "value": 0.0
+    },
+    {
+      "kind": "metric",
+      "service": "reservation",
+      "name": "http_5xx_rate",
+      "timestamp": "2026-10-21T09:39:00Z",
+      "value": 0.002
+    },
+    {
+      "kind": "metric",
+      "service": "geo",
+      "name": "cpu_utilization",
+      "timestamp": "2026-10-21T09:39:00Z",
+      "value": 0.11,
+      "labels": {
+        "pod": "geo-5d6b7f9c8-x2kqp"
+      }
+    },
+    {
+      "kind": "metric",
+      "service": "mongodb-geo",
+      "name": "memory_utilization",
+      "timestamp": "2026-10-21T09:39:00Z",
+      "value": 0.38,
+      "labels": {
+        "pod": "mongodb-geo-6f8c9d7b5-tl9wz"
+      }
+    },
+    {
+      "kind": "metric",
+      "service": "mongodb-geo",
+      "name": "filesystem_utilization",
+      "timestamp": "2026-10-21T09:39:00Z",
+      "value": 0.99,
+      "labels": {
+        "pod": "mongodb-geo-6f8c9d7b5-tl9wz",
+        "mount": "/data/db"
+      }
+    },
+    {
+      "kind": "metric",
+      "service": "profile",
+      "name": "cpu_utilization",
+      "timestamp": "2026-10-21T09:39:00Z",
+      "value": 0.94,
+      "labels": {
+        "pod": "profile-7c9d8b6f4-qm2rs"
+      }
+    },
+    {
+      "kind": "metric",
+      "service": "memcached-profile",
+      "name": "memory_utilization",
+      "timestamp": "2026-10-21T09:39:00Z",
+      "value": 0.93,
+      "labels": {
+        "pod": "memcached-profile-5b8f7c6d9-8hj4k"
+      }
+    },
+    {
+      "kind": "metric",
+      "service": "recommendation",
+      "name": "p99_latency_ms",
+      "timestamp": "2026-10-21T09:39:00Z",
+      "value": 41.0
+    },
+    {
+      "kind": "metric",
+      "service": "frontend",
+      "name": "p99_latency_ms",
+      "timestamp": "2026-10-21T09:39:00Z",
+      "value": 1480.0
+    },
+    {
+      "kind": "metric",
+      "service": "frontend",
+      "name": "http_5xx_rate",
+      "timestamp": "2026-10-21T09:41:00Z",
+      "value": 0.47
+    },
+    {
+      "kind": "metric",
+      "service": "search",
+      "name": "http_5xx_rate",
+      "timestamp": "2026-10-21T09:41:00Z",
+      "value": 0.71
+    },
+    {
+      "kind": "metric",
+      "service": "geo",
+      "name": "http_5xx_rate",
+      "timestamp": "2026-10-21T09:41:00Z",
+      "value": 0.97
+    },
+    {
+      "kind": "metric",
+      "service": "rate",
+      "name": "http_5xx_rate",
+      "timestamp": "2026-10-21T09:41:00Z",
+      "value": 0.0
+    },
+    {
+      "kind": "metric",
+      "service": "profile",
+      "name": "http_5xx_rate",
+      "timestamp": "2026-10-21T09:41:00Z",
+      "value": 0.0
+    },
+    {
+      "kind": "metric",
+      "service": "reservation",
+      "name": "http_5xx_rate",
+      "timestamp": "2026-10-21T09:41:00Z",
+      "value": 0.002
+    },
+    {
+      "kind": "metric",
+      "service": "geo",
+      "name": "cpu_utilization",
+      "timestamp": "2026-10-21T09:41:00Z",
+      "value": 0.11,
+      "labels": {
+        "pod": "geo-5d6b7f9c8-x2kqp"
+      }
+    },
+    {
+      "kind": "metric",
+      "service": "mongodb-geo",
+      "name": "memory_utilization",
+      "timestamp": "2026-10-21T09:41:00Z",
+      "value": 0.38,
+      "labels": {
+        "pod": "mongodb-geo-6f8c9d7b5-tl9wz"
+      }
+    },
+    {
+      "kind": "metric",
+      "service": "mongodb-geo",
+      "name": "filesystem_utilization",
+      "timestamp": "2026-10-21T09:41:00Z",
+      "value": 0.99,
+      "labels": {
+        "pod": "mongodb-geo-6f8c9d7b5-tl9wz",
+        "mount": "/data/db"
+      }
+    },
+    {
+      "kind": "metric",
+      "service": "profile",
+      "name": "cpu_utilization",
+      "timestamp": "2026-10-21T09:41:00Z",
+      "value": 0.94,
+      "labels": {
+        "pod": "profile-7c9d8b6f4-qm2rs"
+      }
+    },
+    {
+      "kind": "metric",
+      "service": "memcached-profile",
+      "name": "memory_utilization",
+      "timestamp": "2026-10-21T09:41:00Z",
+      "value": 0.93,
+      "labels": {
+        "pod": "memcached-profile-5b8f7c6d9-8hj4k"
+      }
+    },
+    {
+      "kind": "metric",
+      "service": "recommendation",
+      "name": "p99_latency_ms",
+      "timestamp": "2026-10-21T09:41:00Z",
+      "value": 41.0
+    },
+    {
+      "kind": "metric",
+      "service": "frontend",
+      "name": "p99_latency_ms",
+      "timestamp": "2026-10-21T09:41:00Z",
+      "value": 2310.0
+    },
+    {
+      "kind": "log",
+      "service": "mongodb-geo",
+      "severity": "FATAL",
+      "message": "WiredTiger error (28) [1761039492:412871][1:0x7f3a] __posix_file_write, 668: /data/db/WiredTiger.wt: handle-write: pwrite: failed to write 4096 bytes at offset 81920: No space left on device",
+      "timestamp": "2026-10-21T09:38:12.412Z"
+    },
+    {
+      "kind": "log",
+      "service": "mongodb-geo",
+      "severity": "FATAL",
+      "message": "Fatal assertion 28559 WT_PANIC: WiredTiger library panic",
+      "timestamp": "2026-10-21T09:38:12.415Z"
+    },
+    {
+      "kind": "log",
+      "service": "geo",
+      "severity": "ERROR",
+      "message": "server selection error: context deadline exceeded, current topology: { Type: Single, Servers: [{ Addr: mongodb-geo:27017, Type: Unknown, Last error: dial tcp 10.96.142.7:27017: connect: connection refused }] }",
+      "timestamp": "2026-10-21T09:39:04.208Z"
+    },
+    {
+      "kind": "log",
+      "service": "geo",
+      "severity": "ERROR",
+      "message": "Nearby failed: mongo find on geo-db.geo: server selection timeout",
+      "timestamp": "2026-10-21T09:41:02.931Z"
+    },
+    {
+      "kind": "log",
+      "service": "search",
+      "severity": "ERROR",
+      "message": "rpc error: code = Unavailable desc = geo: Nearby failed",
+      "timestamp": "2026-10-21T09:41:03.044Z"
+    },
+    {
+      "kind": "log",
+      "service": "frontend",
+      "severity": "ERROR",
+      "message": "GET /hotels: search failed: rpc error: code = Unavailable",
+      "timestamp": "2026-10-21T09:41:03.120Z"
+    },
+    {
+      "kind": "log",
+      "service": "frontend",
+      "severity": "WARN",
+      "message": "slow request GET /hotels took 2.31s",
+      "timestamp": "2026-10-21T09:41:05.502Z"
+    },
+    {
+      "kind": "log",
+      "service": "consul",
+      "severity": "WARN",
+      "message": "agent: Check is now critical: check=service:geo",
+      "timestamp": "2026-10-21T09:39:10.001Z"
+    },
+    {
+      "kind": "log",
+      "service": "jaeger-agent",
+      "severity": "WARN",
+      "message": "dropped 12 spans: queue full",
+      "timestamp": "2026-10-21T09:40:00.000Z"
+    },
+    {
+      "kind": "log",
+      "service": "reservation",
+      "severity": "INFO",
+      "message": "MakeReservation ok: hotel 17, 2 nights",
+      "timestamp": "2026-10-21T09:40:31.770Z"
+    },
+    {
+      "kind": "log",
+      "service": "profile",
+      "severity": "INFO",
+      "message": "warming profile cache: 80 hotels",
+      "timestamp": "2026-10-21T09:38:00.000Z"
+    },
+    {
+      "kind": "log",
+      "service": "kube-proxy",
+      "severity": "ERROR",
+      "message": "Failed to execute iptables-restore: exit status 4 (iptables-restore: line 48 failed); will retry",
+      "timestamp": "2026-10-21T09:37:44.300Z"
+    },
+    {
+      "kind": "span",
+      "service": "frontend",
+      "trace_id": "4bf92f3577b34da6",
+      "span_id": "4bf901",
+      "parent_span_id": null,
+      "operation": "HTTP GET /hotels",
+      "span_kind": "SERVER",
+      "start_time": "2026-10-21T09:41:02.900Z",
+      "duration_ms": 221.0,
+      "otel_status_code": "ERROR",
+      "http_status_code": 500
+    },
+    {
+      "kind": "span",
+      "service": "frontend",
+      "trace_id": "4bf92f3577b34da6",
+      "span_id": "4bf902",
+      "parent_span_id": "4bf901",
+      "operation": "/search.Search/Nearby",
+      "span_kind": "CLIENT",
+      "start_time": "2026-10-21T09:41:02.90002Z",
+      "duration_ms": 214.0,
+      "otel_status_code": "ERROR",
+      "grpc_status_code": 14
+    },
+    {
+      "kind": "span",
+      "service": "search",
+      "trace_id": "4bf92f3577b34da6",
+      "span_id": "4bf903",
+      "parent_span_id": "4bf902",
+      "operation": "/search.Search/Nearby",
+      "span_kind": "SERVER",
+      "start_time": "2026-10-21T09:41:02.90004Z",
+      "duration_ms": 209.0,
+      "otel_status_code": "ERROR",
+      "grpc_status_code": 14
+    },
+    {
+      "kind": "span",
+      "service": "search",
+      "trace_id": "4bf92f3577b34da6",
+      "span_id": "4bf904",
+      "parent_span_id": "4bf903",
+      "operation": "/geo.Geo/Nearby",
+      "span_kind": "CLIENT",
+      "start_time": "2026-10-21T09:41:02.90006Z",
+      "duration_ms": 203.0,
+      "otel_status_code": "ERROR",
+      "grpc_status_code": 14
+    },
+    {
+      "kind": "span",
+      "service": "geo",
+      "trace_id": "4bf92f3577b34da6",
+      "span_id": "4bf905",
+      "parent_span_id": "4bf904",
+      "operation": "/geo.Geo/Nearby",
+      "span_kind": "SERVER",
+      "start_time": "2026-10-21T09:41:02.90008Z",
+      "duration_ms": 200.0,
+      "otel_status_code": "ERROR",
+      "grpc_status_code": 14
+    },
+    {
+      "kind": "span",
+      "service": "geo",
+      "trace_id": "4bf92f3577b34da6",
+      "span_id": "4bf906",
+      "parent_span_id": "4bf905",
+      "operation": "mongodb.find geo-db.geo",
+      "span_kind": "CLIENT",
+      "start_time": "2026-10-21T09:41:02.90010Z",
+      "duration_ms": 199.0,
+      "otel_status_code": "ERROR"
+    },
+    {
+      "kind": "span",
+      "service": "search",
+      "trace_id": "4bf92f3577b34da6",
+      "span_id": "4bf907",
+      "parent_span_id": "4bf903",
+      "operation": "/rate.Rate/GetRates",
+      "span_kind": "CLIENT",
+      "start_time": "2026-10-21T09:41:02.90007Z",
+      "duration_ms": 3.1,
+      "otel_status_code": "OK",
+      "grpc_status_code": 0
+    },
+    {
+      "kind": "span",
+      "service": "rate",
+      "trace_id": "4bf92f3577b34da6",
+      "span_id": "4bf908",
+      "parent_span_id": "4bf907",
+      "operation": "/rate.Rate/GetRates",
+      "span_kind": "SERVER",
+      "start_time": "2026-10-21T09:41:02.90008Z",
+      "duration_ms": 2.4,
+      "otel_status_code": "OK",
+      "grpc_status_code": 0
+    },
+    {
+      "kind": "span",
+      "service": "rate",
+      "trace_id": "4bf92f3577b34da6",
+      "span_id": "4bf909",
+      "parent_span_id": "4bf908",
+      "operation": "memcached.get rate_17",
+      "span_kind": "CLIENT",
+      "start_time": "2026-10-21T09:41:02.90009Z",
+      "duration_ms": 0.6,
+      "otel_status_code": "OK"
+    },
+    {
+      "kind": "span",
+      "service": "frontend",
+      "trace_id": "a3ce929d0e0e4736",
+      "span_id": "a3ce01",
+      "parent_span_id": null,
+      "operation": "HTTP GET /hotels",
+      "span_kind": "SERVER",
+      "start_time": "2026-10-21T09:41:03.400Z",
+      "duration_ms": 221.0,
+      "otel_status_code": "ERROR",
+      "http_status_code": 500
+    },
+    {
+      "kind": "span",
+      "service": "frontend",
+      "trace_id": "a3ce929d0e0e4736",
+      "span_id": "a3ce02",
+      "parent_span_id": "a3ce01",
+      "operation": "/search.Search/Nearby",
+      "span_kind": "CLIENT",
+      "start_time": "2026-10-21T09:41:03.40002Z",
+      "duration_ms": 214.0,
+      "otel_status_code": "ERROR",
+      "grpc_status_code": 14
+    },
+    {
+      "kind": "span",
+      "service": "search",
+      "trace_id": "a3ce929d0e0e4736",
+      "span_id": "a3ce03",
+      "parent_span_id": "a3ce02",
+      "operation": "/search.Search/Nearby",
+      "span_kind": "SERVER",
+      "start_time": "2026-10-21T09:41:03.40004Z",
+      "duration_ms": 209.0,
+      "otel_status_code": "ERROR",
+      "grpc_status_code": 14
+    },
+    {
+      "kind": "span",
+      "service": "search",
+      "trace_id": "a3ce929d0e0e4736",
+      "span_id": "a3ce04",
+      "parent_span_id": "a3ce03",
+      "operation": "/geo.Geo/Nearby",
+      "span_kind": "CLIENT",
+      "start_time": "2026-10-21T09:41:03.40006Z",
+      "duration_ms": 203.0,
+      "otel_status_code": "ERROR",
+      "grpc_status_code": 14
+    },
+    {
+      "kind": "span",
+      "service": "geo",
+      "trace_id": "a3ce929d0e0e4736",
+      "span_id": "a3ce05",
+      "parent_span_id": "a3ce04",
+      "operation": "/geo.Geo/Nearby",
+      "span_kind": "SERVER",
+      "start_time": "2026-10-21T09:41:03.40008Z",
+      "duration_ms": 200.0,
+      "otel_status_code": "ERROR",
+      "grpc_status_code": 14
+    },
+    {
+      "kind": "span",
+      "service": "geo",
+      "trace_id": "a3ce929d0e0e4736",
+      "span_id": "a3ce06",
+      "parent_span_id": "a3ce05",
+      "operation": "mongodb.find geo-db.geo",
+      "span_kind": "CLIENT",
+      "start_time": "2026-10-21T09:41:03.40010Z",
+      "duration_ms": 199.0,
+      "otel_status_code": "ERROR"
+    },
+    {
+      "kind": "span",
+      "service": "search",
+      "trace_id": "a3ce929d0e0e4736",
+      "span_id": "a3ce07",
+      "parent_span_id": "a3ce03",
+      "operation": "/rate.Rate/GetRates",
+      "span_kind": "CLIENT",
+      "start_time": "2026-10-21T09:41:03.40007Z",
+      "duration_ms": 3.1,
+      "otel_status_code": "OK",
+      "grpc_status_code": 0
+    },
+    {
+      "kind": "span",
+      "service": "rate",
+      "trace_id": "a3ce929d0e0e4736",
+      "span_id": "a3ce08",
+      "parent_span_id": "a3ce07",
+      "operation": "/rate.Rate/GetRates",
+      "span_kind": "SERVER",
+      "start_time": "2026-10-21T09:41:03.40008Z",
+      "duration_ms": 2.4,
+      "otel_status_code": "OK",
+      "grpc_status_code": 0
+    },
+    {
+      "kind": "span",
+      "service": "rate",
+      "trace_id": "a3ce929d0e0e4736",
+      "span_id": "a3ce09",
+      "parent_span_id": "a3ce08",
+      "operation": "memcached.get rate_17",
+      "span_kind": "CLIENT",
+      "start_time": "2026-10-21T09:41:03.40009Z",
+      "duration_ms": 0.6,
+      "otel_status_code": "OK"
+    },
+    {
+      "kind": "span",
+      "service": "frontend",
+      "trace_id": "c7d1a0f55e2b4c19",
+      "span_id": "c701",
+      "parent_span_id": null,
+      "operation": "HTTP GET /recommendations",
+      "span_kind": "SERVER",
+      "start_time": "2026-10-21T09:40:12.000Z",
+      "duration_ms": 18.0,
+      "otel_status_code": "OK",
+      "http_status_code": 200
+    },
+    {
+      "kind": "span",
+      "service": "frontend",
+      "trace_id": "c7d1a0f55e2b4c19",
+      "span_id": "c702",
+      "parent_span_id": "c701",
+      "operation": "/recommendation.Recommendation/GetRecommendations",
+      "span_kind": "CLIENT",
+      "start_time": "2026-10-21T09:40:12.002Z",
+      "duration_ms": 6.0,
+      "otel_status_code": "OK",
+      "grpc_status_code": 0
+    },
+    {
+      "kind": "span",
+      "service": "recommendation",
+      "trace_id": "c7d1a0f55e2b4c19",
+      "span_id": "c703",
+      "parent_span_id": "c702",
+      "operation": "/recommendation.Recommendation/GetRecommendations",
+      "span_kind": "SERVER",
+      "start_time": "2026-10-21T09:40:12.003Z",
+      "duration_ms": 4.2,
+      "otel_status_code": "OK",
+      "grpc_status_code": 0
+    },
+    {
+      "kind": "span",
+      "service": "frontend",
+      "trace_id": "c7d1a0f55e2b4c19",
+      "span_id": "c704",
+      "parent_span_id": "c701",
+      "operation": "/profile.Profile/GetProfiles",
+      "span_kind": "CLIENT",
+      "start_time": "2026-10-21T09:40:12.009Z",
+      "duration_ms": 8.0,
+      "otel_status_code": "OK",
+      "grpc_status_code": 0
+    },
+    {
+      "kind": "span",
+      "service": "profile",
+      "trace_id": "c7d1a0f55e2b4c19",
+      "span_id": "c705",
+      "parent_span_id": "c704",
+      "operation": "/profile.Profile/GetProfiles",
+      "span_kind": "SERVER",
+      "start_time": "2026-10-21T09:40:12.010Z",
+      "duration_ms": 6.9,
+      "otel_status_code": "OK",
+      "grpc_status_code": 0
+    },
+    {
+      "kind": "span",
+      "service": "frontend",
+      "trace_id": "e91b3f2a7c604d88",
+      "span_id": "e901",
+      "parent_span_id": null,
+      "operation": "HTTP POST /reservation",
+      "span_kind": "SERVER",
+      "start_time": "2026-10-21T09:40:31.700Z",
+      "duration_ms": 24.0,
+      "otel_status_code": "OK",
+      "http_status_code": 200
+    },
+    {
+      "kind": "span",
+      "service": "frontend",
+      "trace_id": "e91b3f2a7c604d88",
+      "span_id": "e902",
+      "parent_span_id": "e901",
+      "operation": "/user.User/CheckUser",
+      "span_kind": "CLIENT",
+      "start_time": "2026-10-21T09:40:31.702Z",
+      "duration_ms": 3.0,
+      "otel_status_code": "OK",
+      "grpc_status_code": 0
+    },
+    {
+      "kind": "span",
+      "service": "user",
+      "trace_id": "e91b3f2a7c604d88",
+      "span_id": "e903",
+      "parent_span_id": "e902",
+      "operation": "/user.User/CheckUser",
+      "span_kind": "SERVER",
+      "start_time": "2026-10-21T09:40:31.703Z",
+      "duration_ms": 2.1,
+      "otel_status_code": "OK",
+      "grpc_status_code": 0
+    },
+    {
+      "kind": "span",
+      "service": "frontend",
+      "trace_id": "e91b3f2a7c604d88",
+      "span_id": "e904",
+      "parent_span_id": "e901",
+      "operation": "/reservation.Reservation/MakeReservation",
+      "span_kind": "CLIENT",
+      "start_time": "2026-10-21T09:40:31.706Z",
+      "duration_ms": 16.0,
+      "otel_status_code": "OK",
+      "grpc_status_code": 0
+    },
+    {
+      "kind": "span",
+      "service": "reservation",
+      "trace_id": "e91b3f2a7c604d88",
+      "span_id": "e905",
+      "parent_span_id": "e904",
+      "operation": "/reservation.Reservation/MakeReservation",
+      "span_kind": "SERVER",
+      "start_time": "2026-10-21T09:40:31.707Z",
+      "duration_ms": 14.5,
+      "otel_status_code": "OK",
+      "grpc_status_code": 0
+    },
+    {
+      "kind": "k8s",
+      "service": "mongodb-geo",
+      "name": "mongodb-geo-6f8c9d7b5-tl9wz",
+      "namespace": "hotel-reservation",
+      "resource": "Pod",
+      "status": "CrashLoopBackOff",
+      "restart_count": 11
+    },
+    {
+      "kind": "k8s",
+      "service": "geo",
+      "name": "geo-5d6b7f9c8-x2kqp",
+      "namespace": "hotel-reservation",
+      "resource": "Pod",
+      "status": "Running",
+      "restart_count": 0
+    },
+    {
+      "kind": "k8s",
+      "service": "search",
+      "name": "search-7b4c6d9f8-p5n2m",
+      "namespace": "hotel-reservation",
+      "resource": "Pod",
+      "status": "Running",
+      "restart_count": 0
+    },
+    {
+      "kind": "k8s",
+      "service": "frontend",
+      "name": "frontend-6c8d9b7f5-zx4lq",
+      "namespace": "hotel-reservation",
+      "resource": "Pod",
+      "status": "Running",
+      "restart_count": 0
+    },
+    {
+      "kind": "k8s",
+      "service": "profile",
+      "name": "profile-7c9d8b6f4-qm2rs",
+      "namespace": "hotel-reservation",
+      "resource": "Pod",
+      "status": "Running",
+      "restart_count": 0
+    },
+    {
+      "kind": "k8s",
+      "service": "memcached-profile",
+      "name": "memcached-profile-5b8f7c6d9-8hj4k",
+      "namespace": "hotel-reservation",
+      "resource": "Pod",
+      "status": "Running",
+      "restart_count": 0
+    },
+    {
+      "kind": "k8s",
+      "service": "kube-proxy",
+      "name": "kube-proxy-9fz7d",
+      "namespace": "kube-system",
+      "resource": "Pod",
+      "status": "Running",
+      "restart_count": 4
+    },
+    {
+      "kind": "k8s",
+      "service": "geo",
+      "name": "geo",
+      "namespace": "hotel-reservation",
+      "resource": "Deployment",
+      "status": "Available",
+      "restart_count": 0,
+      "replicas": 1
+    },
+    {
+      "kind": "k8s",
+      "service": "mongodb-geo",
+      "name": "mongodb-geo",
+      "namespace": "hotel-reservation",
+      "resource": "Deployment",
+      "status": "Unavailable",
+      "restart_count": 0,
+      "replicas": 1
+    }
+  ]
+}

@@ -144,8 +144,8 @@ def render_score(command: str, output: str, hypotheses: dict[str, str]) -> str:
 
 # ---------- draft: rival hypotheses for the components M2 suspects ----------
 
-DRAFT_VERSION = "draft-v2"
-LAYERS = ("app-config", "k8s-network", "resources", "dependency", "code")
+DRAFT_VERSION = "draft-v3"  # v3: storage layer
+LAYERS = ("app-config", "k8s-network", "resources", "storage", "dependency", "code")
 
 # role -> how the candidate list explains it. The weight itself is never shown: position is weighted
 # in code (the graph prior), so the LLM must not count it a second time.
@@ -192,7 +192,8 @@ def render_draft(
             "Each hypothesis has:",
             "- component: ONE service from <candidates>, or a service named in <signals>, spelled exactly.",
             "- layer: one of " + ", ".join(LAYERS) + ". Use dependency when a service the component",
-            "  calls is down; use code for a bug in the service's own code.",
+            "  calls is down; use storage when its data volume is full (no space left on device);",
+            "  use code for a bug in the service's own code.",
             "- fault: a short, specific claim, e.g. 'DB_HOST env var missing'.",
             f"- test: ONE read-only kubectl command (get, describe, logs, top or events) with -n {namespace}",
             "  that would confirm or refute this hypothesis. No pipes, no other commands, no changes.",

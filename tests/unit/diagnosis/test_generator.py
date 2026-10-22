@@ -44,3 +44,13 @@ def test_per_component_fills_from_held_back_specs_when_one_candidate_is_all_ther
 
 def test_no_per_component_limit_keeps_every_guess_on_the_top_candidate():
     assert {h.component for h in RuleGenerator().draft(CTX, k=3)} == {"frontend"}
+
+
+def test_storage_is_only_guessed_when_the_evidence_mentions_a_full_disk():
+    assert all(h.layer != "storage" for h in RuleGenerator().draft(CTX, k=10))
+    disk = CTX.model_copy(update={"symptoms": ["cart: log_fatal (write failed: No space left on device)"]})
+    hyps = RuleGenerator().draft(disk, k=10)
+    storage = [h for h in hyps if h.layer == "storage"]
+    assert [h.component for h in storage] == ["cart"]
+    assert storage[0].test == "kubectl logs deployment/cart -n demo --previous --tail=50"
+    assert all(h.layer != "storage" for h in RuleGenerator(use_clues=False).draft(disk, k=10))
